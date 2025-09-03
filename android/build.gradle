@@ -1,0 +1,32 @@
+// Primero define el buildscript y los repositorios
+buildscript {
+    ext.kotlin_version = '2.1.21'
+    repositories {
+        google() // Repositorio para dependencias de Google
+        mavenCentral() // Repositorio central de Maven
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.10.1'
+        classpath 'com.google.gms:google-services:4.4.2' // Plugin de Google Services
+    }
+}
+
+// Luego configura los repositorios para el resto del proyecto
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// Configuración de directorios de compilación
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.evaluationDependsOn(":app")
+}
+
+// Tarea para limpiar el proyecto
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "290216580206",
+    "project_id": "servicemet-fba89",
+    "storage_bucket": "servicemet-fba89.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:290216580206:android:eaefad750f7991bce9c27f",
+        "android_client_info": {
+          "package_name": "com.metrica.met_service"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNTKVfypd4dFXW2LsU_fPmhVBcYVM-p3I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
