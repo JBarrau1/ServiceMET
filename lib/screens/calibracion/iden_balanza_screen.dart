@@ -89,6 +89,8 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   bool _fotosTomadas = false;
 
+  final List<String> unidadesPermitidas = ['mg', 'g', 'kg'];
+
   final List<String> marcasBalanzas = [
     'ACCULAB',
     'AIV ELECTRONIC TECH',
@@ -238,15 +240,44 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
     _d1Controller.clear();
     _e1Controller.clear();
     _dec1Controller.clear();
-    _pmax2Controller.clear();
-    _d2Controller.clear();
-    _e2Controller.clear();
-    _dec2Controller.clear();
-    _pmax3Controller.clear();
-    _d3Controller.clear();
-    _e3Controller.clear();
-    _dec3Controller.clear();
+
+    // NUEVOS: Inicializar campos del rango 2 con "0"
+    _pmax2Controller.text = "0";
+    _d2Controller.text = "0";
+    _e2Controller.text = "0";
+    _dec2Controller.text = "0";
+
+    // NUEVOS: Inicializar campos del rango 3 con "0"
+    _pmax3Controller.text = "0";
+    _d3Controller.text = "0";
+    _e3Controller.text = "0";
+    _dec3Controller.text = "0";
   }
+
+  Widget _buildUnidadField() {
+    return DropdownButtonFormField<String>(
+      value: _unidadController.text.isNotEmpty ? _unidadController.text : null,
+      decoration: buildInputDecoration('Unidad:'),
+      items: unidadesPermitidas.map((String unidad) {
+        return DropdownMenuItem<String>(
+          value: unidad,
+          child: Text(unidad),
+        );
+      }).toList(),
+      onChanged: (String? newValue) {
+        setState(() {
+          _unidadController.text = newValue ?? '';
+        });
+      },
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor seleccione una unidad';
+        }
+        return null;
+      },
+    );
+  }
+
 
   Future<void> _takePhoto(BuildContext context) async {
     final photo = await _imagePicker.pickImage(source: ImageSource.camera);
@@ -993,22 +1024,15 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
 
     // Actualizar los controladores con los datos de la balanza seleccionada
     _codMetricaController.text = selectedBalanza.cod_metrica;
-    _catBalanzaController.text =
-        balanza['categoria']?.toString() ?? ''; // De la tabla balanzas
+    _catBalanzaController.text = balanza['categoria']?.toString() ?? ''; // De la tabla balanzas
     _codInternoController.text = balanza['cod_interno']?.toString() ?? '';
-    _nCeldasController.text =
-        balanza['n_celdas']?.toString() ?? ''; // De la tabla inf
-    _tipoEquipoController.text =
-        balanza['tipo_instrumento']?.toString() ?? ''; // De la tabla inf
-    _marcaController.text =
-        balanza['marca']?.toString() ?? ''; // De la tabla inf
-    _modeloController.text =
-        balanza['modelo']?.toString() ?? ''; // De la tabla inf
-    _serieController.text =
-        balanza['serie']?.toString() ?? ''; // Puede venir de ambas tablas
+    _nCeldasController.text = balanza['n_celdas']?.toString() ?? ''; // De la tabla inf
+    _tipoEquipoController.text = balanza['tipo_instrumento']?.toString() ?? ''; // De la tabla inf
+    _marcaController.text = balanza['marca']?.toString() ?? ''; // De la tabla inf
+    _modeloController.text = balanza['modelo']?.toString() ?? ''; // De la tabla inf
+    _serieController.text = balanza['serie']?.toString() ?? ''; // Puede venir de ambas tablas
     _unidadController.text = selectedBalanza.unidad;
-    _ubicacionController.text =
-        balanza['ubicacion']?.toString() ?? ''; // De la tabla inf
+    _ubicacionController.text = balanza['ubicacion']?.toString() ?? ''; // De la tabla inf
     _pmax1Controller.text = selectedBalanza.cap_max1;
     _d1Controller.text = selectedBalanza.d1.toString();
     _e1Controller.text = selectedBalanza.e1.toString();
@@ -1560,13 +1584,7 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
                                     readOnly: false,
                                   ),
                                   const SizedBox(height: 14.0),
-                                  TextFormField(
-                                    controller: _unidadController,
-                                    decoration: buildInputDecoration(
-                                      'Unidad:',
-                                    ),
-                                    readOnly: false,
-                                  ),
+                                  _buildUnidadField (),
                                   const SizedBox(height: 14.0),
                                   TextFormField(
                                     controller: _ubicacionController,

@@ -47,51 +47,12 @@ class _ExcentricidadScreenState extends State<ExcentricidadScreen> {
       final dbHelper = AppDatabase();
       final existingRecord = await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
 
-      if (existingRecord != null) {
-        final continuar = await _showContinueDialog(context);
-        if (continuar == true) {
 
-          _controller.loadFromDatabase(existingRecord);
-        } else {
-
-          _controller.clearData();
-        }
-        setState(() {});
-      }
     });
 
     _controller.masaController.addListener(() {
       _controller.autoFillIndicationsFromMasa();
     });
-  }
-
-  Future<bool?> _showContinueDialog(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            "DATOS PREVIOS ENCONTRADOS",
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          content: const Text(
-              "Se encontraron datos registrados anteriormente. ¿Desea continuar con ellos o empezar un nuevo registro?\n SI CAMBIO DE BALANZA, INGRESE NUEVOS, DE LO CONTRARIO VISULIZARA LOS DATOS DE LA ANTERIOR BALANZA"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Ingresar nuevos"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Usar últimos"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
 

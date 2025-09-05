@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:mssql_connection/mssql_connection.dart';
+import 'package:crypto/crypto.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,15 +40,48 @@ class _LoginScreenState extends State<LoginScreen> {
     _loadPrefs();
   }
 
+  String hashPassword(String password) {
+    var bytes = utf8.encode(password);
+    var digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+// Función para sanitizar entradas SQL
+  String sanitizeInput(String input) {
+    // Remueve caracteres peligrosos para SQL
+    return input.replaceAll("'", "''")  // Escapa comillas simples
+        .replaceAll(";", "")     // Remueve punto y coma
+        .replaceAll("--", "")    // Remueve comentarios SQL
+        .replaceAll("/*", "")    // Remueve comentarios de bloque
+        .replaceAll("*/", "")
+        .replaceAll("xp_", "")   // Remueve procedimientos peligrosos
+        .replaceAll("sp_", "")
+        .trim();
+  }
+
+// Validación adicional de entrada
+  bool isValidInput(String input) {
+    // No debe contener caracteres sospechosos
+    final dangerousPatterns = [
+      'drop', 'delete', 'insert', 'update', 'create', 'alter',
+      'exec', 'execute', 'union', 'select', 'script'
+    ];
+
+    final lowerInput = input.toLowerCase();
+    return !dangerousPatterns.any((pattern) => lowerInput.contains(pattern));
+  }
+
   Future<void> _loadPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _ipController.text = prefs.getString('ip') ?? '';
     _portController.text = prefs.getString('port') ?? '1433';
     _dbController.text = prefs.getString('database') ?? '';
     _dbUserController.text = prefs.getString('dbuser') ?? '';
-    _dbPassController.text = prefs.getString('dbpass') ?? '';
+    _dbPassController.text = '';
+
     _usuarioController.text = prefs.getString('usuario') ?? '';
-    _passController.text = prefs.getString('contrasena') ?? '';
+    _passController.text = '';
+
     recordarCredenciales = prefs.getBool('recordar') ?? false;
     setState(() {});
   }
@@ -58,11 +92,16 @@ class _LoginScreenState extends State<LoginScreen> {
     await prefs.setString('port', _portController.text);
     await prefs.setString('database', _dbController.text);
     await prefs.setString('dbuser', _dbUserController.text);
-    await prefs.setString('dbpass', _dbPassController.text);
+
+    //HASHEAR CONTRASEÑA DE BD ANTES DE GUARDAR
+    await prefs.setString('dbpass', hashPassword(_dbPassController.text));
+
     await prefs.setBool('recordar', recordarCredenciales);
+
     if (recordarCredenciales) {
       await prefs.setString('usuario', _usuarioController.text);
-      await prefs.setString('contrasena', _passController.text);
+      //HASHEAR CONTRASEÑA DE USUARIO ANTES DE GUARDAR
+      await prefs.setString('contrasena', hashPassword(_passController.text));
     } else {
       await prefs.remove('usuario');
       await prefs.remove('contrasena');
@@ -72,9 +111,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _saveUserToSQLite(Map<String, dynamic> userData) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'usuarios.db');
-    final db = await openDatabase(path, version: 1,
-        onCreate: (Database db, int version) async {
-      await db.execute('''
+
+    Database? db;
+    try {
+      db = await openDatabase(path, version: 1,
+          onCreate: (Database db, int version) async {
+            await db.execute('''
         CREATE TABLE IF NOT EXISTS usuarios (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           nombre1 TEXT,
@@ -82,12 +124,26 @@ class _LoginScreenState extends State<LoginScreen> {
           pass TEXT,
           usuario TEXT,
           titulo_abr TEXT,
-          estado TEXT
+          estado TEXT,
+          fecha_guardado TEXT
         )
       ''');
-    });
+          });
 
-    await db.insert('usuarios', userData);
+      await db.delete('usuarios');
+
+      final userDataConFecha = {
+        ...userData,
+        'fecha_guardado': DateTime.now().toIso8601String(),
+      };
+
+      await db.insert('usuarios', userDataConFecha);
+
+    } catch (e) {
+      print('Error guardando en SQLite: $e');
+    } finally {
+      await db?.close();
+    }
   }
 
   Future<void> _login(BuildContext context) async {
@@ -104,6 +160,18 @@ class _LoginScreenState extends State<LoginScreen> {
     final pass = _passController.text.trim();
 
     try {
+      // 🔒 VALIDACIÓN DE SEGURIDAD
+      if (!isValidInput(usuario) || !isValidInput(pass)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Caracteres no válidos detectados')),
+        );
+        return;
+      }
+
+      // 🔒 SANITIZAR ENTRADAS
+      final usuarioSeguro = sanitizeInput(usuario);
+      final passSeguro = sanitizeInput(pass);
+
       // Configurar timeout de 15 segundos
       final timeoutDuration = const Duration(seconds: 15);
 
@@ -128,14 +196,14 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Consulta SQL parametrizada para evitar inyección
+      // 🔒 QUERY SQL MÁS SEGURA (aunque no sea completamente parametrizada)
       final query = '''
-        SELECT nombre1, apellido1, pass, usuario, titulo_abr, estado 
-        FROM data_users 
-        WHERE usuario = '$usuario' AND pass = '$pass'
-      ''';
+      SELECT nombre1, apellido1, pass, usuario, titulo_abr, estado 
+      FROM data_users 
+      WHERE usuario = '$usuarioSeguro' AND pass = '$passSeguro'
+    ''';
 
-      // Usamos getData() como originalmente pero con timeout
+      // Usamos getData() con timeout
       final resultJson = await connection
           .getData(query)
           .timeout(timeoutDuration, onTimeout: () {
@@ -147,7 +215,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (result.isNotEmpty) {
         final userData = Map<String, dynamic>.from(result.first);
-        await _saveUserToSQLite(userData);
+
+        // 🔒 HASHEAR LA CONTRASEÑA ANTES DE GUARDAR LOCALMENTE
+        final userDataSeguro = {
+          ...userData,
+          'pass': hashPassword(userData['pass']), // Hashear contraseña
+        };
+
+        await _saveUserToSQLite(userDataSeguro);
         await _savePrefs();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -451,7 +526,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20.0),
               Text(
-                'versión 6.1.1_1_02925',
+                'versión 6.1.1_2_05925',
                 style: GoogleFonts.inter(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white

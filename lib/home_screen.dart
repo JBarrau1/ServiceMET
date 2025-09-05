@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String userArea = "Cargando...";
   int _currentIndex = 0;
   final PageController _pageController = PageController();
-  final int _totalSections = 3; // Total de secciones con tarjetas
+  final int _totalSections = 3;
 
   @override
   void initState() {
@@ -38,6 +38,63 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  // Agregar esta función a tu HomeScreen
+  Future<bool> _verificarDatosLocales() async {
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, 'usuarios.db');
+
+      // Verificar si existe la BD
+      if (!await databaseExists(path)) {
+        return false;
+      }
+
+      final db = await openDatabase(path);
+      final result = await db.query('usuarios');
+      await db.close();
+
+      return result.isNotEmpty;
+    } catch (e) {
+      print('Error verificando datos locales: $e');
+      return false;
+    }
+  }
+
+// Función para mostrar mensaje si no hay datos offline
+  void _mostrarMensajeSinDatos(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'SIN DATOS OFFLINE',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: Colors.orange,
+            ),
+          ),
+          content: const Text(
+              'No tienes datos almacenados localmente.\n\n'
+                  'Para usar el modo offline, primero debes:'
+                  '\n• Conectarte a internet'
+                  '\n• Iniciar sesión online al menos una vez'
+                  '\n• Los datos se guardarán automáticamente'
+          ),
+          actions: <Widget>[
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+              ),
+              child: const Text('Entendido'),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _fetchUserData() async {
@@ -58,6 +115,17 @@ class _HomeScreenState extends State<HomeScreen> {
           photoUrl = null;
         });
       } else {
+        // 🔒 VERIFICAR SI ES MODO OFFLINE SIN DATOS
+        final hayDatosLocales = await _verificarDatosLocales();
+        if (!hayDatosLocales) {
+          setState(() {
+            userName = "Usuario sin datos";
+            userArea = "Requiere conexión";
+          });
+
+          return;
+        }
+
         setState(() {
           userName = "Usuario no identificado";
           userArea = "Área no especificada";
@@ -96,9 +164,38 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: const Text('Cerrar Sesión'),
               onPressed: () async {
-                // Limpiar preferencias de sesión
+                // 🔒 LIMPIAR SOLO DATOS DE SESIÓN, NO CONFIGURACIÓN DE BD
                 final prefs = await SharedPreferences.getInstance();
-                await prefs.clear();
+
+                // Guardar configuración de BD antes de limpiar
+                final ip = prefs.getString('ip');
+                final port = prefs.getString('port');
+                final database = prefs.getString('database');
+                final dbuser = prefs.getString('dbuser');
+                final dbpass = prefs.getString('dbpass');
+
+                // Limpiar solo datos de sesión de usuario
+                await prefs.remove('usuario');
+                await prefs.remove('contrasena');
+                await prefs.setBool('recordar', false);
+
+                // Restaurar configuración de BD
+                if (ip != null) await prefs.setString('ip', ip);
+                if (port != null) await prefs.setString('port', port);
+                if (database != null) await prefs.setString('database', database);
+                if (dbuser != null) await prefs.setString('dbuser', dbuser);
+                if (dbpass != null) await prefs.setString('dbpass', dbpass);
+
+                // 🔒 LIMPIAR BASE DE DATOS LOCAL DE USUARIOS
+                try {
+                  final dbPath = await getDatabasesPath();
+                  final path = join(dbPath, 'usuarios.db');
+                  final db = await openDatabase(path);
+                  await db.delete('usuarios');
+                  await db.close();
+                } catch (e) {
+                  print('Error limpiando BD local: $e');
+                }
 
                 // Cerrar todas las pantallas y volver al login
                 Navigator.of(context).pushNamedAndRemoveUntil(
@@ -141,21 +238,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleNavigationTap(int index, BuildContext context) {
-    setState(() {
-      _currentIndex = index;
-    });
-
     switch (index) {
       case 0: // Inicio
+        setState(() {
+          _currentIndex = index;
+        });
         break;
+
       case 1: // Respaldo
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => RespaldoScreen()),
-        );
+        ).then((_) {
+          // 🔒 RESETEAR ÍNDICE CUANDO REGRESE DE RESPALDO
+          setState(() {
+            _currentIndex = 0;
+          });
+        });
         break;
+
       case 2: // Cerrar Sesión
         _cerrarSesion(context);
+        // No cambiar el índice para cerrar sesión
         break;
     }
   }
@@ -290,30 +394,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Widget para el indicador de puntos
-  Widget _buildDotIndicator(BuildContext context, int currentSection) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_totalSections, (index) {
-        return Container(
-          width: 8,
-          height: 8,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: currentSection == index
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey.withOpacity(0.5),
-          ),
-        );
-      }),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    int currentSection = 0; // Podrías controlar esto con un PageController si quieres scroll vertical
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -462,6 +545,61 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildServiceCard(
                     imagePath: 'images/tarjetas/st_home.png',
                     title: 'SERVICIO DE\nSOPORTE TÉCNICO',
+                    onTap: () async {
+                      String dbPath = join(
+                          await getDatabasesPath(), 'precarga_database.db');
+                      bool dbExists = await databaseExists(dbPath);
+
+                      if (dbExists) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SoporteScreen(
+                                userName: userName,
+                              )),
+                        );
+                      } else {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text(
+                                '¡PRECARGA REQUERIDA!',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 17,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              content: const Text(
+                                'Debes realizar la precarga de datos antes de acceder al módulo de Soporte Técnico.\n\n'
+                                    'Sin la precarga no podrás:'
+                                    '\n- Ver información de Clientes'
+                                    '\n- Acceder a Plantas y Equipos'
+                                    '\n- Consultar Historial de Soporte',
+                              ),
+                              actions: <Widget>[
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                  ),
+                                  child: const Text('Salir'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 15),
+                  _buildServiceCard(
+                    imagePath: 'images/tarjetas/st_home.png',
+                    title: 'SERVICIOS\nDISPONIBLES',
                     onTap: () async {
                       String dbPath = join(
                           await getDatabasesPath(), 'precarga_database.db');

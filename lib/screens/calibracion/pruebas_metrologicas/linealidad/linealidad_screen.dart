@@ -84,7 +84,7 @@ class _LinealidadScreenState extends State<LinealidadScreen> {
     if (useExisting) {
       _controller.loadFromDatabase(existingRecord!);
     } else {
-      await _controller.loadLinFromPrecarga();
+      await _controller.loadLinFromPrecargaOrDatabase();
     }
     setState(() {
       _isInitialized = true;

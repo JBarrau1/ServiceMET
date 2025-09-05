@@ -3,7 +3,6 @@ import 'package:service_met/providers/calibration_provider.dart';
 import '../../../../database/app_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:flutter/material.dart';
 
 class LinealidadController {
   List<TextEditingController> cargaControllers = [];
@@ -52,12 +51,56 @@ class LinealidadController {
     indicacionControllers = List.generate(rowCount, (_) => TextEditingController());
   }
 
-  Future<void> loadLinFromPrecarga() async {
+  Future<String> _getDatabasePath() async {
+    final dbPath = await getDatabasesPath();
+    return join(dbPath, 'precarga_database.db');
+  }
+
+  Future<void> loadLinFromPrecargaOrDatabase() async {
     try {
       _disposeRows();
 
-      const dbPath = '/data/data/com.metrica.met_service/databases/precarga_database.db';
+      // Paso 1: Buscar en precarga_database.db
+      final precargaData = await _loadFromPrecargaDatabase();
 
+      if (precargaData.isNotEmpty) {
+        // Si encuentra datos en precarga, los usa
+        _createRowsFromPrecargaData(precargaData);
+        debugPrint('Datos cargados desde precarga_database.db');
+
+        // Persistir y actualizar UI
+        await _persistTempDataAndUpdate();
+        return;
+      }
+
+      // Paso 2: Si no hay datos en precarga, buscar en AppDatabase
+      final appDatabaseData = await _loadFromAppDatabase();
+
+      if (appDatabaseData.isNotEmpty) {
+        // Si encuentra datos en AppDatabase, los usa
+        _createRowsFromAppDatabaseData(appDatabaseData);
+        debugPrint('Datos cargados desde AppDatabase');
+
+        // Persistir y actualizar UI
+        await _persistTempDataAndUpdate();
+        return;
+      }
+
+      // Paso 3: Si no hay datos en ninguna base de datos
+      _showNoDataMessage();
+      _createDefaultEmptyRows();
+
+      await _persistTempDataAndUpdate();
+
+    } catch (e) {
+      debugPrint('Error en búsqueda cascada: $e');
+      _handleLoadError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> _loadFromPrecargaDatabase() async {
+    try {
+      final dbPath = await _getDatabasePath(); // Método mejorado sin hardcode
       final db = await openDatabase(dbPath, readOnly: true);
 
       final columns = List<String>.generate(60, (i) => 'lin${i + 1}');
@@ -73,61 +116,144 @@ class LinealidadController {
 
       await db.close();
 
-      int valoresCargados = 0;
-
-      if (result.isNotEmpty) {
-        final row = result.first;
-
-        // 1) Encontrar el último índice con dato (asumiendo que normalmente son contiguos desde lin1)
-        int lastIndexWithData = 0;
-        for (int i = 1; i <= 60; i++) {
-          final v = row['lin$i'];
-          if (v != null && v.toString().trim().isNotEmpty) {
-            lastIndexWithData = i;
-          }
-        }
-
-        // 2) Crear filas solo hasta el último índice con dato
-        if (lastIndexWithData > 0) {
-          for (int i = 1; i <= lastIndexWithData; i++) {
-            final v = row['lin$i'];
-            // Creamos fila
-            addRow();
-            // Si hay valor, lo colocamos en LT; si vino null, lo dejamos vacío
-            if (v != null && v.toString().trim().isNotEmpty) {
-              rows[i - 1]['lt']?.text = v.toString();
-              // No llenamos 'indicacion' a propósito (la medirá el técnico)
-              // rows[i - 1]['indicacion']?.text = rows[i - 1]['lt']!.text; // <- si quisieras copiar LT a indicación
-              valoresCargados++;
-            }
-          }
-        }
-      }
-
-      // Si no se cargó nada, dejamos 6 filas vacías (UX consistente)
-      if (valoresCargados == 0 && rows.isEmpty) {
-        for (int i = 0; i < 6; i++) {
-          addRow();
-        }
-      }
-
-      // Persistimos en temp y refrescamos UI
-      Future.microtask(() {
-        provider.updateTempDataForTest('linealidad', toMap());
-      });
-      onUpdate?.call();
+      return result.isNotEmpty ? result.first : {};
 
     } catch (e) {
-      debugPrint('Error leyendo precarga lin1..lin60: $e');
+      debugPrint('Error cargando desde precarga_database.db: $e');
+      return {};
+    }
+  }
 
-      // Fallback: 6 filas vacías para que la pantalla no quede sin nada
-      if (rows.isEmpty) {
-        for (int i = 0; i < 6; i++) {
-          addRow();
+// Método para cargar desde AppDatabase
+  Future<Map<String, dynamic>> _loadFromAppDatabase() async {
+    try {
+      final dbHelper = AppDatabase();
+
+      // Buscar por codMetrica en la tabla de calibración
+      final result = await dbHelper.getRegistroByCodMetrica(codMetrica);
+
+      return result ?? {};
+
+    } catch (e) {
+      debugPrint('Error cargando desde AppDatabase: $e');
+      return {};
+    }
+  }
+
+// Procesar datos de precarga_database.db
+  void _createRowsFromPrecargaData(Map<String, dynamic> data) {
+    int valoresCargados = 0;
+
+    // Encontrar el último índice con dato
+    int lastIndexWithData = 0;
+    for (int i = 1; i <= 60; i++) {
+      final v = data['lin$i'];
+      if (v != null && v.toString().trim().isNotEmpty) {
+        lastIndexWithData = i;
+      }
+    }
+
+    // Crear filas solo hasta el último índice con dato
+    if (lastIndexWithData > 0) {
+      for (int i = 1; i <= lastIndexWithData; i++) {
+        final v = data['lin$i'];
+        addRow();
+        if (v != null && v.toString().trim().isNotEmpty) {
+          rows[i - 1]['lt']?.text = v.toString();
+          valoresCargados++;
         }
       }
-      onUpdate?.call();
     }
+
+    debugPrint('Valores cargados desde precarga: $valoresCargados');
+  }
+
+// Procesar datos de AppDatabase
+  void _createRowsFromAppDatabaseData(Map<String, dynamic> data) {
+    int valoresCargados = 0;
+
+    // Cargar métodos seleccionados
+    selectedMetodo = data['metodo'] ?? 'Ascenso evaluando ceros';
+    selectedMetodoCarga = data['metodo_carga'] ?? 'Método 1';
+    notaController.text = data['linealidad_comentario'] ?? '';
+
+    // Cargar datos de las filas
+    for (int i = 1; i <= 60; i++) {
+      final lt = data['lin$i'];
+      final ind = data['ind$i'];
+
+      if ((lt != null && lt.toString().isNotEmpty) ||
+          (ind != null && ind.toString().isNotEmpty)) {
+
+        if (rows.length < i) addRow();
+
+        rows[i - 1]['lt']?.text = lt?.toString() ?? '';
+        rows[i - 1]['indicacion']?.text = ind?.toString() ?? '';
+        rows[i - 1]['retorno']?.text = data['retorno_lin$i']?.toString() ?? '0';
+        rows[i - 1]['difference']?.text = data['diff$i']?.toString() ?? '';
+
+        valoresCargados++;
+      }
+    }
+
+    debugPrint('Valores cargados desde AppDatabase: $valoresCargados');
+  }
+
+// Crear filas vacías por defecto
+  void _createDefaultEmptyRows() {
+    for (int i = 0; i < 6; i++) {
+      addRow();
+    }
+  }
+
+// Mostrar mensaje de no hay datos
+  void _showNoDataMessage() {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La balanza no tiene registros previos, debe ingresar nuevos',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+// Persistir datos temporales y actualizar UI
+  Future<void> _persistTempDataAndUpdate() async {
+    await Future.microtask(() {
+      provider.updateTempDataForTest('linealidad', toMap());
+    });
+    onUpdate?.call();
+  }
+
+// Manejo de errores
+  void _handleLoadError(dynamic error) {
+    debugPrint('Error en carga de datos: $error');
+
+    // Crear filas vacías como fallback
+    if (rows.isEmpty) {
+      _createDefaultEmptyRows();
+    }
+
+    // Mostrar mensaje de error
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error al cargar datos: ${error.toString()}',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+
+    onUpdate?.call();
   }
 
   Future<void> loadPreviousServiceData() async {
@@ -165,22 +291,32 @@ class LinealidadController {
   }
 
 
+  // Reemplazar el método initialize() en LinealidadController
+
   Future<void> initialize() async {
-    // Cargar pmax1 para cálculos si es necesario
     try {
       final dbHelper = AppDatabase();
       final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-      // Solo cargar datos temporales si no hay datos en DB
+      // Solo cargar datos temporales si no hay datos en DB por sessionId
       final tempData = provider.getTempDataForTest('linealidad');
+
       if (tempData != null && !_hasDatabaseData(existingRecord)) {
+        // Hay datos temporales y no hay datos en BD por session
         fromMap(tempData);
+      } else if (existingRecord != null && _hasDatabaseData(existingRecord)) {
+        // Hay datos en BD por sessionId, los carga directamente
+        loadFromDatabase(existingRecord);
       } else {
-        _initializeRows();
+        // No hay datos temporales ni por sessionId, busca por codMetrica
+        await loadLinFromPrecargaOrDatabase(); // ← Usar el nuevo método
       }
+
     } catch (e) {
-      _initializeRows();
+      debugPrint('Error en initialize(): $e');
+      _createDefaultEmptyRows();
     }
+
     onUpdate?.call();
   }
 
@@ -516,4 +652,5 @@ class LinealidadController {
     iCpController.text = map['iCp'] ?? '';
     onUpdate?.call();
   }
+
 }

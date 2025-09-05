@@ -42,50 +42,7 @@ class _RepetibilidadScreenState extends State<RepetibilidadScreen> {
       sessionId: widget.sessionId,
       context: context,
     );
-
-    final dbHelper = AppDatabase();
-    final existingRecord =
-    await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
-
-    bool useExisting = false;
-
-    if (existingRecord != null) {
-      useExisting = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text(
-            'DATOS PREVIOS ENCONTRADOS',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          content: const Text(
-              "Se encontraron datos registrados anteriormente. ¿Desea continuar con ellos o empezar un nuevo registro?\n SI CAMBIO DE BALANZA, INGRESE NUEVOS, DE LO CONTRARIO VISULIZARA LOS DATOS DE LA ANTERIOR BALANZA"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Ingresar nuevos'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Usar últimos'),
-            ),
-          ],
-        ),
-      ) ??
-          false;
-    }
-
-    if (useExisting && existingRecord != null) {
-      // cargar datos previos
-      _controller.loadFromDatabase(existingRecord);
-    } else {
-      // iniciar limpio
-      await _controller.initialize();
-      _controller.clearAllFields();
-    }
-
+    await _controller.initialize();
 
     setState(() {
       _isInitialized = true;

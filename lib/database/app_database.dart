@@ -12,6 +12,28 @@ class AppDatabase {
 
   AppDatabase._internal();
 
+  Future<Map<String, dynamic>?> getRegistroByCodMetrica(String codMetrica) async {
+    try {
+      final db = await database;
+
+      // Buscar en la tabla de calibración por cod_metrica
+      // Asumiendo que tu tabla se llama 'registros_calibracion' o similar
+      final List<Map<String, dynamic>> result = await db.query(
+        'registros_calibracion', // Cambia por el nombre real de tu tabla
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+        orderBy: 'id DESC', // O el campo de fecha que uses, ej: 'fecha_creacion DESC'
+        limit: 1,
+      );
+
+      return result.isNotEmpty ? result.first : null;
+
+    } catch (e) {
+      debugPrint('Error al buscar registro por codMetrica: $e');
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> getUltimoRegistroPorSeca(String seca) async {
     final db = await database;
     final result = await db.query(

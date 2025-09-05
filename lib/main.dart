@@ -5,6 +5,7 @@ import 'package:service_met/home_screen.dart';
 import 'package:service_met/providers/calibration_provider.dart';
 import 'package:service_met/repositories/calibration_repository.dart';
 import 'database/app_database.dart';
+import 'database/app_database_sop.dart';
 import 'login_screen.dart';
 import 'package:service_met/screens/calibracion/selec_cliente.dart';
 import 'package:service_met/provider/balanza_provider.dart';
@@ -15,6 +16,7 @@ void main() async {
   await Firebase.initializeApp();
   // Inicializa la base de datos local
   await AppDatabase().database; // Esta línea creará la BD si no existe
+  await DatabaseHelperSop().database;
 
 
   runApp(
