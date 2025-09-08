@@ -381,20 +381,19 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
               onPressed: () async {
                 final dbHelper = AppDatabase();
 
-                // ⚠️ CAMBIO CRÍTICO: Generar NUEVO sessionId en lugar de usar el existente
-                String newSessionId = await dbHelper.generateSessionId(_secaController.text);
+                // ✅ CORRECCIÓN: Obtener el sessionId EXISTENTE en lugar de generar uno nuevo
+                final ultimoRegistro = await dbHelper.getUltimoRegistroPorSeca(_secaController.text);
 
-                // Actualizar el registro con el NUEVO sessionId
-                await dbHelper.upsertRegistroCalibracion({
-                  'seca': _secaController.text,
-                  'fecha_servicio': _fechaController.text,
-                  'personal': widget.userName,
-                  'session_id': newSessionId,
-                });
+                if (ultimoRegistro == null || ultimoRegistro['session_id'] == null) {
+                  _showSnackBar(context, 'Error: No se encontró la sesión', isError: true);
+                  return;
+                }
+
+                final sessionIdExistente = ultimoRegistro['session_id'].toString();
 
                 Navigator.of(dialogContext).pop(); // Cerrar diálogo
 
-                // Navegar a CalibracionScreen con el NUEVO sessionId
+                // Navegar a CalibracionScreen con el sessionId EXISTENTE
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -402,7 +401,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                       dbName: _secaController.text,
                       userName: widget.userName,
                       secaValue: _secaController.text,
-                      sessionId: newSessionId, // ← NUEVO sessionId
+                      sessionId: sessionIdExistente, // ← Usar sessionId existente (0001)
                     ),
                   ),
                 );

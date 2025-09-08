@@ -20,46 +20,56 @@ class TestRow extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: FutureBuilder<double>(
-                future: controller.getD1Value(),
-                builder: (context, snapshot) {
-                  final d1 = snapshot.data ?? 0.1;
-                  final decimalPlaces = d1.toString().split('.').last.length;
-
-                  return TextFormField(
-                    controller: controller
-                        .indicacionControllers[cargaIndex][testIndex],
-                    decoration: buildInputDecoration(
-                      'Indicación ${testIndex + 1}',
-                      suffixIcon: PopupMenuButton<String>(
-                        icon: const Icon(Icons.arrow_drop_down),
-                        onSelected: (value) {
-                          controller.indicacionControllers[cargaIndex][testIndex]
-                              .text = value;
-                        },
-                        itemBuilder: (context) {
-                          final baseValue = double.tryParse(controller
-                              .indicacionControllers[cargaIndex][testIndex]
-                              .text) ??
-                              0.0;
-                          return List.generate(11, (i) {
-                            final value = baseValue + ((i - 5) * d1);
-                            return PopupMenuItem<String>(
-                              value: value.toStringAsFixed(decimalPlaces),
-                              child: Text(value.toStringAsFixed(decimalPlaces)),
-                            );
-                          });
-                        },
-                      ),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Campo obligatorio';
-                      }
-                      return null;
+              child: TextFormField(
+                controller: controller.indicacionControllers[cargaIndex][testIndex],
+                decoration: buildInputDecoration(
+                  'Indicación ${testIndex + 1}',
+                  suffixIcon: PopupMenuButton<String>(
+                    icon: const Icon(Icons.arrow_drop_down),
+                    onSelected: (value) {
+                      controller.indicacionControllers[cargaIndex][testIndex].text = value;
                     },
-                  );
+                    itemBuilder: (context) {
+                      // 🔥 CAMBIO 1: Usar el método que selecciona el D correcto según la carga
+                      final dValue = controller.getDValueForCargaController(cargaIndex);
+
+                      // 🔥 CAMBIO 2: Calcular decimales basado en el valor D
+                      int decimalPlaces = 1; // por defecto
+                      if (dValue >= 1) {
+                        decimalPlaces = 0;
+                      } else if (dValue >= 0.1) {
+                        decimalPlaces = 1;
+                      } else if (dValue >= 0.01) {
+                        decimalPlaces = 2;
+                      } else if (dValue >= 0.001) {
+                        decimalPlaces = 3;
+                      }
+
+                      // 🔥 CAMBIO 3: Usar la carga como base si el campo está vacío
+                      final currentText = controller.indicacionControllers[cargaIndex][testIndex].text.trim();
+                      final baseValue = double.tryParse(
+                          (currentText.isEmpty
+                              ? controller.cargaControllers[cargaIndex].text
+                              : currentText).replaceAll(',', '.')
+                      ) ?? 0.0;
+
+                      // 🔥 CAMBIO 4: Usar dValue en lugar de d1
+                      return List.generate(11, (i) {
+                        final value = baseValue + ((i - 5) * dValue);
+                        return PopupMenuItem<String>(
+                          value: value.toStringAsFixed(decimalPlaces),
+                          child: Text(value.toStringAsFixed(decimalPlaces)),
+                        );
+                      });
+                    },
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Campo obligatorio';
+                  }
+                  return null;
                 },
               ),
             ),

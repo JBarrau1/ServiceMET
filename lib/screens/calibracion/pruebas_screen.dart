@@ -168,7 +168,7 @@ class _PruebasScreenState extends State<PruebasScreen> {
           Expanded(
             child: TextField(
               controller: _precargasControllers[index],
-              decoration: _buildInputDecoration('Precarga'),
+              decoration: buildInputDecoration('Precarga'),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
@@ -191,7 +191,7 @@ class _PruebasScreenState extends State<PruebasScreen> {
 
                 return TextFormField(
                   controller: _indicacionesControllers[index],
-                  decoration: _buildInputDecoration(
+                  decoration: buildInputDecoration(
                     'Indicación',
                     suffixIcon: PopupMenuButton<String>(
                       icon: const Icon(Icons.arrow_drop_down),
@@ -382,13 +382,18 @@ class _PruebasScreenState extends State<PruebasScreen> {
     });
   }
 
-  InputDecoration _buildInputDecoration(String labelText, {Widget? suffixIcon, String? suffixText}) {
+  InputDecoration buildInputDecoration(
+      String labelText, {
+        Widget? suffixIcon,
+        String? suffixText,
+      }) {
     return InputDecoration(
       labelText: labelText,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20.0),
+      ),
       suffixIcon: suffixIcon,
       suffixText: suffixText,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     );
   }
 
@@ -616,7 +621,7 @@ class _PruebasScreenState extends State<PruebasScreen> {
                           child: Text(item),
                         )).toList(),
                         onChanged: _onAjusteRealizadoChanged,
-                        decoration: _buildInputDecoration('¿Se Realizó el Ajuste?'),
+                        decoration: buildInputDecoration('¿Se Realizó el Ajuste?'),
                         validator: (value) => value == null ? 'Por favor seleccione una opción' : null,
                       ),
                       const SizedBox(height: 20),
@@ -626,13 +631,13 @@ class _PruebasScreenState extends State<PruebasScreen> {
                           child: Text(item),
                         )).toList(),
                         onChanged: _isAjusteRealizado ? _onTipoAjusteChanged : null,
-                        decoration: _buildInputDecoration('Tipo de Ajuste:'),
+                        decoration: buildInputDecoration('Tipo de Ajuste:'),
                         validator: (value) => _isAjusteRealizado && value == null ? 'Por favor seleccione una opción' : null,
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _cargasPesasController,
-                        decoration: _buildInputDecoration('Cargas / Pesas de Ajuste:'),
+                        decoration: buildInputDecoration('Cargas / Pesas de Ajuste:'),
                         enabled: _isAjusteExterno,
                         validator: (value) => _isAjusteExterno && (value == null || value.isEmpty) ? 'Por favor ingrese un valor' : null,
                       ),
@@ -651,7 +656,7 @@ class _PruebasScreenState extends State<PruebasScreen> {
                           TextFormField(
                             controller: _horaController,
                             readOnly: true,
-                            decoration: _buildInputDecoration(
+                            decoration: buildInputDecoration(
                               'Hora',
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.access_time),
@@ -687,7 +692,7 @@ class _PruebasScreenState extends State<PruebasScreen> {
                         controller: _hriController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
-                        decoration: _buildInputDecoration('HRi (%)', suffixText: '%'),
+                        decoration: buildInputDecoration('HRi (%)', suffixText: '%'),
                         validator: (value) => value == null || value.isEmpty ? 'Por favor ingrese un valor' : null,
                       ),
                       const SizedBox(height: 20),
@@ -695,7 +700,7 @@ class _PruebasScreenState extends State<PruebasScreen> {
                         controller: _tiController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
-                        decoration: _buildInputDecoration('ti (°C)', suffixText: '°C'),
+                        decoration: buildInputDecoration('ti (°C)', suffixText: '°C'),
                         validator: (value) => value == null || value.isEmpty ? 'Por favor ingrese un valor' : null,
                       ),
                       const SizedBox(height: 20),
@@ -703,7 +708,7 @@ class _PruebasScreenState extends State<PruebasScreen> {
                         controller: _patmiController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
-                        decoration: _buildInputDecoration('Patmi (hPa)', suffixText: 'hPa'),
+                        decoration: buildInputDecoration('Patmi (hPa)', suffixText: 'hPa'),
                         validator: (value) => value == null || value.isEmpty ? 'Por favor ingrese un valor' : null,
                       ),
                       const SizedBox(height: 20.0),
