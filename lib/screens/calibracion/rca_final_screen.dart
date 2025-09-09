@@ -82,7 +82,7 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
   }
 
   Future<void> _saveDataToDatabase(BuildContext context) async {
-    // 1) Validación rápida (igual que tenías)
+    // Validaciones existentes...
     if (_horaController.text.isEmpty ||
         _hrifinController.text.isEmpty ||
         _tifinController.text.isEmpty ||
@@ -92,60 +92,49 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
         _reemplazoController.text.isEmpty ||
         _obscomController.text.isEmpty ||
         _selectedEmp23001 == null ||
+        _selectedEmp23001!.isEmpty ||
         _indicarController.text.isEmpty ||
         _factorSeguridadController.text.isEmpty ||
-        _selectedReglaAceptacion == null) {
-      _showSnackBar(
-        context,
-        'Error, termine de llenar todos los campos y vuelva a intentar el guardado',
-        isError: true,
-      );
+        _selectedReglaAceptacion == null
+    // ... resto de validaciones
+    ) {
+      _showSnackBar(context, 'Error, termine de llenar todos los campos', isError: true);
       return;
     }
 
-    // 2) Guardar fotos (si corresponde)
+    // Guardar fotos si existen
     if (_finalPhotos['final']?.isNotEmpty ?? false) {
       await _savePhotosToZip(context);
     }
 
-    // 3) Preparar DB + payload
-    final dbHelper = AppDatabase();
-    final db = await dbHelper.database;
-
-    // IMPORTANTE: incluye 'seca' para poder insertar si no existe
-    final registro = <String, dynamic>{
-      'session_id': widget.sessionId,
-      'seca': widget.secaValue,
-      'hora_fin': _horaController.text,
-      'hri_fin': _hrifinController.text,
-      'ti_fin': _tifinController.text,
-      'patmi_fin': _patmifinController.text,
-      'mant_soporte': _mantenimientoController.text,
-      'venta_pesas': _ventaPesasController.text,
-      'reemplazo': _reemplazoController.text,
-      'observaciones': _obscomController.text,
-      'emp': _selectedEmp23001,
-      'indicar': _indicarController.text,
-      'factor': _factorSeguridadController.text,
-      'regla_aceptacion': _selectedReglaAceptacion,
-      'estado_servicio_bal': 'Balanza Calibrada',
-    };
-
     try {
-      // 4) Buscar por SECA
+      final dbHelper = AppDatabase();
       final existingRecord = await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
 
+      // Crear registro con TODOS los datos
+      final Map<String, dynamic> registro = {
+        'session_id': widget.sessionId,
+        'seca': widget.secaValue,
+        'hora_fin': _horaController.text,
+        'hri_fin': _hrifinController.text,
+        'ti_fin': _tifinController.text,
+        'patmi_fin': _patmifinController.text,
+        'mant_soporte': _mantenimientoController.text,
+        'venta_pesas': _ventaPesasController.text,
+        'reemplazo': _reemplazoController.text,
+        'observaciones': _obscomController.text,
+        'emp': _selectedEmp23001,
+        'indicar': _indicarController.text,
+        'factor': _factorSeguridadController.text,
+        'regla_aceptacion': _selectedReglaAceptacion,
+        'estado_servicio_bal': 'Balanza Calibrada',
+      };
+
+      // APLICAR LA MISMA LÓGICA QUE FUNCIONA
       if (existingRecord != null) {
-        // UPDATE por SECA
-        await db.update(
-          'registros_calibracion',
-          registro,
-          where: 'seca = ?',
-          whereArgs: [widget.secaValue],
-        );
+        await dbHelper.upsertRegistroCalibracion(registro);
       } else {
-        // INSERT nuevo (con 'seca' incluido en 'registro')
-        await db.insert('registros_calibracion', registro);
+        await dbHelper.insertRegistroCalibracion(registro);
       }
 
       if (mounted) {
@@ -158,12 +147,10 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
       _showSnackBar(context, 'Datos guardados correctamente');
     } catch (e, stackTrace) {
       _showSnackBar(context, 'Error al guardar los datos: $e', isError: true);
-      debugPrint('Error al guardar los datos: $e');
+      debugPrint('Error al guardar: $e');
       debugPrint('StackTrace: $stackTrace');
     }
   }
-
-
 
   Future<void> _takePhoto(BuildContext context) async {
     final photo = await _imagePicker.pickImage(source: ImageSource.camera);

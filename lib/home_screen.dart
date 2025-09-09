@@ -250,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(builder: (context) => RespaldoScreen()),
         ).then((_) {
-          // 🔒 RESETEAR ÍNDICE CUANDO REGRESE DE RESPALDO
+          //
           setState(() {
             _currentIndex = 0;
           });
