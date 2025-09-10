@@ -6,10 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 class AreaSeleccionScreen extends StatelessWidget {
   final String userName;
 
-  const AreaSeleccionScreen({
-    required this.userName,
-    super.key
-  });
+  const AreaSeleccionScreen({required this.userName, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -36,11 +33,11 @@ class AreaSeleccionScreen extends StatelessWidget {
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(color: Colors.black.withOpacity(0.4)),
+                ),
+              )
             : null,
         centerTitle: true,
       ),
@@ -157,7 +154,11 @@ class AreaSeleccionScreen extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.color
+                      ?.withOpacity(0.7),
                 ),
                 textAlign: TextAlign.center,
               ),

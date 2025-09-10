@@ -536,6 +536,28 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               Text(
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 'DESARROLLADO POR: J.FARFAN',
                 style: GoogleFonts.inter(
                   color: Theme.of(context).brightness == Brightness.dark

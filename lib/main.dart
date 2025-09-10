@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:service_met/home_screen.dart';
 import 'package:service_met/providers/calibration_provider.dart';
 import 'package:service_met/repositories/calibration_repository.dart';
 import 'database/app_database.dart';
@@ -10,6 +9,7 @@ import 'login_screen.dart';
 import 'package:service_met/screens/calibracion/selec_cliente.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:provider/provider.dart';
+import 'main_navigation_wrapper.dart'; // Añade esta importación
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +17,6 @@ void main() async {
   // Inicializa la base de datos local
   await AppDatabase().database; // Esta línea creará la BD si no existe
   await DatabaseHelperSop().database;
-
 
   runApp(
     MultiProvider(
@@ -50,13 +49,13 @@ class MyApp extends StatelessWidget {
         initialRoute: '/login',
         routes: {
           '/login': (context) => const LoginScreen(),
-          '/home': (context) => const HomeScreen(),
+          '/home': (context) => const MainNavigationWrapper(), // Cambia aquí
           '/calibracion': (context) => const CalibracionScreen(
-                dbName: '',
-                userName: '',
-                secaValue: '',
-                sessionId: '',
-              ),
+            dbName: '',
+            userName: '',
+            secaValue: '',
+            sessionId: '',
+          ),
         },
       ),
     );
