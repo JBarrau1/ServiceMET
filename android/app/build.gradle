@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.metrica.met_service"
     compileSdk = 35
-    ndkVersion = "27.2.12479018"
+    ndkVersion = "29.0.14033849"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
