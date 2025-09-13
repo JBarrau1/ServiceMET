@@ -7,12 +7,23 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import 'extenciones/database_helper.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'detalles_seca_screen.dart';
 
-import 'home/configuracion_screen.dart';
-import 'home/otros_apartados_screen.dart';
-import 'home/servicios_screen.dart';
+class ServicioSeca {
+  final String seca;
+  final int cantidadBalanzas;
+  final List<Map<String, dynamic>> balanzas;
+
+  ServicioSeca({
+    required this.seca,
+    required this.cantidadBalanzas,
+    required this.balanzas,
+  });
+}
 
 class HomeScreen extends StatefulWidget {
   final String dbName;
@@ -135,6 +146,53 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<List<ServicioSeca>> _getServiciosAgrupadosPorSeca() async {
+    final List<ServicioSeca> servicios = [];
+
+    try {
+      String dbPath = join(await getDatabasesPath(), 'calibracion.db');
+
+      if (await databaseExists(dbPath)) {
+        final db = await openDatabase(dbPath);
+
+        // Obtener todos los registros de calibración
+        final List<Map<String, dynamic>> registros = await db.query('registros_calibracion');
+
+        // Agrupar por SECA
+        final Map<String, List<Map<String, dynamic>>> agrupados = {};
+
+        for (var registro in registros) {
+          final String seca = registro['seca']?.toString() ?? 'Sin SECA';
+
+          if (!agrupados.containsKey(seca)) {
+            agrupados[seca] = [];
+          }
+
+          agrupados[seca]!.add(registro);
+        }
+
+        // Convertir a lista de ServicioSeca
+        agrupados.forEach((seca, balanzas) {
+          servicios.add(ServicioSeca(
+            seca: seca,
+            cantidadBalanzas: balanzas.length,
+            balanzas: balanzas,
+          ));
+        });
+
+        await db.close();
+      }
+
+      // Ordenar por SECA
+      servicios.sort((a, b) => a.seca.compareTo(b.seca));
+
+      return servicios;
+    } catch (e) {
+      print('Error obteniendo servicios agrupados: $e');
+      return [];
+    }
+  }
+
   Future<bool> _verificarDatosLocales() async {
     try {
       final dbPath = await getDatabasesPath();
@@ -224,6 +282,52 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _exportarSecaDirectamente(BuildContext context, ServicioSeca servicio) async {
+    try {
+      final List<List<dynamic>> csvData = [];
+
+      // Encabezados
+      if (servicio.balanzas.isNotEmpty) {
+        csvData.add(servicio.balanzas.first.keys.toList());
+      }
+
+      // Datos
+      for (var balanza in servicio.balanzas) {
+        csvData.add(balanza.values.toList());
+      }
+
+      // Convertir a CSV
+      String csv = const ListToCsvConverter().convert(csvData);
+
+      // Obtener directorio de descargas
+      final directory = await getDownloadsDirectory();
+      final path = directory?.path;
+
+      if (path == null) {
+        throw Exception('No se pudo acceder al directorio de descargas');
+      }
+
+      // Crear nombre de archivo
+      final fileName = 'SECA_${servicio.seca}_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final filePath = '$path/$fileName';
+
+      // Guardar archivo
+      final File file = File(filePath);
+      await file.writeAsString(csv);
+
+      // Abrir el archivo
+      OpenFilex.open(filePath);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Archivo exportado: $fileName'))
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al exportar: $e'))
+      );
+    }
+  }
+
   void _mostrarEnDesarrollo(BuildContext context,
       {String message = 'Este apartado se encuentra actualmente en desarrollo.'}) {
     showDialog(
@@ -271,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Icon(
                 icon,
                 size: 25,
-                color: Colors.white, // 🔹 Contraste sobre el fondo
+                color: Colors.black, // 🔹 Contraste sobre el fondo
               ),
               const SizedBox(height: 8),
               Text(
@@ -279,7 +383,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white, // 🔹 Texto en blanco para contraste
+                  color: Colors.black, // 🔹 Texto en blanco para contraste
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -289,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white, // 🔹 También en blanco
+                  color: Colors.black, // 🔹 También en blanco
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -384,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: FontAwesomeIcons.wrench,
                   title: 'Total\nBalanzas Arregladas',
                   value: totalServiciosSop.toString(),
-                  color: Color(0xFF274E48),
+                  color: Color(0xFFF9E300),
                 ),
                 const SizedBox(width: 10),
                 _buildSummaryCard(
@@ -392,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: FontAwesomeIcons.scaleBalanced,
                   title: 'Total\nBalanzas Calibradas',
                   value: totalServiciosCal.toString(),
-                  color: const Color(0xFF447287),
+                  color: const Color(0xFFFFF15C),
                 ),
               ],
             ),
@@ -404,12 +508,102 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: FontAwesomeIcons.cloudDownloadAlt,
                   title: 'Última\nPrecarga Realizada',
                   value: fechaUltimaPrecarga.split(' ')[0],
-                  color: Color(0xFF5B7A46),
+                  color: Color(0xFFFFEE2E),
                 ),
               ],
             ),
             const SizedBox(height: 40),
-            // Accesos rápidos
+
+            // NUEVA SECCIÓN: Lista de Servicios
+            Text(
+              'LISTA DE SERVICIOS',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 15),
+
+            FutureBuilder<List<ServicioSeca>>(
+              future: _getServiciosAgrupadosPorSeca(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Text(
+                    'No hay servicios de calibración registrados',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  );
+                }
+
+                final servicios = snapshot.data!;
+
+                return Column(
+                  children: servicios.map((servicio) {
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'SECA: ${servicio.seca}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '${servicio.cantidadBalanzas} balanza(s)',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => DetallesSecaScreen(servicioSeca: servicio),
+                                      ),
+                                    );
+                                  },
+                                  child: Text('Abrir'),
+                                ),
+                                const SizedBox(width: 8),
+                                OutlinedButton(
+                                  onPressed: () => _exportarSecaDirectamente(context, servicio),
+                                  child: Text('Exportar'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
           ],
         ),
       ),

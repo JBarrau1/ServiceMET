@@ -77,7 +77,6 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       final secaExiste = await dbHelper.secaExists(seca);
 
       if (secaExiste) {
-        // Si el SECA existe, obtener el último registro y mostrar diálogo
         final ultimoRegistro = await dbHelper.getUltimoRegistroPorSeca(seca);
         _showExistingSecaDialog(context, seca, ultimoRegistro?['fecha_servicio'] ?? 'N/A');
       } else {
@@ -91,17 +90,22 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           'session_id': newSessionId,
         });
 
-        setState(() {
-          _secaController.text = seca;
-          _secaValue = seca;
-          _showSecaField = true;
-          _isDatabaseReady = true;
-        });
+        if (mounted) { // ← AGREGADO: Verificar si el widget sigue montado
+          setState(() {
+            _secaController.text = seca;
+            _secaValue = seca;
+            _showSecaField = true;
+            _isDatabaseReady = true;
+          });
 
-        _showSnackBar(context, 'Nueva sesión creada para SECA: $seca (Session: $newSessionId)');
+          _showSnackBar(context, 'Nueva sesión creada para SECA: $seca (Session: $newSessionId)');
+        }
       }
     } catch (e) {
-      _showSnackBar(context, 'Error al preparar SECA: $e', isError: true);
+      debugPrint('Error completo en _prepareSecaRecord: $e'); // ← Más información del error
+      if (mounted) {
+        _showSnackBar(context, 'Error al preparar SECA: ${e.toString()}', isError: true);
+      }
     }
   }
 
@@ -110,7 +114,13 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('SECA YA REGISTRADO'),
+          title: const Text(
+            'SECA YA REGISTRADO',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,6 +141,9 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
               onPressed: () async {
                 final dbHelper = AppDatabase();
 
@@ -140,7 +153,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                   'seca': seca,
                   'fecha_servicio': _fechaController.text,
                   'personal': widget.userName,
-                  'session_id': newSessionId, // ← NUEVO sessionId
+                  'session_id': newSessionId,
                 });
 
                 setState(() {
@@ -154,13 +167,15 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                 _showSnackBar(context, 'Nueva sesión creada: $newSessionId');
               },
               child: const Text('Crear Nueva Sesión'),
-            ),
+            )
+
           ],
         );
       },
     );
   }
 
+  // Método corregido para _showPrecargadosList en PrecargaScreen
   Future<void> _showPrecargadosList(BuildContext context) async {
     try {
       final dbHelper = AppDatabase();
@@ -191,7 +206,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
 
       showDialog(
         context: context,
-        builder: (BuildContext context) {
+        builder: (BuildContext dialogContext) {
           return AlertDialog(
             title: const Text(
               'SECAS REGISTRADOS ANTERIORMENTE',
@@ -243,15 +258,12 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                         size: 18,
                         color: Colors.grey,
                       ),
-                      onTap: () {
-                        setState(() {
-                          _secaController.text = registro['seca'];
-                          _secaValue = registro['seca'];
-                          _showSecaField = true;
-                          _isDatabaseReady = true;
-                        });
-                        Navigator.of(context).pop();
-                        _showSnackBar(context, 'SECA seleccionado: ${registro['seca']}');
+                      // ← CORRECCIÓN: Usar _prepareSecaRecord en lugar de solo setState
+                      onTap: () async {
+                        Navigator.of(dialogContext).pop(); // Cerrar diálogo primero
+
+                        // Ahora sí llamar a _prepareSecaRecord que manejará toda la lógica
+                        await _prepareSecaRecord(context, registro['seca']);
                       },
                     ),
                   );
@@ -260,7 +272,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(dialogContext).pop(),
                 child: const Text('Cerrar'),
               ),
             ],

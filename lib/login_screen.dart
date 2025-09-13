@@ -526,7 +526,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20.0),
               Text(
-                'versión 6.1.1_2_05925',
+                'versión 9.1.1_4_12925',
                 style: GoogleFonts.inter(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white
@@ -536,28 +536,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               Text(
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 'DESARROLLADO POR: J.FARFAN',
                 style: GoogleFonts.inter(
                   color: Theme.of(context).brightness == Brightness.dark

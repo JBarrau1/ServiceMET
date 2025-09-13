@@ -62,7 +62,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
           filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
           child: NavigationBar(
             backgroundColor: Colors.transparent,
-            elevation: 0,
+            elevation: 2,
             height: 60,
             indicatorColor: isDarkMode
                 ? Colors.white.withOpacity(0.2)
