@@ -1,6 +1,6 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/screens/calibracion/precarga.dart';
@@ -17,16 +17,15 @@ class ServiciosScreen extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 70,
         title: Text(
           'AREAS DE TRABAJO',
-          style: GoogleFonts.inter(
+          style: GoogleFonts.poppins(
             color: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white
                 : Colors.black,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             fontSize: 16.0,
           ),
         ),
@@ -42,60 +41,179 @@ class ServiciosScreen extends StatelessWidget {
             : null,
         centerTitle: true,
       ),
-      body: ListView(
-        padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40,
-          left: 16.0,
-          right: 16.0,
-          bottom: 16.0,
+      body: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header de bienvenida
+            _buildWelcomeHeader(context, userName),
+
+            const SizedBox(height: 30),
+
+            // Título de sección
+            Text(
+              'Servicios Disponibles',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+              ),
+            ).animate().fadeIn(delay: 300.ms),
+
+            const SizedBox(height: 20),
+
+            // Lista de servicios
+            Expanded(
+              child: ListView(
+                children: [
+                  _buildServiceCard(
+                    context,
+                    icon: FontAwesomeIcons.scaleBalanced,
+                    title: 'Calibración',
+                    subtitle: 'Procesos de calibración de equipos',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => PrecargaScreen(userName: userName)),
+                      );
+                    },
+                    color: const Color(0xFFBFD6A7),
+                    delay: 400.ms,
+                  ),
+                  _buildServiceCard(
+                    context,
+                    icon: FontAwesomeIcons.screwdriverWrench,
+                    title: 'Soporte Técnico',
+                    subtitle: 'Soporte y mantenimiento',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => SoporteScreen(userName: userName)),
+                      );
+                    },
+                    color: const Color(0xFF89B2CC),
+                    delay: 500.ms,
+                  ),
+                  _buildServiceCard(
+                    context,
+                    icon: FontAwesomeIcons.mapMarkedAlt,
+                    title: 'Selección de Área',
+                    subtitle: 'Gestión de áreas de trabajo',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                AreaSeleccionScreen(userName: userName)),
+                      );
+                    },
+                    color: const Color(0xFFD6D4A7),
+                    delay: 600.ms,
+                  ),
+                ].animate(interval: 100.ms).slideX(begin: 0.3).fadeIn(),
+              ),
+            ),
+          ],
         ),
-        children: [
-          _buildServiceCard(
-            context,
-            icon: FontAwesomeIcons.scaleBalanced,
-            title: 'Calibración',
-            subtitle: 'Procesos de calibración de equipos',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => PrecargaScreen(userName: userName)),
-              );
-            },
-            gradientColors: [Color(0xFFF9E300), Color(0xFF04376E)],
-          ),
-          _buildServiceCard(
-            context,
-            icon: FontAwesomeIcons.wrench,
-            title: 'Soporte Técnico',
-            subtitle: 'Soporte y mantenimiento',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => SoporteScreen(userName: userName)),
-              );
-            },
-            gradientColors: [Color(0xFFF9E300), Color(0xFF04376E)],
-          ),
-          // _buildServiceCard(
-          //   context,
-          //   icon: Icons.area_chart,
-          //   title: 'Selección de Área',
-          //   subtitle: 'Gestión de áreas de trabajo',
-          //   onTap: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(
-          //           builder: (context) =>
-          //               AreaSeleccionScreen(userName: userName)),
-          //     );
-          //   },
-          //   gradientColors: [Colors.orange.shade400, Colors.orange.shade600],
-          // ),
-        ],
       ),
     );
+  }
+
+  Widget _buildWelcomeHeader(BuildContext context, String userName) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF2C3E50), const Color(0xFF34495E)]
+              : [const Color(0xFF667EEA), const Color(0xFF764BA2)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: Colors.white.withOpacity(0.2),
+                child: Icon(
+                  FontAwesomeIcons.userCog,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '¡Bienvenido/a!',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      userName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  FontAwesomeIcons.cogs,
+                  color: Colors.white,
+                  size: 14,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Selecciona un área de trabajo',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2);
   }
 
   Widget _buildServiceCard(
@@ -104,186 +222,92 @@ class ServiciosScreen extends StatelessWidget {
         required String title,
         required String subtitle,
         required VoidCallback onTap,
-        required List<Color> gradientColors,
+        required Color color,
+        required Duration delay,
       }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      height: 160,
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: gradientColors.first.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: isDarkMode
-                  ? Colors.grey.shade800.withOpacity(0.9)
-                  : Colors.white,
-              border: Border.all(
-                color: isDarkMode
-                    ? Colors.grey.shade700
-                    : Colors.grey.shade200,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                // Mitad izquierda - Imagen con degradado
-                Expanded(
-                  flex: 1,
-                  child: Container(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                      ),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: gradientColors,
+                        colors: [color.withOpacity(0.8), color],
                       ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Stack(
-                      children: [
-                        // Patrón de fondo sutil
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                bottomLeft: Radius.circular(16),
-                              ),
-                              gradient: RadialGradient(
-                                center: Alignment.topRight,
-                                radius: 1.0,
-                                colors: [
-                                  Colors.white.withOpacity(0.1),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Ícono principal
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              icon,
-                              size: 30,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        // Elementos decorativos
-                        Positioned(
-                          top: 16,
-                          right: 16,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.3),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 20,
-                          left: 20,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.2),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Icon(
+                      icon,
+                      size: 24,
+                      color: const Color(0xFF212121),
                     ),
                   ),
-                ),
-                // Mitad derecha - Contenido de texto
-                Expanded(
-                  flex: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
+                  const SizedBox(width: 16),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.white : Colors.black87,
+                            color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
                           ),
                         ),
-                        const SizedBox(height: 6),
                         Text(
                           subtitle,
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: 14,
+                            color: Colors.grey[600],
                             fontWeight: FontWeight.w500,
-                            color: isDarkMode
-                                ? Colors.grey.shade300
-                                : Colors.grey.shade600,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Text(
-                              'Acceder',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: gradientColors.first,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 12,
-                              color: gradientColors.first,
-                            ),
-                          ],
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    );
+    ).animate(delay: delay).fadeIn().slideX(begin: 0.3);
   }
 }
