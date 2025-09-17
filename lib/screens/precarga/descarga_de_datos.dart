@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/bdb/precarga_bd.dart';
-import 'package:flutter/material.dart';
 import 'package:mssql_connection/mssql_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -115,10 +117,10 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
       builder: (context) {
         return AlertDialog(
           title: Text(
-            'INGRESE LOS DATOS PARA LA CONEXIÓN',
-            style: GoogleFonts.inter(
+            'CONFIGURACIÓN DE CONEXIÓN',
+            style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w900,
             ),
           ),
           content: SingleChildScrollView(
@@ -282,7 +284,7 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
                 Navigator.of(context).pop(connectionData);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: const Color(0xFF264024),
               ),
               child: const Text('Conectar'),
             ),
@@ -650,14 +652,14 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: Text(
-            'CONFIRMAR ELIMINACIÓN',
-            style: GoogleFonts.inter(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
+            'Confirmar Eliminación',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
           content: const Text(
-              '¿Esta seguro de eliminar la precarga realizada?, esto borrara los datos de la base de datos interna.'),
+              '¿Está seguro de eliminar la precarga realizada? Esto borrará los datos de la base de datos interna.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -714,140 +716,447 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: Text(
-          'PRECARGA',
-          style: GoogleFonts.inter(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black,
-            fontWeight: FontWeight.w900,
-            fontSize: 16.0,
-          ),
-        ),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.transparent
-            : Colors.white,
-        elevation: 0,
-        flexibleSpace: Theme.of(context).brightness == Brightness.dark
-            ? ClipRect(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: ClipRRect(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-            child: Container(
-              color: Colors.black.withOpacity(0.1),
+            filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+            child: AppBar(
+              toolbarHeight: 70,
+              title: Text(
+                'PRECARGA DE DATOS',
+                style: GoogleFonts.poppins(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16.0,
+                ),
+              ),
+              backgroundColor: isDarkMode
+                  ? Colors.black.withOpacity(0.4)
+                  : Colors.white.withOpacity(0.7),
+              elevation: 0,
+              centerTitle: true,
             ),
           ),
-        )
-            : null,
-        iconTheme: IconThemeData(color: Theme.of(context).iconTheme.color),
-        titleTextStyle: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white
-              : Colors.black,
         ),
-        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              'DESCARGA DE DATOS DEL SERVIDOR',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20.0),
-            GestureDetector(
-              onTap: () => _downloadAndStoreData(context),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _loadLastUpdate();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header de bienvenida
+              _buildWelcomeHeader(context),
+
+              const SizedBox(height: 30),
+
+              // Título principal
+              Text(
+                'Gestión de Datos',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
                 ),
-                child: Stack(
+              ).animate().fadeIn(delay: 300.ms),
+
+              const SizedBox(height: 20),
+
+              // Card principal de descarga
+              _buildDownloadCard(context),
+
+              const SizedBox(height: 20),
+
+              // Estado de la precarga
+              if (lastUpdate != null) _buildStatusCard(context),
+
+              const SizedBox(height: 30),
+
+              // Información adicional
+              _buildInfoSection(context),
+
+              const SizedBox(height: 80), // Espacio para el bottom navigation
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF2C3E50), const Color(0xFF34495E)]
+              : [const Color(0xFF667EEA), const Color(0xFF764BA2)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: Colors.white.withOpacity(0.2),
+                child: const Icon(
+                  FontAwesomeIcons.cloudArrowDown,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: double.infinity,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        image: const DecorationImage(
-                          image: AssetImage('images/tarjetas/t6.png'),
-                          fit: BoxFit.cover,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+                    Text(
+                      'Precarga de Datos',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Container(
-                      width: double.infinity,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          'HAGA CLICK EN ESTA TARJETA PARA DESCARGAR O ACTUALIZAR LOS DATOS.',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                    Text(
+                      widget.userName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(height: 20.0),
-            if (lastUpdate != null) ...[
-              Column(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  FontAwesomeIcons.database,
+                  color: Colors.white,
+                  size: 14,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Sincronización de datos del servidor',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2);
+  }
+
+  Widget _buildDownloadCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _downloadAndStoreData(context),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
                 children: [
-                  Text(
-                    'ÚLTIMA ACTUALIZACIÓN DE DATOS:',
-                    style: GoogleFonts.inter(
-                        fontSize: 16, fontWeight: FontWeight.w600),
-                    textAlign: TextAlign.center,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xFFD6D4A7).withOpacity(0.8),
+                              const Color(0xFFD6D4A7)
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          FontAwesomeIcons.cloudArrowDown,
+                          size: 28,
+                          color: Color(0xFF212121),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Descargar Datos',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Sincroniza los datos del servidor con la aplicación',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD6D4A7).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Color(0xFFD6D4A7),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Fecha: ${_formatDate(lastUpdate!)}',
-                    style: GoogleFonts.inter(
-                        fontSize: 14, fontWeight: FontWeight.w600),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    'Hora: ${_formatTime(lastUpdate!)}',
-                    style: GoogleFonts.inter(
-                        fontSize: 14, fontWeight: FontWeight.w600),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _deleteDatabase,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                    child: const Text(
-                      'ELIMINAR PRECARGA',
-                    ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _downloadAndStoreData(context),
+                          icon: const Icon(FontAwesomeIcons.download, size: 16),
+                          label: const Text('Iniciar Descarga'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD6D4A7),
+                            foregroundColor: const Color(0xFF212121),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
+          ),
+        ),
+      ),
+    ).animate(delay: 400.ms).fadeIn().slideX(begin: 0.3);
+  }
+
+  Widget _buildStatusCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    FontAwesomeIcons.circleCheck,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Última Actualización',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Fecha: ${_formatDate(lastUpdate!)}',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        'Hora: ${_formatTime(lastUpdate!)}',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _deleteDatabase,
+                    icon: const Icon(FontAwesomeIcons.trash, size: 16),
+                    label: const Text('Eliminar Precarga'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
-    );
+    ).animate(delay: 500.ms).fadeIn().slideX(begin: 0.3);
+  }
+
+  Widget _buildInfoSection(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2C3E50) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                FontAwesomeIcons.circleInfo,
+                color: Color(0xFF667EEA),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Información Importante',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'La precarga descarga y sincroniza todos los datos necesarios del servidor para el funcionamiento offline de la aplicación.',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[600],
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8CB0C).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8CB0C).withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  FontAwesomeIcons.triangleExclamation,
+                  color: Color(0xFFE8CB0C),
+                  size: 16,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Tenga en cuenta que para tener la información, debe realizar la precarga periodicamente.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate(delay: 600.ms).fadeIn().slideY(begin: 0.3);
   }
 
   String _formatDate(String dateString) {

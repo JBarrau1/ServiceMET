@@ -16,42 +16,23 @@ class ServiciosScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: Text(
-          'AREAS DE TRABAJO',
-          style: GoogleFonts.poppins(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black,
-            fontWeight: FontWeight.w700,
-            fontSize: 16.0,
-          ),
-        ),
-        backgroundColor: isDarkMode ? Colors.transparent : Colors.white,
-        elevation: 0,
-        flexibleSpace: isDarkMode
-            ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
-            : null,
-        centerTitle: true,
-      ),
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Aquí puedes agregar lógica de refresh si es necesario
+        await Future.delayed(const Duration(milliseconds: 500));
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header de bienvenida
-            _buildWelcomeHeader(context, userName),
+            // Header de bienvenida personalizado para servicios
+            _buildWelcomeHeader(context),
 
             const SizedBox(height: 30),
 
-            // Título de sección
+            // Título de servicios disponibles
             Text(
               'Servicios Disponibles',
               style: GoogleFonts.poppins(
@@ -63,66 +44,69 @@ class ServiciosScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Lista de servicios
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildServiceCard(
-                    context,
-                    icon: FontAwesomeIcons.scaleBalanced,
-                    title: 'Calibración',
-                    subtitle: 'Procesos de calibración de equipos',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => PrecargaScreen(userName: userName)),
-                      );
-                    },
-                    color: const Color(0xFFBFD6A7),
-                    delay: 400.ms,
-                  ),
-                  _buildServiceCard(
-                    context,
-                    icon: FontAwesomeIcons.screwdriverWrench,
-                    title: 'Soporte Técnico',
-                    subtitle: 'Soporte y mantenimiento',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => SoporteScreen(userName: userName)),
-                      );
-                    },
-                    color: const Color(0xFF89B2CC),
-                    delay: 500.ms,
-                  ),
-                  _buildServiceCard(
-                    context,
-                    icon: FontAwesomeIcons.mapMarkedAlt,
-                    title: 'Selección de Área',
-                    subtitle: 'Gestión de áreas de trabajo',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                AreaSeleccionScreen(userName: userName)),
-                      );
-                    },
-                    color: const Color(0xFFD6D4A7),
-                    delay: 600.ms,
-                  ),
-                ].animate(interval: 100.ms).slideX(begin: 0.3).fadeIn(),
-              ),
+            // Servicios principales
+            _buildServiceCard(
+              context,
+              icon: FontAwesomeIcons.scaleBalanced,
+              title: 'Calibración',
+              subtitle: 'Procesos de calibración de balanzas, tanques y pesas patrón',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => PrecargaScreen(userName: userName)),
+                );
+              },
+              color: const Color(0xFFBFD6A7),
+              delay: 400.ms,
             ),
+
+            _buildServiceCard(
+              context,
+              icon: FontAwesomeIcons.screwdriverWrench,
+              title: 'Soporte Técnico',
+              subtitle: 'Soporte y mantenimiento de balanzas y básculas de camiones',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => SoporteScreen(userName: userName)),
+                );
+              },
+              color: const Color(0xFF89B2CC),
+              delay: 500.ms,
+            ),
+
+            //_buildServiceCard(
+              //context,
+              //icon: FontAwesomeIcons.mapMarkedAlt,
+              //title: 'Selección de Área',
+              //subtitle: 'Gestión y selección de áreas de trabajo',
+              //onTap: () {
+                //Navigator.push(
+                  //context,
+                  //MaterialPageRoute(
+                      //builder: (context) =>
+                          //AreaSeleccionScreen(userName: userName)),
+                //);
+              //},
+              //color: const Color(0xFFD6D4A7),
+              //delay: 600.ms,
+            //),
+
+            const SizedBox(height: 30),
+
+            // Información adicional
+            _buildInfoSection(context),
+
+            const SizedBox(height: 80), // Espacio para el bottom navigation
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeHeader(BuildContext context, String userName) {
+  Widget _buildWelcomeHeader(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -152,7 +136,7 @@ class ServiciosScreen extends StatelessWidget {
               CircleAvatar(
                 radius: 25,
                 backgroundColor: Colors.white.withOpacity(0.2),
-                child: Icon(
+                child: const Icon(
                   FontAwesomeIcons.userCog,
                   color: Colors.white,
                   size: 20,
@@ -164,7 +148,7 @@ class ServiciosScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '¡Bienvenido/a!',
+                      'Área de Servicios',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         color: Colors.white.withOpacity(0.9),
@@ -194,14 +178,14 @@ class ServiciosScreen extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   FontAwesomeIcons.cogs,
                   color: Colors.white,
                   size: 14,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Selecciona un área de trabajo',
+                  'Selecciona un servicio para continuar',
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 13,
@@ -248,59 +232,85 @@ class ServiciosScreen extends StatelessWidget {
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: Row(
+              child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [color.withOpacity(0.8), color],
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [color.withOpacity(0.8), color],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: 28,
+                          color: const Color(0xFF212121),
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 24,
-                      color: const Color(0xFF212121),
-                    ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: color,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: onTap,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: color,
+                            foregroundColor: const Color(0xFF212121),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Acceder',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        Text(
-                          subtitle,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: color,
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -309,5 +319,50 @@ class ServiciosScreen extends StatelessWidget {
         ),
       ),
     ).animate(delay: delay).fadeIn().slideX(begin: 0.3);
+  }
+
+  Widget _buildInfoSection(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2C3E50) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                FontAwesomeIcons.lightbulb,
+                color: const Color(0xFF667EEA),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Información',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Selecciona el servicio que deseas utilizar. Cada servicio tiene sus propias funcionalidades específicas para ayudarte en tu trabajo diario.',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[600],
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    ).animate(delay: 700.ms).fadeIn().slideY(begin: 0.3);
   }
 }

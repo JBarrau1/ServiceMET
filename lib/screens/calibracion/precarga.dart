@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/screens/calibracion/qr/qr_scanner_screen.dart';
 import 'package:path_provider/path_provider.dart';
@@ -88,7 +90,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           'session_id': newSessionId,
         });
 
-        if (mounted) { // ← AGREGADO: Verificar si el widget sigue montado
+        if (mounted) {
           setState(() {
             _secaController.text = seca;
             _secaValue = seca;
@@ -100,7 +102,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error completo en _prepareSecaRecord: $e'); // ← Más información del error
+      debugPrint('Error completo en _prepareSecaRecord: $e');
       if (mounted) {
         _showSnackBar(context, 'Error al preparar SECA: ${e.toString()}', isError: true);
       }
@@ -112,11 +114,11 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'SECA YA REGISTRADO',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
+          title: Text(
+            'SECA Ya Registrado',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
           content: Column(
@@ -129,8 +131,27 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
               const SizedBox(height: 10),
               const Text('¿Desea crear una NUEVA sesión para este SECA?'),
               const SizedBox(height: 10),
-              const Text('⚠️ Los datos anteriores se mantendrán intactos.',
-                  style: TextStyle(color: Colors.orange, fontSize: 12)),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(FontAwesomeIcons.triangleExclamation,
+                        color: Colors.orange, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Los datos anteriores se mantendrán intactos.',
+                        style: GoogleFonts.inter(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
           actions: <Widget>[
@@ -140,7 +161,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: const Color(0xFF667EEA),
               ),
               onPressed: () async {
                 final dbHelper = AppDatabase();
@@ -166,14 +187,12 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
               },
               child: const Text('Crear Nueva Sesión'),
             )
-
           ],
         );
       },
     );
   }
 
-  // Método corregido para _showPrecargadosList en PrecargaScreen
   Future<void> _showPrecargadosList(BuildContext context) async {
     try {
       final dbHelper = AppDatabase();
@@ -206,11 +225,11 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
         context: context,
         builder: (BuildContext dialogContext) {
           return AlertDialog(
-            title: const Text(
-              'SECAS REGISTRADOS ANTERIORMENTE',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 17,
+            title: Text(
+              'SECAs Registrados',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
             ),
             content: SizedBox(
@@ -220,47 +239,53 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                 itemCount: secasLista.length,
                 itemBuilder: (context, index) {
                   final registro = secasLista[index];
-                  return Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      leading: CircleAvatar(
-                        backgroundColor: const Color(0xFFE8CB0C),
-                        child: Icon(Icons.description, color: Colors.white),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFBFD6A7).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          FontAwesomeIcons.scaleBalanced,
+                          color: Color(0xFFBFD6A7),
+                          size: 20,
+                        ),
                       ),
                       title: Text(
                         registro['seca'] ?? '',
-                        style: const TextStyle(
+                        style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
                       subtitle: Row(
                         children: [
-                          const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                          const Icon(FontAwesomeIcons.calendar, size: 14, color: Colors.grey),
                           const SizedBox(width: 4),
                           Text(
                             'Fecha: ${registro['fecha_servicio'] ?? 'N/A'}',
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               color: Colors.grey[600],
+                              fontSize: 12,
                             ),
                           ),
                         ],
                       ),
                       trailing: const Icon(
                         Icons.arrow_forward_ios,
-                        size: 18,
+                        size: 16,
                         color: Colors.grey,
                       ),
-                      // ← CORRECCIÓN: Usar _prepareSecaRecord en lugar de solo setState
                       onTap: () async {
-                        Navigator.of(dialogContext).pop(); // Cerrar diálogo primero
-
-                        // Ahora sí llamar a _prepareSecaRecord que manejará toda la lógica
+                        Navigator.of(dialogContext).pop();
                         await _prepareSecaRecord(context, registro['seca']);
                       },
                     ),
@@ -282,7 +307,6 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     }
   }
 
-// Función auxiliar para parsear fechas en formato DD-MM-YYYY
   DateTime _parseDate(String dateString) {
     try {
       List<String> parts = dateString.split('-');
@@ -295,7 +319,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     } catch (e) {
       print('Error parsing date: $e');
     }
-    return DateTime(1900); // Fecha por defecto para ordenamiento
+    return DateTime(1900);
   }
 
   void _showCreateDatabaseDialog(BuildContext context) {
@@ -304,13 +328,10 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(
-            'INGRESE NÚMERO SECA',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white
-                  : Colors.black,
+            'Ingrese Número SECA',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
           content: Column(
@@ -318,10 +339,32 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             children: [
               TextFormField(
                 controller: _dbNameController,
-                decoration: buildInputDecoration('Codigo SECA:'),
+                decoration: _buildInputDecoration('Código SECA'),
+                style: GoogleFonts.inter(),
               ),
-              const SizedBox(height: 10),
-              const Text('Ejemplo: 1234-C01-25'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(FontAwesomeIcons.lightbulb, color: Colors.blue, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Formato: 1234-C01-25',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
           actions: <Widget>[
@@ -331,7 +374,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3e7732),
+                backgroundColor: const Color(0xFF667EEA),
               ),
               onPressed: () async {
                 if (_dbNameController.text.isEmpty) {
@@ -354,8 +397,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     );
   }
 
-  void _showSnackBar(BuildContext context, String message,
-      {bool isError = false}) {
+  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -370,15 +412,14 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'CONFIRMACIÓN',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 17,
+          title: Text(
+            'Confirmación',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
-          content: const Text(
-              '¿Está seguro de comenzar el servicio de calibración?'),
+          content: const Text('¿Está seguro de comenzar el servicio de calibración?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancelar'),
@@ -386,12 +427,11 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: const Color(0xFF667EEA),
               ),
               onPressed: () async {
                 final dbHelper = AppDatabase();
 
-                // ✅ CORRECCIÓN: Obtener el sessionId EXISTENTE en lugar de generar uno nuevo
                 final ultimoRegistro = await dbHelper.getUltimoRegistroPorSeca(_secaController.text);
 
                 if (ultimoRegistro == null || ultimoRegistro['session_id'] == null) {
@@ -401,9 +441,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
 
                 final sessionIdExistente = ultimoRegistro['session_id'].toString();
 
-                Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                Navigator.of(dialogContext).pop();
 
-                // Navegar a CalibracionScreen con el sessionId EXISTENTE
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -411,7 +450,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                       dbName: _secaController.text,
                       userName: widget.userName,
                       secaValue: _secaController.text,
-                      sessionId: sessionIdExistente, // ← Usar sessionId existente (0001)
+                      sessionId: sessionIdExistente,
                     ),
                   ),
                 );
@@ -435,20 +474,17 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     }
   }
 
-  void _showMetricaFormatError(
-      BuildContext context, String qrContent, String extractedCode) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
+  void _showMetricaFormatError(BuildContext context, String qrContent, String extractedCode) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Error en formato de código métrica',
-          style: TextStyle(
-            color: isDarkMode ? Colors.white : Colors.black,
+          'Error en Formato',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -456,44 +492,43 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             children: [
               Text(
                 'El código métrica escaneado no tiene el formato correcto.',
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black,
+                style: GoogleFonts.inter(),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Formato esperado:',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'XXXX-XX-XXX (11 caracteres)',
+                      style: GoogleFonts.inter(color: Colors.blue),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               Text(
-                'Formato esperado: XXXX-XX-XXX (11 caracteres)',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.yellow : Colors.blue,
-                ),
+                'Contenido QR:',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 20),
-              Text(
-                'Contenido QR completo:',
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white70 : Colors.grey[700],
-                ),
-              ),
-              Text(
-                qrContent,
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black,
-                ),
-              ),
-              const SizedBox(height: 10),
+              Text(qrContent, style: GoogleFonts.inter(fontSize: 12)),
+              const SizedBox(height: 8),
               Text(
                 'Código extraído:',
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white70 : Colors.grey[700],
-                ),
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
               ),
               Text(
                 extractedCode,
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: GoogleFonts.inter(color: Colors.red, fontSize: 12),
               ),
             ],
           ),
@@ -501,20 +536,14 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'OK',
-              style: TextStyle(
-                color: isDarkMode ? Colors.yellow : Colors.blue,
-              ),
-            ),
+            child: const Text('Entendido'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _processMetricaCode(
-      BuildContext context, String qrContent) async {
+  Future<void> _processMetricaCode(BuildContext context, String qrContent) async {
     String codigoMetrica = _extractMetricaCode(qrContent);
 
     if (!_isValidMetricaFormat(codigoMetrica)) {
@@ -522,30 +551,23 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       return;
     }
 
-    // Extraer los primeros 4 dígitos para el SECA (NNNN)
     String parteNumerica = codigoMetrica.substring(0, 4);
-    // Generar SECA sugerido (NNNN-C00-25)
     String secaSugerido = '$parteNumerica-C00-25';
 
-    // Mostrar diálogo con información y campo editable para el SECA
     _showBalanzaInfoDialog(context, codigoMetrica, secaSugerido);
   }
 
-  void _showBalanzaInfoDialog(
-      BuildContext context, String codigoMetrica, String secaSugerido) {
-    TextEditingController secaController =
-    TextEditingController(text: secaSugerido);
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  void _showBalanzaInfoDialog(BuildContext context, String codigoMetrica, String secaSugerido) {
+    TextEditingController secaController = TextEditingController(text: secaSugerido);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'INFORMACIÓN DE LA BALANZA',
-          style: TextStyle(
-            fontSize: 16.0,
-            fontWeight: FontWeight.w900,
-            color: isDarkMode ? Colors.white : Colors.black,
+          'Información de la Balanza',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
         content: SingleChildScrollView(
@@ -557,37 +579,24 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
               const SizedBox(height: 20),
               Text(
                 'SECA Sugerido:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black,
-                ),
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: secaController,
-                decoration: buildInputDecoration(
-                  'Formato: NNNN-CXX-25',
-                ),
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black,
-                ),
-                onChanged: (value) {
-                  if (!_isValidSecaFormat(value)) {
-                    // Mostrar error sutil cambiando el color del borde
-                    secaController.value = secaController.value.copyWith(
-                      text: value,
-                      selection: secaController.selection,
-                      composing: TextRange.empty,
-                    );
-                  }
-                },
+                decoration: _buildInputDecoration('Formato: NNNN-CXX-25'),
+                style: GoogleFonts.inter(),
               ),
-              const SizedBox(height: 10),
-              Text(
-                'Modifique los números después de la "C" según corresponda\nEjemplo: C01, C02, etc.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDarkMode ? Colors.white70 : Colors.grey[700],
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Modifique los números después de la "C" según corresponda\nEjemplo: C01, C02, etc.',
+                  style: GoogleFonts.inter(fontSize: 12),
                 ),
               ),
             ],
@@ -596,34 +605,25 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancelar',
-            ),
+            child: const Text('Cancelar'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: const Color(0xFF667EEA),
             ),
             onPressed: () async {
               if (!_isValidSecaFormat(secaController.text)) {
-                _showSnackBar(
-                    context, 'Formato de SECA inválido. Use NNNN-CXX-25',
-                    isError: true);
+                _showSnackBar(context, 'Formato de SECA inválido. Use NNNN-CXX-25', isError: true);
                 return;
               }
               try {
                 await _prepareSecaRecord(context, secaController.text);
-                Navigator.pop(context); // Cerrar diálogo
-
+                Navigator.pop(context);
               } catch (e) {
-                _showSnackBar(context, 'Error al procesar SECA: $e',
-                    isError: true);
+                _showSnackBar(context, 'Error al procesar SECA: $e', isError: true);
               }
             },
-            child: const Text(
-              'Continuar',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Continuar'),
           ),
         ],
       ),
@@ -631,33 +631,24 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
   }
 
   bool _isValidMetricaFormat(String codigo) {
-    // Verificar longitud primero
     if (codigo.length != 11) return false;
-
-    // Verificar guiones en las posiciones correctas
     if (codigo[4] != '-' || codigo[7] != '-') return false;
-
-    // Verificar que los demás caracteres sean dígitos
     final digits = codigo.replaceAll('-', '');
     return RegExp(r'^\d+$').hasMatch(digits);
   }
 
   String _extractMetricaCode(String qrContent) {
-    // Caso 1: El QR contiene exactamente el código métrica
     if (_isValidMetricaFormat(qrContent)) return qrContent;
 
-    // Caso 2: El código métrica son los primeros 11 caracteres
     if (qrContent.length >= 11) {
       String possibleCode = qrContent.substring(0, 11);
       if (_isValidMetricaFormat(possibleCode)) return possibleCode;
     }
 
-    // Caso 3: Buscar patrón en cualquier parte del QR
     final regex = RegExp(r'(\d{4}-\d{2}-\d{3})');
     final match = regex.firstMatch(qrContent);
     if (match != null) return match.group(1)!;
 
-    // Si no se encuentra, devolver el contenido original para mostrar el error
     return qrContent;
   }
 
@@ -666,12 +657,79 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: RichText(
         text: TextSpan(
+          style: GoogleFonts.inter(),
           children: [
             TextSpan(
-                text: label,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: ' ${value.isNotEmpty ? value : 'No disponible'}'),
+              text: label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(
+              text: ' ${value.isNotEmpty ? value : 'No disponible'}',
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMethodCard({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    required Color color,
+    bool isFullWidth = false,
+  }) {
+    return Expanded(
+      flex: isFullWidth ? 2 : 1,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onTap,
+            child: Container(
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [color.withOpacity(0.8), color],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 32,
+                    color: Colors.black,
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -682,299 +740,424 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: Text(
-          'CALIBRACIÓN',
-          style: GoogleFonts.inter(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black,
-            fontWeight: FontWeight.w900,
-            fontSize: 16.0,
-          ),
-        ),
-        backgroundColor: isDarkMode ? Colors.transparent : Colors.white,
-        elevation: 0,
-        flexibleSpace: isDarkMode
-            ? ClipRect(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: ClipRRect(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
+            filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+            child: AppBar(
+              toolbarHeight: 70,
+              title: Text(
+                'Calibración',
+                style: GoogleFonts.poppins(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16.0,
+                ),
+              ),
+              backgroundColor: isDarkMode
+                  ? Colors.black.withOpacity(0.4)
+                  : Colors.white.withOpacity(0.7),
+              elevation: 0,
+              centerTitle: true,
+            ),
           ),
-        )
-            : null,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40,
-          left: 16.0,
-          right: 16.0,
-          bottom: 16.0,
         ),
-        child: Column(
-          children: [
-            const Text(
-              'REGISTRO DE DATOS PARA EL SERVICIO DE CALIBRACIÓN',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20.0),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  controller: _fechaController,
-                  decoration: buildInputDecoration('Fecha del Servicio'),
-                  readOnly: true,
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          setState(() {});
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header de bienvenida
+              _buildWelcomeHeader(context),
+
+              const SizedBox(height: 30),
+
+              // Información de fecha
+              _buildDateSection(context),
+
+              const SizedBox(height: 30),
+
+              // Título de métodos
+              Text(
+                'Métodos de Identificación',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
                 ),
-                const SizedBox(height: 8.0),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info,
-                      color: isDarkMode ? Colors.white60 : Colors.black,
-                      size: 16.0,
-                    ),
-                    const SizedBox(width: 4.0),
-                    Expanded(
-                      child: Text(
-                        'Fecha generada automáticamente por el sistema.',
-                        style: TextStyle(
-                          fontSize: 13.0,
-                          fontStyle: FontStyle.italic,
-                          color: isDarkMode ? Colors.white60 : Colors.black,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 20.0),
-            const Text(
-              'Método de busqueda o\nidentificación de la balanza',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => _scanQRCode(context),
-                    child: Container(
-                      height: 150,
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF525656),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text(
-                            'BÚSQUEDA POR QR',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 12.0,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Icon(
-                            Icons.qr_code_2_rounded,
-                            size: 40,
-                            color: Colors.white,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    height: 150,
-                    margin: const EdgeInsets.symmetric(horizontal: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF363737),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Text(
-                          'CODIGO METRICA',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 12.0,
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Icon(
-                          Icons.keyboard_alt_rounded,
-                          size: 40,
-                          color: Colors.white,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => _showCreateDatabaseDialog(context),
-                    child: Container(
-                      height: 150,
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF5c5f5f),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text(
-                            'SELECCIÓN MANUAL',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 12.0,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Icon(
-                            Icons.next_plan_rounded,
-                            size: 40,
-                            color: Colors.white,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => _showPrecargadosList(context),
-                    child: Container(
-                      height: 150,
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3e3e3e),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text(
-                            'LISTA DE SECAS INGRESADOS',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 12.0,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Icon(
-                            Icons.featured_play_list,
-                            size: 40,
-                            color: Colors.white,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20.0),
-            if (_showSecaField) ...[
-              TextFormField(
-                controller: _secaController,
-                decoration: buildInputDecoration('SECA REGISTRADO'),
-                readOnly: true,
-              ),
-              const SizedBox(height: 8.0),
-              const Row(
+              ).animate().fadeIn(delay: 300.ms),
+
+              const SizedBox(height: 20),
+
+              // Cards de métodos
+              Row(
                 children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 16.0,
+                  _buildMethodCard(
+                    icon: FontAwesomeIcons.qrcode,
+                    title: 'Búsqueda por QR',
+                    onTap: () => _scanQRCode(context),
+                    color: const Color(0xFF89B2CC),
                   ),
-                  SizedBox(width: 4.0),
-                  Expanded(
-                    child: Text(
-                      'SECA registrado correctamente. Puede continuar con el servicio.',
-                      style: TextStyle(
-                        fontSize: 13.0,
-                        color: Colors.green,
-                      ),
-                    ),
+                  _buildMethodCard(
+                    icon: FontAwesomeIcons.keyboard,
+                    title: 'Código Métrica',
+                    onTap: () {}, // Implementar según necesidad
+                    color: const Color(0xFFBFD6A7),
                   ),
                 ],
-              ),
-              const SizedBox(height: 20.0),
+              ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.3),
+
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  _buildMethodCard(
+                    icon: FontAwesomeIcons.handPointer,
+                    title: 'Selección Manual',
+                    onTap: () => _showCreateDatabaseDialog(context),
+                    color: const Color(0xFFD6D4A7),
+                  ),
+                  _buildMethodCard(
+                    icon: FontAwesomeIcons.list,
+                    title: 'SECAs Registrados',
+                    onTap: () => _showPrecargadosList(context),
+                    color: const Color(0xFF89B2CC),
+                  ),
+                ],
+              ).animate(delay: 500.ms).fadeIn().slideY(begin: 0.3),
+
+              const SizedBox(height: 30),
+
+              // Campo SECA si está disponible
+              if (_showSecaField) _buildSecaSection(context),
+
+              const SizedBox(height: 30),
+
+              // Botón de iniciar calibración
+              _buildStartButton(context),
+
+              const SizedBox(height: 80), // Espacio para navigation
             ],
-            ElevatedButton(
-              onPressed: _isDatabaseReady
-                  ? () async {
-                _showConfirmationDialog(context);
-              }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isDatabaseReady ? Colors.green : Colors.grey,
-                elevation: 4.0,
-              ),
-              child: const Text(
-                'INICIAR CALIBRACIÓN',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          ],
+          ),
         ),
       ),
     );
   }
 
-  InputDecoration buildInputDecoration(String labelText) {
+  Widget _buildWelcomeHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF2C3E50), const Color(0xFF34495E)]
+              : [const Color(0xFF667EEA), const Color(0xFF764BA2)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: Colors.white.withOpacity(0.2),
+                child: const Icon(
+                  FontAwesomeIcons.scaleBalanced,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Servicio de Calibración',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      widget.userName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  FontAwesomeIcons.clipboardCheck,
+                  color: Colors.white,
+                  size: 14,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Registro de datos para calibración',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2);
+  }
+
+  Widget _buildDateSection(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF667EEA).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  FontAwesomeIcons.calendar,
+                  color: Color(0xFF667EEA),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Fecha del Servicio',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                      ),
+                    ),
+                    Text(
+                      _fechaController.text,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(FontAwesomeIcons.circleInfo, color: Colors.blue, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Fecha generada automáticamente por el sistema',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.3);
+  }
+
+  Widget _buildSecaSection(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  FontAwesomeIcons.circleCheck,
+                  color: Colors.green,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SECA Registrado',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                      ),
+                    ),
+                    Text(
+                      _secaController.text,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(FontAwesomeIcons.check, color: Colors.green, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'SECA registrado correctamente. Puede continuar con el servicio.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.green,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate(delay: 600.ms).fadeIn().slideY(begin: 0.3);
+  }
+
+  Widget _buildStartButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _isDatabaseReady ? () => _showConfirmationDialog(context) : null,
+        icon: Icon(
+          FontAwesomeIcons.play,
+          size: 16,
+          color: _isDatabaseReady ? Colors.white : Colors.grey,
+        ),
+        label: Text(
+          'Iniciar Calibración',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: _isDatabaseReady ? Colors.white : Colors.grey,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _isDatabaseReady ? const Color(0xFF667EEA) : Colors.grey[300],
+          elevation: _isDatabaseReady ? 4 : 0,
+        ),
+      ),
+    ).animate(delay: 700.ms).fadeIn().slideY(begin: 0.3);
+  }
+
+  InputDecoration _buildInputDecoration(String labelText) {
     return InputDecoration(
       labelText: labelText,
+      labelStyle: GoogleFonts.inter(),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20.0),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: BorderSide(color: Colors.grey[300]!),
       ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: Color(0xFF667EEA)),
+      ),
+      contentPadding: const EdgeInsets.all(16),
     );
   }
 }

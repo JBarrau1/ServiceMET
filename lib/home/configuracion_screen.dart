@@ -79,32 +79,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: Text(
-          'CONFIGURACIÓN',
-          style: GoogleFonts.inter(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black,
-            fontWeight: FontWeight.w900,
-            fontSize: 16.0,
-          ),
-        ),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.transparent
-            : Colors.white,
-        elevation: 0,
-        flexibleSpace: Theme.of(context).brightness == Brightness.dark
-            ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
-            : null,
-        centerTitle: true,
-      ),
       body: Column(
         children: [
           Expanded(

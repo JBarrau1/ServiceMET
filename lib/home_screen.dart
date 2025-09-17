@@ -137,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (await databaseExists(dbPath)) {
         final file = File(dbPath);
         final lastModified = await file.lastModified();
-        final formattedDate = DateFormat('dd/MM/yyyy').format(lastModified);
+        final formattedDate = DateFormat("d MMMM 'de' y", 'es_ES').format(lastModified);
 
         setState(() {
           fechaUltimaPrecarga = formattedDate;
@@ -153,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
+
 
   Future<List<ServicioSeca>> _getServiciosAgrupadosPorSeca() async {
     final List<ServicioSeca> servicios = [];
@@ -710,7 +711,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Los servicios de calibración aparecerán aquí cuando estén disponibles',
+                          'Los servicios de calibración o soporte técnico aparecerán aquí cuando estén disponibles',
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: Colors.grey[500],
@@ -753,13 +754,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(25),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0), // Más blur
+          filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(25),
+              borderRadius: BorderRadius.circular(30),
               color: isDarkMode
-                  ? Colors.black.withOpacity(0.2) // Más transparente
-                  : Colors.white.withOpacity(0.7), // Más transparente
+                  ? Colors.black.withOpacity(0.4)
+                  : Colors.white.withOpacity(0.7),
               border: Border.all(
                 color: isDarkMode
                     ? Colors.white.withOpacity(0.1)
@@ -771,64 +772,64 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               height: 70,
-              indicatorColor: Colors.transparent, // Quitar el indicador de color
+              indicatorColor: const Color(0xFFE8CB0C).withOpacity(0.15),
               labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
               destinations: [
-                _buildNavItem(
-                  icon: FontAwesomeIcons.home,
-                  isSelected: _currentIndex == 0,
-                  isDarkMode: isDarkMode,
+                NavigationDestination(
+                  icon: Icon(
+                    FontAwesomeIcons.home,
+                    color: _currentIndex == 0
+                        ? const Color(0xFFE8CB0C)
+                        : (isDarkMode ? Colors.white70 : Colors.black54),
+                    size: 20,
+                  ),
+                  label: 'Inicio',
                 ),
-                _buildNavItem(
-                  icon: FontAwesomeIcons.wrench,
-                  isSelected: _currentIndex == 1,
-                  isDarkMode: isDarkMode,
+                NavigationDestination(
+                  icon: Icon(
+                    FontAwesomeIcons.wrench,
+                    color: _currentIndex == 1
+                        ? const Color(0xFFE8CB0C)
+                        : (isDarkMode ? Colors.white70 : Colors.black54),
+                    size: 20,
+                  ),
+                  label: 'Servicios',
                 ),
-                _buildNavItem(
-                  icon: FontAwesomeIcons.solidFolder,
-                  isSelected: _currentIndex == 2,
-                  isDarkMode: isDarkMode,
+                NavigationDestination(
+                  icon: Icon(
+                    FontAwesomeIcons.solidFolder,
+                    color: _currentIndex == 2
+                        ? const Color(0xFFE8CB0C)
+                        : (isDarkMode ? Colors.white70 : Colors.black54),
+                    size: 20,
+                  ),
+                  label: 'Otros',
                 ),
-                _buildNavItem(
-                  icon: FontAwesomeIcons.cog,
-                  isSelected: _currentIndex == 3,
-                  isDarkMode: isDarkMode,
+                NavigationDestination(
+                  icon: Icon(
+                    FontAwesomeIcons.cog,
+                    color: _currentIndex == 3
+                        ? const Color(0xFFE8CB0C)
+                        : (isDarkMode ? Colors.white70 : Colors.black54),
+                    size: 20,
+                  ),
+                  label: 'Configuración',
                 ),
               ],
               selectedIndex: _currentIndex,
               onDestinationSelected: (index) {
                 setState(() {
                   _currentIndex = index;
-                  _pageController.jumpToPage(index);
                 });
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
               },
             ),
           ),
         ),
-      ),
-    );
-  }
-
-// Widget auxiliar para los items de navegación
-  Widget _buildNavItem({
-    required IconData icon,
-    required bool isSelected,
-    required bool isDarkMode,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: isSelected
-          ? BoxDecoration(
-        color: const Color(0xFFE8CB0C).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-      )
-          : null,
-      child: Icon(
-        icon,
-        color: isSelected
-            ? const Color(0xFFE8CB0C)
-            : (isDarkMode ? Colors.white70 : Colors.black54),
-        size: 22,
       ),
     );
   }
@@ -840,27 +841,39 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: Text(
-          _getAppBarTitle(),
-          style: GoogleFonts.poppins(
-            color: isDarkMode ? Colors.white : Colors.black,
-            fontWeight: FontWeight.w700,
-            fontSize: 16.0,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+            child: AppBar(
+              toolbarHeight: 70,
+              title: Text(
+                _getAppBarTitle(),
+                style: GoogleFonts.poppins(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16.0,
+                ),
+              ),
+              backgroundColor: isDarkMode
+                  ? Colors.black.withOpacity(0.1)
+                  : Colors.white.withOpacity(0.7),
+              elevation: 0,
+              centerTitle: true,
+              // Agregar borde sutil como en NavigationBar
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(0.5),
+                child: Container(
+                  height: 0.5,
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.black.withOpacity(0.1),
+                ),
+              ),
+            ),
           ),
         ),
-        backgroundColor: isDarkMode ? Colors.transparent : Colors.white,
-        elevation: 0,
-        flexibleSpace: isDarkMode
-            ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
-            : null,
-        centerTitle: true,
       ),
       body: SafeArea(
         bottom: false,
