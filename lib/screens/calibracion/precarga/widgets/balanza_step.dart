@@ -205,6 +205,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['categoria_balanza']!,
             label: 'Categoría',
             prefixIcon: Icons.category,
+            readOnly: !controller.isNewBalanza, // AGREGAR ESTA LÍNEA
           ),
 
           const SizedBox(height: 16),
@@ -214,6 +215,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['cod_int']!,
             label: 'Código Interno',
             prefixIcon: Icons.tag,
+            readOnly: !controller.isNewBalanza, // AGREGAR ESTA LÍNEA
           ),
 
           const SizedBox(height: 16),
@@ -233,6 +235,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['modelo']!,
             label: 'Modelo',
             prefixIcon: Icons.precision_manufacturing,
+            readOnly: !controller.isNewBalanza, // AGREGAR ESTA LÍNEA
           ),
 
           const SizedBox(height: 16),
@@ -242,6 +245,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['serie']!,
             label: 'Serie',
             prefixIcon: Icons.confirmation_number,
+            readOnly: !controller.isNewBalanza, // AGREGAR ESTA LÍNEA
           ),
 
           const SizedBox(height: 16),
@@ -284,7 +288,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
           borderRadius: BorderRadius.circular(12),
         ),
         filled: readOnly,
-        fillColor: readOnly ? Colors.grey[100] : null,
       ),
       readOnly: readOnly,
       keyboardType: keyboardType,
@@ -293,6 +296,17 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   Widget _buildTipoEquipoField(PrecargaController controller) {
+    // Si es balanza existente, mostrar campo de solo lectura
+    if (!controller.isNewBalanza) {
+      return _buildTextField(
+        controller: widget.balanzaControllers['tipo_equipo']!,
+        label: 'Tipo de Equipo',
+        readOnly: true,
+        prefixIcon: Icons.scale,
+      );
+    }
+
+    // Si es balanza nueva, mostrar dropdown
     return DropdownButtonFormField<String>(
       value: widget.balanzaControllers['tipo_equipo']!.text.isNotEmpty
           ? widget.balanzaControllers['tipo_equipo']!.text
@@ -304,7 +318,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      items: controller.tiposEquipo.map((String tipo) {
+      items: controller.tiposEquipo.toSet().map((String tipo) {
         return DropdownMenuItem<String>(
           value: tipo,
           child: Text(
@@ -323,6 +337,17 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   Widget _buildMarcaField(PrecargaController controller) {
+    // Si es balanza existente, mostrar campo de solo lectura
+    if (!controller.isNewBalanza) {
+      return _buildTextField(
+        controller: widget.balanzaControllers['marca']!,
+        label: 'Marca',
+        readOnly: true,
+        prefixIcon: Icons.business,
+      );
+    }
+
+    // Si es balanza nueva, mostrar dropdown
     return DropdownButtonFormField<String>(
       value: widget.balanzaControllers['marca']!.text.isNotEmpty
           ? widget.balanzaControllers['marca']!.text
@@ -349,6 +374,17 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   Widget _buildUnidadField(PrecargaController controller) {
+    // Si es balanza existente, mostrar campo de solo lectura
+    if (!controller.isNewBalanza) {
+      return _buildTextField(
+        controller: widget.balanzaControllers['unidades']!,
+        label: 'Unidad',
+        readOnly: true,
+        prefixIcon: Icons.straighten,
+      );
+    }
+
+    // Si es balanza nueva, mostrar dropdown
     return DropdownButtonFormField<String>(
       value: widget.balanzaControllers['unidades']!.text.isNotEmpty
           ? widget.balanzaControllers['unidades']!.text
@@ -601,67 +637,129 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   void _showBalanzasDialog(PrecargaController controller) {
+    final TextEditingController searchController = TextEditingController();
+    List<Map<String, dynamic>> filteredBalanzas = controller.balanzas;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Balanzas Disponibles',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 400,
-            child: controller.balanzas.isEmpty
-                ? const Center(
-              child: Text('No hay balanzas disponibles'),
-            )
-                : ListView.builder(
-              itemCount: controller.balanzas.length,
-              itemBuilder: (context, index) {
-                final balanza = controller.balanzas[index];
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[300]!),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      'CÓDIGO: ${balanza['cod_metrica']}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                'Balanzas Disponibles',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 500,
+                child: Column(
+                  children: [
+                    // Campo de búsqueda
+                    TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        labelText: 'Buscar balanza',
+                        hintText: 'Cod. Métrica, Cod. Interno o Serie',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: searchController.text.isNotEmpty
+                            ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            searchController.clear();
+                            setDialogState(() {
+                              filteredBalanzas = controller.balanzas;
+                            });
+                          },
+                        )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          if (value.isEmpty) {
+                            filteredBalanzas = controller.balanzas;
+                          } else {
+                            filteredBalanzas = controller.balanzas.where((balanza) {
+                              final codMetrica = balanza['cod_metrica']?.toString().toLowerCase() ?? '';
+                              final codInterno = balanza['cod_interno']?.toString().toLowerCase() ?? '';
+                              final serie = balanza['serie']?.toString().toLowerCase() ?? '';
+                              final searchLower = value.toLowerCase();
+
+                              return codMetrica.contains(searchLower) ||
+                                  codInterno.contains(searchLower) ||
+                                  serie.contains(searchLower);
+                            }).toList();
+                          }
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Lista de balanzas filtradas
+                    Expanded(
+                      child: filteredBalanzas.isEmpty
+                          ? const Center(
+                        child: Text('No se encontraron balanzas'),
+                      )
+                          : ListView.builder(
+                        itemCount: filteredBalanzas.length,
+                        itemBuilder: (context, index) {
+                          final balanza = filteredBalanzas[index];
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ListTile(
+                              title: Text(
+                                'CÓDIGO: ${balanza['cod_metrica']}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Cod. Interno: ${balanza['cod_interno'] ?? 'N/A'}'),
+                                  Text('Serie: ${balanza['serie'] ?? 'N/A'}'),
+                                  Text('Marca: ${balanza['marca'] ?? 'N/A'}'),
+                                  Text('Modelo: ${balanza['modelo'] ?? 'N/A'}'),
+                                ],
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                              onTap: () {
+                                controller.selectBalanza(balanza);
+                                _fillBalanzaData(balanza);
+                                Navigator.pop(context);
+                              },
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Serie: ${balanza['serie'] ?? 'N/A'}'),
-                        Text('Marca: ${balanza['marca'] ?? 'N/A'}'),
-                        Text('Modelo: ${balanza['modelo'] ?? 'N/A'}'),
-                      ],
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      controller.selectBalanza(balanza);
-                      _fillBalanzaData(balanza);
-                      Navigator.pop(context);
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cerrar'),
-            ),
-          ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    searchController.dispose();
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );

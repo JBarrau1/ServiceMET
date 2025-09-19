@@ -122,6 +122,26 @@ class SecaStep extends StatelessWidget {
     );
   }
 
+  // Obtiene la parte fija del SECA (año-código_planta-)
+  String _getFixedSecaPart(PrecargaController controller) {
+    final seca = controller.generatedSeca ?? '';
+    final parts = seca.split('-');
+    if (parts.length >= 3) {
+      return '${parts[0]}-${parts[1]}-${parts[2]}-';
+    }
+    return '';
+  }
+
+// Obtiene solo la parte de cotización (C01, C02, etc.)
+  String _getCotizacionPart(PrecargaController controller) {
+    final seca = controller.generatedSeca ?? '';
+    final parts = seca.split('-');
+    if (parts.length >= 4) {
+      return parts[3];
+    }
+    return 'C01';
+  }
+
   Widget _buildSecaCard(PrecargaController controller, BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
@@ -152,27 +172,91 @@ class SecaStep extends StatelessWidget {
       child: Column(
         children: [
           // Ícono
+          // BUSCAR esta sección (alrededor de línea 150-180):
+          // BUSCAR esta sección del código SECA (alrededor de línea 150-180) y REEMPLAZAR por:
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             decoration: BoxDecoration(
-              color: controller.secaConfirmed
-                  ? Colors.green[200]
-                  : Colors.blue[200],
-              shape: BoxShape.circle,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: controller.secaConfirmed
+                    ? Colors.green[200]!
+                    : Colors.blue[200]!,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Icon(
-              controller.secaConfirmed
-                  ? FontAwesomeIcons.circleCheck
-                  : FontAwesomeIcons.qrcode,
-              size: 48,
-              color: controller.secaConfirmed
-                  ? Colors.green[800]
-                  : Colors.blue[800],
+            child: controller.secaConfirmed
+                ? // Si está confirmado, mostrar texto completo fijo
+            Text(
+              controller.generatedSeca ?? 'Generando...',
+              style: GoogleFonts.robotoMono(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.green[800],
+                letterSpacing: 2,
+              ),
+              textAlign: TextAlign.center,
+            )
+                : // Si no está confirmado, mostrar partes fijas + campo editable
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Parte fija del SECA (año-código_planta-)
+                Text(
+                  _getFixedSecaPart(controller),
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[800],
+                    letterSpacing: 2,
+                  ),
+                ),
+                // Campo editable para el número de cotización (C01, C02, etc.)
+                Container(
+                  width: 80,
+                  child: TextField(
+                    controller: TextEditingController(text: _getCotizacionPart(controller)),
+                    style: GoogleFonts.robotoMono(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[800],
+                      letterSpacing: 2,
+                    ),
+                    decoration: InputDecoration(
+                      border: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blue[300]!),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      hintText: 'C01',
+                      hintStyle: GoogleFonts.robotoMono(
+                        fontSize: 24,
+                        color: Colors.blue[400],
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLength: 3,
+                    buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                    onChanged: (value) {
+                      // Validar formato C + número
+                      if (value.isNotEmpty && !RegExp(r'^C\d{0,2}$').hasMatch(value)) {
+                        return; // No permitir caracteres inválidos
+                      }
+                      controller.updateNumeroCotizacion(value.isEmpty ? 'C01' : value);
+                    },
+                  ),
+                ),
+              ],
             ),
-          ).animate(delay: 300.ms).scale(
-            begin: const Offset(0.5, 0.5),
-            duration: 800.ms,
-          ),
+          ).animate(delay: 400.ms).fadeIn().slideX(begin: 0.3),
 
           const SizedBox(height: 24),
 

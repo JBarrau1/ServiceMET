@@ -279,6 +279,210 @@ class _ClienteStepState extends State<ClienteStep> {
     );
   }
 
+  Widget _buildTermohigrometroSelection(PrecargaController controller) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'SELECCIÓN INICIAL DE TERMOHIGRÓMETROS',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue[700],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showTermohigrometrosSelection(controller),
+              icon: const Icon(Icons.device_thermostat),
+              label: Text(
+                'Seleccionar Termohigrómetros (${controller.selectedTermohigrometros.length}/2)',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF337743),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate(delay: 800.ms).fadeIn().slideY(begin: 0.3);
+  }
+
+  void _showTermohigrometrosSelection(PrecargaController controller) {
+    final termohigrometros = controller.equipos.where((equipo) {
+      final instrumento = equipo['instrumento']?.toString() ?? '';
+      return instrumento.contains('Termohigrómetro') ||
+          instrumento.contains('Termohigrobarómetro');
+    }).toList();
+
+    // Obtener la versión más reciente de cada termohigrómetro
+    final Map<String, Map<String, dynamic>> uniqueTermos = {};
+    for (var termo in termohigrometros) {
+      final codInstrumento = termo['cod_instrumento'].toString();
+      final certFecha = DateTime.parse(termo['cert_fecha']);
+
+      if (!uniqueTermos.containsKey(codInstrumento) ||
+          certFecha.isAfter(DateTime.parse(uniqueTermos[codInstrumento]!['cert_fecha']))) {
+        uniqueTermos[codInstrumento] = termo;
+      }
+    }
+
+    final termosUnicos = uniqueTermos.values.toList()
+      ..sort((a, b) => (a['cod_instrumento']?.toString() ?? '')
+          .compareTo(b['cod_instrumento']?.toString() ?? ''));
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          builder: (context, scrollController) {
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return Container(
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'SELECCIONAR TERMOHIGRÓMETROS',
+                              style: GoogleFonts.poppins(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Seleccione los termohigrómetros para el servicio (1-2)',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      Expanded(
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: termosUnicos.length,
+                          itemBuilder: (context, index) {
+                            final termo = termosUnicos[index];
+                            final isSelected = controller.selectedTermohigrometros.any((e) =>
+                            e['cod_instrumento'] == termo['cod_instrumento']);
+
+                            final certFecha = DateTime.parse(termo['cert_fecha']);
+                            final difference = DateTime.now().difference(certFecha).inDays;
+
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              child: CheckboxListTile(
+                                title: Text(
+                                  '${termo['cod_instrumento']}',
+                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('${termo['instrumento']}'),
+                                    Text(
+                                      'Certificado: ${termo['cert_fecha']} ($difference días)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: difference > 365
+                                            ? Colors.red
+                                            : difference > 300
+                                            ? Colors.orange
+                                            : Colors.green,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Ente: ${termo['ente_calibrador']}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                                value: isSelected,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      if (controller.selectedTermohigrometros.length < 2) {
+                                        controller.addEquipo(termo, 'termohigrometro', '1');
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Máximo 2 termohigrómetros permitidos')),
+                                        );
+                                      }
+                                    } else {
+                                      controller.removeEquipo(termo['cod_instrumento'], 'termohigrometro');
+                                    }
+                                  });
+                                  this.setState(() {});
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text('CONFIRMAR SELECCIÓN'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildSelectedClientInfo(PrecargaController controller) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -397,6 +601,14 @@ class _ClienteStepState extends State<ClienteStep> {
               ),
             ),
           ],
+          // Agregar después de _buildSelectedClientInfo()
+          if (controller.selectedClienteName != null && controller.equipos.isNotEmpty)
+            Column(
+              children: [
+                const SizedBox(height: 30),
+                _buildTermohigrometroSelection(controller),
+              ],
+            ),
         ],
       ),
     ).animate(delay: 600.ms).fadeIn().slideY(begin: 0.3);

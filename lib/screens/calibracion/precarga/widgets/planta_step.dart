@@ -50,7 +50,7 @@ class _PlantaStepState extends State<PlantaStep> {
 
             const SizedBox(height: 30),
 
-            // Selección de planta según el tipo de cliente
+            // Selección de planta según el tipo de clientea
             if (controller.isNewClient)
               _buildNewPlantaSection(controller)
             else

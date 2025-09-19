@@ -103,7 +103,7 @@ class PrecargaController extends ChangeNotifier {
     'BALANZA ELECTRÓNICA DE DOBLE RANGO', 'BALANZA ELECTRÓNICA DE TRIPLE RANGO',
     'BALANZA ELECTRÓNICA DE DOBLE INTÉRVALO', 'BALANZA ELECTRÓNICA DE TRIPLE INTÉRVALO',
     'BALANZA SEMIMICROANALÍTICA', 'BALANZA MICROANALÍTICA',
-    'BALANZA SEMIMICROANALÍTICA DE DOBLE RANGO', 'BALANZA SEMIMICROANALÍTICA DE TRIPLE RANGO'
+    'BALANZA SEMIMICROANALÍTICA DE DOBLE RANGO', 'BALANZA SEMIMICROANALÍTICA DE TRIPLE RANGO', 'BALANZA ELECTRONICA',
   ];
 
   // MÉTODOS DE NAVEGACIÓN
@@ -159,6 +159,8 @@ class PrecargaController extends ChangeNotifier {
     notifyListeners();
 
     fetchPlantas(_selectedClienteId!);
+    // AGREGAR ESTA LÍNEA:
+    fetchEquipos(); // Cargar equipos inmediatamente para selección temprana
   }
 
   void selectNewClient(String nombreComercial, String razonSocial) {
@@ -236,8 +238,26 @@ class PrecargaController extends ChangeNotifier {
     if (_selectedPlantaCodigo != null && _selectedPlantaCodigo!.isNotEmpty) {
       final now = DateTime.now();
       final year = now.year.toString().substring(2);
-      _generatedSeca = '$_selectedPlantaCodigo-C01-$year';
+      _generatedSeca = '$year-$_selectedPlantaCodigo-C01';
       notifyListeners();
+    }
+  }
+
+  void updateNumeroCotizacion(String nuevoNumero) {
+    if (_generatedSeca != null && nuevoNumero.isNotEmpty) {
+      // Validar formato C + número (01-99)
+      final regex = RegExp(r'^C\d{2}$');
+      if (!regex.hasMatch(nuevoNumero)) {
+        throw Exception('Formato inválido. Use C01 a C99');
+      }
+
+      // Mantener las partes fijas y cambiar solo el número de cotización
+      final partes = _generatedSeca!.split('-');
+      if (partes.length == 4) {
+        partes[3] = nuevoNumero; // Reemplazar la última parte (C01)
+        _generatedSeca = partes.join('-');
+        notifyListeners();
+      }
     }
   }
 
