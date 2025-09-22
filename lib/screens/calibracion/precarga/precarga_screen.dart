@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../servicios/servicio_screen.dart';
 import 'precarga_controller.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/cliente_step.dart';
@@ -12,7 +13,7 @@ import 'widgets/planta_step.dart';
 import 'widgets/seca_step.dart';
 import 'widgets/balanza_step.dart';
 import 'widgets/equipos_step.dart';
-import '../servicio_screen.dart';
+
 
 class PrecargaScreen extends StatefulWidget {
   final String userName;
@@ -299,7 +300,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           title: Text(
             'SECA Ya Registrado',
             style: GoogleFonts.poppins(
-              fontSize: 18,
+              fontSize: 18, 
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -396,6 +397,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             nReca: _nRecaController.text,
             secaValue: controller.generatedSeca!,
             sessionId: controller.generatedSessionId!,
+            dbName: '',
           ),
         ),
       );

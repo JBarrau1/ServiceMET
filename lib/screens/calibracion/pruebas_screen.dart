@@ -507,7 +507,7 @@ class _PruebasScreenState extends State<PruebasScreen> {
                         builder: (context) => FinServicioScreen(
                             secaValue: widget.secaValue,
                             sessionId: widget.sessionId,
-                        ),
+                                                  ),
                       ),
                     );
                   },

@@ -22,6 +22,7 @@ class FinServicioScreen extends StatefulWidget {
     super.key,
     required this.secaValue,
     required this.sessionId,
+
   });
 
   @override
@@ -132,7 +133,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       if (!registrosUnicos.containsKey(claveUnica) ||
           (registrosUnicos[claveUnica]?['hora_fin']?.toString() ?? '')
-              .compareTo(horaFinActual) <
+                  .compareTo(horaFinActual) <
               0) {
         registrosUnicos[claveUnica] = registro;
       }
@@ -160,15 +161,18 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       // 4. Generar y añadir CSV al ZIP
       final csvBytes = await _generateCSVBytes(registrosDepurados);
-      archive.addFile(ArchiveFile('$baseFileName.csv', csvBytes.length, csvBytes));
+      archive
+          .addFile(ArchiveFile('$baseFileName.csv', csvBytes.length, csvBytes));
 
       // 5. Generar y añadir TXT al ZIP
       final txtBytes = await _generateTXTBytes(registrosDepurados);
-      archive.addFile(ArchiveFile('$baseFileName.txt', txtBytes.length, txtBytes));
+      archive
+          .addFile(ArchiveFile('$baseFileName.txt', txtBytes.length, txtBytes));
 
       // 6. Generar y añadir SMET (DB) al ZIP
       final smetBytes = await _generateSMETBytes(registrosDepurados);
-      archive.addFile(ArchiveFile('$baseFileName.met', smetBytes.length, smetBytes));
+      archive.addFile(
+          ArchiveFile('$baseFileName.met', smetBytes.length, smetBytes));
 
       // 7. Comprimir el archivo
       final zipBytes = ZipEncoder().encode(archive);
@@ -205,7 +209,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   }
 
   /// GENERAR BYTES DEL CSV
-  Future<List<int>> _generateCSVBytes(List<Map<String, dynamic>> registros) async {
+  Future<List<int>> _generateCSVBytes(
+      List<Map<String, dynamic>> registros) async {
     final headers = registros.first.keys.toList();
 
     final rows = registros.map((registro) {
@@ -230,7 +235,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   }
 
   /// GENERAR BYTES DEL TXT (ahora con ; y "")
-  Future<List<int>> _generateTXTBytes(List<Map<String, dynamic>> registros) async {
+  Future<List<int>> _generateTXTBytes(
+      List<Map<String, dynamic>> registros) async {
     final headers = registros.first.keys.toList();
 
     // Crear líneas con formato CSV pero para TXT
@@ -254,7 +260,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   }
 
   /// GENERAR BYTES DEL SMET (BASE DE DATOS)
-  Future<List<int>> _generateSMETBytes(List<Map<String, dynamic>> registros) async {
+  Future<List<int>> _generateSMETBytes(
+      List<Map<String, dynamic>> registros) async {
     // Crear una base de datos temporal
     final internalDir = await getApplicationDocumentsDirectory();
     final tempDbPath = '${internalDir.path}/temp_export.db';
@@ -726,7 +733,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
             'CONFIRMAR ACCIÓN',
             style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w900),
           ),
-          content: const Text('¿Está seguro que desea seleccionar otra balanza?'),
+          content:
+              const Text('¿Está seguro que desea seleccionar otra balanza?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancelar'),
@@ -753,8 +761,9 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
           'registros_calibracion',
           where: 'seca = ? AND session_id = ?',
           whereArgs: [widget.secaValue, widget.sessionId],
-          orderBy: 'id DESC' // usa 'hora_fin DESC' si no tienes 'id' autoincrement
-      );
+          orderBy:
+              'id DESC' // usa 'hora_fin DESC' si no tienes 'id' autoincrement
+          );
 
       // 2) Genera un nuevo sessionId
       final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
@@ -768,15 +777,29 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       // 4) Columnas de "cabecera" que quieres arrastrar
       const columnsToCarry = [
-        'cliente', 'razon_social', 'planta', 'dir_planta',
-        'dep_planta', 'cod_planta', 'personal',
-        'equipo6', 'certificado6', 'ente_calibrador6', 'estado6', 'cantidad6',
-        'equipo7', 'certificado7', 'ente_calibrador7', 'estado7', 'cantidad7',
+        'cliente',
+        'razon_social',
+        'planta',
+        'dir_planta',
+        'dep_planta',
+        'cod_planta',
+        'personal',
+        'equipo6',
+        'certificado6',
+        'ente_calibrador6',
+        'estado6',
+        'cantidad6',
+        'equipo7',
+        'certificado7',
+        'ente_calibrador7',
+        'estado7',
+        'cantidad7',
       ];
 
       // 5) Para cada columna, toma el último valor NO NULO / NO VACÍO
       for (final col in columnsToCarry) {
-        for (final row in rows) { // rows ya está DESC: último ingresado primero
+        for (final row in rows) {
+          // rows ya está DESC: último ingresado primero
           final v = row[col];
           if (v != null && (v is! String || v.toString().trim().isNotEmpty)) {
             nuevoRegistro[col] = v;
@@ -790,7 +813,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       // 7) Datos para la navegación
       final selectedCliente = (nuevoRegistro['cliente'] ?? '').toString();
-      final selectedPlantaCodigo = (nuevoRegistro['cod_planta'] ?? '').toString();
+      final selectedPlantaCodigo =
+          (nuevoRegistro['cod_planta'] ?? '').toString();
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -806,7 +830,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         ),
       );
     } catch (e) {
-      _showSnackBar(context, 'Error al preparar nueva balanza: $e', isError: true);
+      _showSnackBar(context, 'Error al preparar nueva balanza: $e',
+          isError: true);
     }
   }
 
@@ -832,11 +857,11 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(color: Colors.black.withOpacity(0.4)),
+                ),
+              )
             : null,
         iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
@@ -861,7 +886,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
               _buildActionCard(
                 'images/tarjetas/t4.png',
                 'FINALIZAR SERVICIO\nY EXPORTAR DATOS',
-                    () => _confirmarYExportar(context),
+                () => _confirmarYExportar(context),
                 textColor,
                 cardOpacity,
               ),
@@ -874,7 +899,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
               _buildActionCard(
                 'images/tarjetas/t7.png',
                 'SELECCIONAR\nOTRA BALANZA',
-                    () => _confirmarSeleccionOtraBalanza(context),
+                () => _confirmarSeleccionOtraBalanza(context),
                 textColor,
                 cardOpacity,
               ),
@@ -921,12 +946,12 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   }
 
   Widget _buildActionCard(
-      String imagePath,
-      String title,
-      VoidCallback onTap,
-      Color textColor,
-      double opacity,
-      ) {
+    String imagePath,
+    String title,
+    VoidCallback onTap,
+    Color textColor,
+    double opacity,
+  ) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       child: InkWell(
