@@ -159,6 +159,9 @@ class DatabaseHelperSop {
         retorno_cero TEXT DEFAULT '',
         carga_retorno_cero TEXT DEFAULT '',
         
+        p_max_bruto TEXT DEFAULT '',
+        p_min_neto TEXT DEFAULT '',
+        
         tipo_plataforma TEXT DEFAULT '',
         puntos_ind TEXT DEFAULT '',
         carga TEXT DEFAULT '',

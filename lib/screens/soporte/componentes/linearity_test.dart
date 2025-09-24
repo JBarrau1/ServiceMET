@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../provider/balanza_provider.dart';
+import 'base_metrological_test.dart';
 
-class LinearityTest extends StatefulWidget {
-  final String testType;
-  final Map<String, dynamic> initialData;
-  final ValueChanged<Map<String, dynamic>> onDataChanged;
-  final String? selectedUnit;
-  final ValueChanged<String>? onUnitChanged;
-
+class LinearityTest extends BaseMetrologicalTest {
   const LinearityTest({
     super.key,
-    required this.testType,
-    required this.initialData,
-    required this.onDataChanged,
-    this.selectedUnit,
-    this.onUnitChanged,
+    required super.testType,
+    required super.initialData,
+    required super.onDataChanged,
+    super.selectedUnit,
+    super.onUnitChanged,
   });
 
   @override
   State<LinearityTest> createState() => _LinearityTestState();
 }
 
-class _LinearityTestState extends State<LinearityTest> {
+class _LinearityTestState extends State<LinearityTest>
+    with MetrologicalTestMixin<LinearityTest> {
   late TextEditingController _lastLoadController;
   late TextEditingController _currentLoadController;
   late TextEditingController _incrementController;
   late List<Map<String, TextEditingController>> _rows;
+  bool _isInitializing = true;
 
   @override
   void initState() {
@@ -36,6 +35,16 @@ class _LinearityTestState extends State<LinearityTest> {
 
     _rows = [];
     _initializeRows();
+
+    // Marcar que la inicialización ha terminado SIN notificar inmediatamente
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+        // NO llamar _notifyDataChanged() aquí - solo después de interacciones del usuario
+      }
+    });
   }
 
   void _initializeRows() {
@@ -43,18 +52,43 @@ class _LinearityTestState extends State<LinearityTest> {
 
     for (var rowData in savedRows) {
       _rows.add({
-        'lt': TextEditingController(text: rowData['lt']),
-        'indicacion': TextEditingController(text: rowData['indicacion']),
+        'lt': TextEditingController(text: rowData['lt'] ?? ''),
+        'indicacion': TextEditingController(text: rowData['indicacion'] ?? ''),
         'retorno': TextEditingController(text: rowData['retorno'] ?? '0'),
       });
     }
 
+    // Asegurar mínimo 2 filas
+    while (_rows.length < 2) {
+      _addEmptyRow();
+    }
+
     _updateLastLoad();
+    _setupListeners();
+  }
+
+  void _setupListeners() {
+    for (var row in _rows) {
+      row['lt']?.addListener(_updateLastLoad);
+    }
+  }
+
+  void _addEmptyRow() {
+    _rows.add({
+      'lt': TextEditingController(),
+      'indicacion': TextEditingController(),
+      'retorno': TextEditingController(text: '0'),
+    });
   }
 
   void _updateLastLoad() {
     if (_rows.isEmpty) {
       _lastLoadController.text = '0';
+      if (!_isInitializing) {
+        _calculateSum();
+        // Solo notificar después de que el usuario interactúe
+        Future.microtask(() => _notifyDataChanged());
+      }
       return;
     }
 
@@ -62,40 +96,53 @@ class _LinearityTestState extends State<LinearityTest> {
       final ltValue = _rows[i]['lt']?.text.trim();
       if (ltValue != null && ltValue.isNotEmpty) {
         _lastLoadController.text = ltValue;
+        if (!_isInitializing) {
+          _calculateSum();
+          Future.microtask(() => _notifyDataChanged());
+        }
         return;
       }
     }
 
     _lastLoadController.text = '0';
+    if (!_isInitializing) {
+      _calculateSum();
+      Future.microtask(() => _notifyDataChanged());
+    }
   }
+
 
   void _calculateSum() {
     final lastLoad = double.tryParse(_lastLoadController.text) ?? 0;
     final currentLoad = double.tryParse(_currentLoadController.text) ?? 0;
-    _incrementController.text = (lastLoad + currentLoad).toStringAsFixed(2);
+
+    // Deriva precisión de d1
+    final balanza = Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
+    final d1 = balanza?.d1 ?? 0.1;
+    final decimalPlaces = _getSignificantDecimals(d1);
+
+    _incrementController.text = (lastLoad + currentLoad).toStringAsFixed(decimalPlaces);
   }
 
   void _addRow() {
     setState(() {
-      _rows.add({
-        'lt': TextEditingController(),
-        'indicacion': TextEditingController(),
-        'retorno': TextEditingController(text: '0'),
-      });
-
+      _addEmptyRow();
       _rows.last['lt']?.addListener(_updateLastLoad);
+      if (!_isInitializing) {
+        _notifyDataChanged();
+      }
     });
   }
 
   void _removeRow(BuildContext context, int index) {
     if (_rows.length <= 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe mantener al menos 2 filas')),
-      );
+      showSnackBar(context, 'Debe mantener al menos 2 filas');
       return;
     }
 
     setState(() {
+      // Remover listener antes de disponer
+      _rows[index]['lt']?.removeListener(_updateLastLoad);
       _rows[index]['lt']?.dispose();
       _rows[index]['indicacion']?.dispose();
       _rows[index]['retorno']?.dispose();
@@ -106,32 +153,47 @@ class _LinearityTestState extends State<LinearityTest> {
 
   void _saveLoad(BuildContext context) {
     if (_incrementController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Calcule la sumatoria primero')),
-      );
+      showSnackBar(context, 'Calcule la sumatoria primero');
       return;
     }
 
     setState(() {
-      for (var row in _rows) {
-        if (row['lt']?.text.isEmpty ?? true) {
-          row['lt']?.text = _incrementController.text;
-          row['indicacion']?.text = _incrementController.text;
-
-          _currentLoadController.clear();
-          _incrementController.clear();
-          _updateLastLoad();
-          return;
-        }
+      // Asignar a primera fila vacía o crear una nueva
+      Map<String, TextEditingController>? targetRow =
+      _rows.firstWhere((row) => (row['lt']?.text.isEmpty ?? true), orElse: () => {});
+      if (targetRow.isEmpty) {
+        _addRow();
+        targetRow = _rows.last;
       }
 
-      _addRow();
-      _rows.last['lt']?.text = _incrementController.text;
-      _rows.last['indicacion']?.text = _incrementController.text;
+      targetRow['lt']!.text = _incrementController.text;
+      targetRow['indicacion']!.text = _incrementController.text;
 
       _currentLoadController.clear();
       _incrementController.clear();
-      _updateLastLoad();
+
+      _updateLastLoad(); // ya recalcula incremento y notifica
+    });
+  }
+
+
+  void _notifyDataChanged() {
+    if (!mounted || _isInitializing) return;
+
+    final rowsData = _rows
+        .map((row) => {
+      'lt': row['lt']?.text ?? '',
+      'indicacion': row['indicacion']?.text ?? '',
+      'retorno': row['retorno']?.text ?? '0',
+    })
+        .toList();
+
+    // Solo notificar si hay cambios reales del usuario
+    updateData({
+      'type': 'linearity',
+      'testType': widget.testType,
+      'lastLoad': _lastLoadController.text,
+      'rows': rowsData,
     });
   }
 
@@ -151,7 +213,7 @@ class _LinearityTestState extends State<LinearityTest> {
             Expanded(
               child: TextFormField(
                 controller: _lastLoadController,
-                decoration: _buildInputDecoration('Última Carga de LT'),
+                decoration: buildInputDecoration('Última Carga de LT'),
                 readOnly: true,
               ),
             ),
@@ -159,9 +221,9 @@ class _LinearityTestState extends State<LinearityTest> {
             Expanded(
               child: TextFormField(
                 controller: _currentLoadController,
-                decoration: _buildInputDecoration('Carga'),
+                decoration: buildInputDecoration('Carga'),
                 keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (_) => _calculateSum(),
               ),
             ),
@@ -173,7 +235,7 @@ class _LinearityTestState extends State<LinearityTest> {
             Expanded(
               child: TextFormField(
                 controller: _incrementController,
-                decoration: _buildInputDecoration('Incremento'),
+                decoration: buildInputDecoration('Incremento'),
                 readOnly: true,
               ),
             ),
@@ -195,9 +257,7 @@ class _LinearityTestState extends State<LinearityTest> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _rows.length,
-          itemBuilder: (context, index) {
-            return _buildRow(index);
-          },
+          itemBuilder: (context, index) => _buildRow(index),
         ),
         const SizedBox(height: 10),
         Row(
@@ -221,32 +281,70 @@ class _LinearityTestState extends State<LinearityTest> {
     );
   }
 
+  int _getSignificantDecimals(double value) {
+    final parts = value.toString().split('.');
+    if (parts.length == 2) {
+      return parts[1].replaceAll(RegExp(r'0+$'), '').length;
+    }
+    return 0;
+  }
+
   Widget _buildRow(int index) {
+    final balanza = Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
+    final d1 = balanza?.d1 ?? 0.1;
+
+    final indicacionCtrl = _rows[index]['indicacion']!;
+    final ltCtrl = _rows[index]['lt']!;
+
+    final decimalPlaces = _getSignificantDecimals(d1);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
           Expanded(
             child: TextFormField(
-              controller: _rows[index]['lt'],
-              decoration: _buildInputDecoration('LT ${index + 1}'),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              controller: ltCtrl,
+              decoration: buildInputDecoration('LT ${index + 1}'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               onChanged: (value) {
                 if (value.isNotEmpty) {
-                  _rows[index]['indicacion']?.text = value;
+                  indicacionCtrl.text = value;
                 }
-                _updateLastLoad();
+                _updateLastLoad();   // también recalcula incremento (ver cambio 3)
               },
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: TextFormField(
-              controller: _rows[index]['indicacion'],
-              decoration: _buildInputDecoration('Indicación ${index + 1}'),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              controller: indicacionCtrl,
+              decoration: buildInputDecoration(
+                'Indicación ${index + 1}',
+                suffixIcon: PopupMenuButton<String>(
+                  icon: const Icon(Icons.arrow_drop_down),
+                  onSelected: (String newValue) {
+                    setState(() {
+                      indicacionCtrl.text = newValue;
+                    });
+                    _notifyDataChanged();
+                  },
+                  itemBuilder: (BuildContext context) {
+                    final baseValue = double.tryParse(indicacionCtrl.text) ?? 0.0;
+                    return List.generate(11, (i) {
+                      final multiplier = i - 5;
+                      final value = baseValue + (multiplier * d1);
+                      final formattedValue = value.toStringAsFixed(decimalPlaces);
+                      return PopupMenuItem<String>(
+                        value: formattedValue,
+                        child: Text(formattedValue),
+                      );
+                    });
+                  },
+                ),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => _notifyDataChanged(),
             ),
           ),
         ],
@@ -254,23 +352,18 @@ class _LinearityTestState extends State<LinearityTest> {
     );
   }
 
-  InputDecoration _buildInputDecoration(String labelText) {
-    return InputDecoration(
-      labelText: labelText,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
-    );
-  }
 
   @override
   void dispose() {
     _lastLoadController.dispose();
     _currentLoadController.dispose();
     _incrementController.dispose();
+
+    // Remover listeners y disponer controladores
     for (var row in _rows) {
-      row['lt']?.dispose();
-      row['indicacion']?.dispose();
-      row['retorno']?.dispose();
+      row['lt']?.removeListener(_updateLastLoad);
     }
+    disposeControllerMaps(_rows);
     super.dispose();
   }
 }

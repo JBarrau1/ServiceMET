@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:service_met/screens/soporte/modulos/home_stac.dart';
+import 'package:service_met/screens/soporte/modulos/home.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
@@ -69,7 +69,7 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
   final TextEditingController _modeloController = TextEditingController();
   final TextEditingController _serieController = TextEditingController();
   final TextEditingController _unidadController = TextEditingController();
-  final TextEditingController _nCeldasControllet = TextEditingController();
+  final TextEditingController _nCeldasController = TextEditingController();
   final TextEditingController _ubicacionController = TextEditingController();
   final TextEditingController _pmax1Controller = TextEditingController();
   final TextEditingController _d1Controller = TextEditingController();
@@ -94,19 +94,21 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   bool _fotosTomadas = false;
 
+  final List<String> unidadesList = ['kg', 'g', 'mg'];
+
   final List<String> instrumentosList = [
-    'balanza de laboratorio',
-    'balanza de mesa',
-    'balanza de banco',
-    'balanza de piso',
-    'tanque',
-    'silo',
-    'accesorios',
-    'tarjeta de com RS-485',
-    'tarjeta de com 4-20 Ma',
-    'tarjeta I/O',
-    'terminal',
-    'plataforma'
+    'BALANZA DE LABORATORIO',
+    'BALANZA DE MESA',
+    'BALANZA DE BANCO',
+    'BALANZA DE PISO',
+    'TANQUE',
+    'SILO',
+    'ACCESORIOS',
+    'TARJETA DE COM RS-485',
+    'TARJETA DE COM 4-20 Ma',
+    'TARJETA I/O',
+    'TERMINAL',
+    'PLATAFORMA'
   ];
   String? selectedInstrumento;
 
@@ -157,7 +159,7 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
     _modeloController.clear();
     _serieController.clear();
     _unidadController.clear();
-    _nCeldasControllet.clear();
+    _nCeldasController.clear();
     _ubicacionController.clear();
     _pmax1Controller.clear();
     _d1Controller.clear();
@@ -172,6 +174,17 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
     _e3Controller.clear();
     _dec3Controller.clear();
   }
+
+  void _toUpperCase(TextEditingController controller) {
+    final text = controller.text;
+    if (text != text.toUpperCase()) {
+      controller.text = text.toUpperCase();
+      controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: controller.text.length),
+      );
+    }
+  }
+
 
   Future<void> _loadClienteFromDatabase() async {
     final path = join(widget.dbPath, '${widget.dbName}.db');
@@ -511,66 +524,13 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
       return;
     }
 
-    // Si es una balanza nueva, mostrar un diálogo de confirmación
-    if (isNewBalanza) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text(
-              'REGISTRANDO BALANZA NUEVA',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 17,
-              ),
-            ),
-            content: const Text(
-              'Está registrando una balanza nueva. Revise bien los datos antes de continuar.',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w300,
-              ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: Text(
-                  'Cancelar',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.yellow
-                        : Colors.black,
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop(false); // No confirmar
-                },
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop(true); // Acción al presionar
-                },
-                child: const Text(
-                  'Continuar',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (confirmed != true) {
-        return; // Si el usuario cancela, no continuar
-      }
-    } else if (selectedBalanza == null) {
-      // Si no es una balanza nueva y no se ha seleccionado una balanza, mostrar error
+    if (isNewBalanza && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor seleccione una balanza')),
+        const SnackBar(
+          content: Text('Balanza nueva registrada exitosamente'),
+          backgroundColor: Colors.green,
+        ),
       );
-      return;
     }
 
     // Guardar los datos en la base de datos
@@ -609,9 +569,9 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
         'unidades': _unidadController.text.trim().isEmpty
             ? ''
             : _unidadController.text.trim(),
-        'num_celdas': _nCeldasControllet.text.trim().isEmpty
+        'num_celdas': _nCeldasController.text.trim().isEmpty
             ? ''
-            : _nCeldasControllet.text.trim(),
+            : _nCeldasController.text.trim(),
         'ubicacion': _ubicacionController.text.trim().isEmpty
             ? ''
             : _ubicacionController.text.trim(),
@@ -692,6 +652,9 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
                 child: const Text('Cancelar'),
               ),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF326B2C),
+                ),
                 onPressed: () => Navigator.of(context).pop(true),
                 child: const Text('Continuar'),
               ),
@@ -703,7 +666,7 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => StacInstalacionScreen(
+              builder: (context) => HomeStacScreen(
                 dbName: widget.dbName,
                 dbPath: widget.dbPath,
                 otValue: widget.otValue,
@@ -879,7 +842,7 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
     _serieController.text =
         balanza['serie']?.toString() ?? ''; // Puede venir de ambas tablas
     _unidadController.text = selectedBalanza.unidad;
-    _nCeldasControllet.text =
+    _nCeldasController.text =
         balanza['n_celdas']?.toString() ?? ''; // De la tabla inf
     _ubicacionController.text =
         balanza['ubicacion']?.toString() ?? ''; // De la tabla inf
@@ -1336,40 +1299,68 @@ class _IdenBalanzaScreenState extends State<IdenBalanzaScreen> {
                                   const SizedBox(height: 14.0),
                                   TextFormField(
                                     controller: _codInternoController,
-                                    decoration:
-                                        buildInputDecoration('Código Interno:'),
+                                    decoration: buildInputDecoration('Código Interno:'),
+                                    onChanged: (value) => _toUpperCase(_codInternoController),
                                   ),
                                   const SizedBox(height: 14.0),
                                   TextFormField(
                                     controller: _marcaController,
                                     decoration: buildInputDecoration('Marca:'),
+                                    onChanged: (value) => _toUpperCase(_marcaController),
                                   ),
                                   const SizedBox(height: 14.0),
                                   TextFormField(
                                     controller: _modeloController,
                                     decoration: buildInputDecoration('Modelo:'),
+                                    onChanged: (value) => _toUpperCase(_modeloController),
                                   ),
                                   const SizedBox(height: 14.0),
                                   TextFormField(
                                     controller: _serieController,
                                     decoration: buildInputDecoration('Serie:'),
+                                    onChanged: (value) => _toUpperCase(_serieController),
                                   ),
                                   const SizedBox(height: 14.0),
-                                  TextFormField(
+                                  isNewBalanza
+                                      ? DropdownButtonFormField<String>(
+                                    decoration: buildInputDecoration('Unidad:'),
+                                    value: _unidadController.text.isNotEmpty
+                                        ? _unidadController.text.toLowerCase() // Convertir a minúsculas
+                                        : null,
+                                    items: unidadesList.map((String unidad) {
+                                      return DropdownMenuItem<String>(
+                                        value: unidad,
+                                        child: Text(unidad.toUpperCase()), // Mostrar en mayúsculas pero valor en minúsculas
+                                      );
+                                    }).toList(),
+                                    onChanged: (newValue) {
+                                      setState(() {
+                                        _unidadController.text = newValue ?? '';
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Seleccione una unidad';
+                                      }
+                                      return null;
+                                    },
+                                  )
+                                      : TextFormField(
                                     controller: _unidadController,
                                     decoration: buildInputDecoration('Unidad:'),
+                                    onChanged: (value) => _toUpperCase(_unidadController),
                                   ),
                                   const SizedBox(height: 14.0),
                                   TextFormField(
-                                    controller: _nCeldasControllet,
+                                    controller: _nCeldasController,
                                     decoration: buildInputDecoration(
                                         'Número de Celdas:'),
                                   ),
                                   const SizedBox(height: 14.0),
                                   TextFormField(
                                     controller: _ubicacionController,
-                                    decoration:
-                                        buildInputDecoration('Ubicación:'),
+                                    decoration: buildInputDecoration('Ubicación:'),
+                                    onChanged: (value) => _toUpperCase(_ubicacionController),
                                   ),
                                   const SizedBox(height: 20.0),
                                   const Text(

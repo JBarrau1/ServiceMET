@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
+import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,7 +11,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/modulos/iden_balanza.dart';
-import 'package:service_met/bdb/calibracion_bd.dart';
+
+import '../../../../bdb/soporte_tecnico_bd.dart';
 
 class FinServicioScreen extends StatefulWidget {
   final String dbName;
@@ -37,11 +39,11 @@ class FinServicioScreen extends StatefulWidget {
 class _FinServicioScreenState extends State<FinServicioScreen> {
   String? errorMessage;
   bool _isExporting = false;
-  final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  void _showSnackBar(BuildContext context, String message,
-      {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
+  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
       SnackBar(
         content: Text(
           message,
@@ -49,178 +51,255 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         ),
         backgroundColor: isError ? Colors.red : Colors.green,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  Future<List<Map<String, dynamic>>> _depurarDatos(
-      List<Map<String, dynamic>> registros) async {
-    // 1. Eliminar filas completamente vacías
-    registros.removeWhere((registro) =>
-        registro.values.every((value) => value == null || value == ''));
+  /// ---- NUEVO: Copia todas las filas de tablas origen a la BD interna "servicios_soporte_tecnino.db"
+  /// Inserta sucesivamente (removiendo 'id' si existe).
+  Future<void> _copyToInternalDatabase() async {
+    final srcPath = join(widget.dbPath, '${widget.dbName}.db');
+    Database? src;
 
-    // 2. Eliminar duplicados conservando el más reciente (por hora_fin)
-    final Map<String, Map<String, dynamic>> registrosUnicos = {};
+    try {
+      // Abrimos la DB de origen en solo lectura
+      src = await openDatabase(srcPath, readOnly: true);
 
-    for (var registro in registros) {
-      final String claveUnica =
-          '${registro['reca']}_${registro['cod_metrica']}_${registro['sticker']}';
-      final String horaFinActual = registro['hora_fin']?.toString() ?? '';
+      // Usamos SIEMPRE la conexión del helper (esto garantiza usar servicios_soporte_tecnico.db)
+      final dest = await DatabaseHelperSop().database;
 
-      if (!registrosUnicos.containsKey(claveUnica) ||
-          (registrosUnicos[claveUnica]?['hora_fin']?.toString() ?? '')
-                  .compareTo(horaFinActual) <
-              0) {
-        registrosUnicos[claveUnica] = registro;
+      // Ajusta las tablas a copiar según tu esquema
+      final tablesToCopy = ['inf_cliente_balanza', 'relevamiento_de_datos'];
+
+      for (final table in tablesToCopy) {
+        // Leemos filas del origen
+        final srcRows = await src.query(table);
+
+        if (srcRows.isEmpty) continue;
+
+        // Obtenemos columnas válidas en destino para esa tabla
+        final destColsInfo = await dest.rawQuery('PRAGMA table_info($table)');
+        if (destColsInfo.isEmpty) {
+          // La tabla no existe en destino; NO la creamos aquí para no romper el control del helper.
+          debugPrint('Tabla $table no existe en la DB interna; omitiendo copia.');
+          continue;
+        }
+
+        final destCols = destColsInfo.map((c) => (c['name'] as String)).toSet();
+        final hasId = destCols.contains('id');
+
+        // Insertamos en transacción
+        await dest.transaction((txn) async {
+          for (final row in srcRows) {
+            final data = Map<String, dynamic>.from(row);
+
+            // Eliminamos 'id' si existe para respetar AUTOINCREMENT en destino
+            if (hasId) data.remove('id');
+
+            // Filtramos a solo columnas que existen en destino
+            data.removeWhere((k, _) => !destCols.contains(k));
+
+            // Inserción "sucesiva"; si hay duplicados y quieres ignorarlos, usa IGNORE
+            await txn.insert(
+              table,
+              data,
+              conflictAlgorithm: ConflictAlgorithm.ignore, // o replace según tu política
+            );
+          }
+        });
       }
+    } catch (e) {
+      debugPrint('Error copiando a BD interna (helper): $e');
+      rethrow;
+    } finally {
+      await src?.close();
     }
-
-    return registrosUnicos.values.toList();
   }
 
-  Future<void> _exportDataToCSV(BuildContext context) async {
+  /// ---- NUEVO: Construye un JOIN con alias para evitar colisiones de columnas en SELECT *
+  Future<Map<String, dynamic>> _buildAliasedJoin(Database db) async {
+    final icbCols = (await db.rawQuery('PRAGMA table_info(inf_cliente_balanza)'))
+        .map((c) => c['name'] as String)
+        .toList();
+    final rddCols = (await db.rawQuery('PRAGMA table_info(relevamiento_de_datos)'))
+        .map((c) => c['name'] as String)
+        .toList();
+
+    final icbSelect = icbCols.map((c) => 'icb."$c" AS icb_$c').join(', ');
+    final rddSelect = rddCols.map((c) => 'rdd."$c" AS rdd_$c').join(', ');
+
+    final sql = '''
+      SELECT $icbSelect, $rddSelect
+      FROM inf_cliente_balanza icb
+      LEFT JOIN relevamiento_de_datos rdd
+        ON icb.cod_metrica = rdd.cod_metrica
+    ''';
+
+    final rows = await db.rawQuery(sql);
+
+    return {
+      'icbCols': icbCols,
+      'rddCols': rddCols,
+      'rows': rows,
+    };
+  }
+
+  /// ---- NUEVO: Dedupe básico por (reca, cod_metrica, sticker) y elige el más "reciente" por hora_fin
+  List<Map<String, dynamic>> _dedupeRegistros(List<Map<String, dynamic>> regs) {
+    regs.removeWhere((r) => r.values.every((v) => v == null || v == ''));
+
+    final Map<String, Map<String, dynamic>> unicos = {};
+    for (final r in regs) {
+      final reca = (r['icb_reca'] ?? r['reca'] ?? '').toString();
+      final cod = (r['icb_cod_metrica'] ?? r['cod_metrica'] ?? '').toString();
+      final stick = (r['icb_sticker'] ?? r['sticker'] ?? '').toString();
+      final horaFin = (r['rdd_hora_fin'] ?? r['hora_fin'] ?? '').toString();
+
+      final clave = '$reca|$cod|$stick';
+      final horaPrev =
+      (unicos[clave]?['rdd_hora_fin'] ?? unicos[clave]?['hora_fin'] ?? '').toString();
+
+      if (!unicos.containsKey(clave) || horaPrev.compareTo(horaFin) < 0) {
+        unicos[clave] = r;
+      }
+    }
+    return unicos.values.toList();
+  }
+
+  /// ---- NUEVO: Exporta CSV + TXT + MET y empaqueta en ZIP (tras copiar a BD interna).
+  Future<void> _exportAllAndZip(BuildContext context) async {
     if (_isExporting) return;
     _isExporting = true;
 
+    Database? db;
     try {
-      // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 20),
-              Text('Procesando datos...'),
-            ],
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 20),
+                Text('Copiando a base interna y generando exportables...'),
+              ],
+            ),
           ),
-        ),
-      );
+        );
+      }
 
-      // 1. Abrir la base de datos
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // 1) Copiar a BD interna antes de exportar
+      await _copyToInternalDatabase();
 
-      // 2. Consulta para unir las tablas
-      final List<Map<String, dynamic>> registros = await db.rawQuery('''
-        SELECT *
-        FROM inf_cliente_balanza AS icb
-        LEFT JOIN relevamiento_de_datos AS rdd
-        ON icb.cod_metrica = rdd.cod_metrica
-      ''');
+      // 2) Armar datos para CSV/TXT a partir de JOIN con alias
+      final srcPath = join(widget.dbPath, '${widget.dbName}.db');
+      db = await openDatabase(srcPath);
 
-      // 3. Depurar los datos
-      final List<Map<String, dynamic>> registrosDepurados =
-          await _depurarDatos(registros);
+      final aliased = await _buildAliasedJoin(db);
+      final icbCols = (aliased['icbCols'] as List).cast<String>();
+      final rddCols = (aliased['rddCols'] as List).cast<String>();
+      final rows = (aliased['rows'] as List).cast<Map<String, dynamic>>();
 
-      if (registrosDepurados.isEmpty) {
-        if (!mounted) return;
-        Navigator.of(context).pop(); // Cerrar diálogo de carga
-        _showSnackBar(context, 'No hay datos para exportar', isError: true);
+      final depurados = _dedupeRegistros(rows);
+      if (depurados.isEmpty) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          _showSnackBar(context, 'No hay datos para exportar', isError: true);
+        }
         return;
       }
+      // 3) Headers en orden estable
+      final headers = [
+        ...icbCols,  // Usa solo los nombres originales de las columnas de 'inf_cliente_balanza'
+        ...rddCols,  // Usa solo los nombres originales de las columnas de 'relevamiento_de_datos'
+      ];
 
-      // 4. Preparar encabezados y filas
-      Set<String> uniqueKeys = {};
-      List<String> headers = [];
 
-      for (var registro in registrosDepurados) {
-        for (var key in registro.keys) {
-          if (!uniqueKeys.contains(key)) {
-            uniqueKeys.add(key);
-            headers.add(key);
-          }
-        }
-      }
+      // 4) Matriz de datos
+      final matrix = <List<dynamic>>[
+        headers,
+        ...depurados.map((reg) => headers.map((h) {
+          final v = reg[h];
+          return (v is num) ? v.toString() : (v?.toString() ?? '');
+        }).toList())
+      ];
 
-      List<List<dynamic>> rows = [];
-      rows.add(headers);
+      // 5) CSV y TXT (ambos ; como separador)
+      final csvString = const ListToCsvConverter(
+        fieldDelimiter: ';',
+        textDelimiter: '"',
+      ).convert(matrix);
+      final txtString = matrix.map((row) => row.map((e) => e.toString()).join(';')).join('\n');
 
-      for (var registro in registrosDepurados) {
-        List<dynamic> row = [];
-        for (var header in headers) {
-          final value = registro[header];
-          if (value is double) {
-            row.add(value.toString());
-          } else if (value is num) {
-            row.add(value.toString());
-          } else {
-            row.add(value?.toString() ?? '');
-          }
-        }
-        rows.add(row);
-      }
+      final csvBytes = utf8.encode(csvString);
+      final txtBytes = utf8.encode(txtString);
 
-      // 5. Generar CSV
-      String csv =
-          const ListToCsvConverter(fieldDelimiter: ';', textDelimiter: '"')
-              .convert(rows);
-      final csvBytes = utf8.encode(csv);
+      // 6) MET = copia binaria de la .db con extensión .met
+      final dbFileBytes = await File(srcPath).readAsBytes();
 
-      // 6. Guardar en directorio interno
+      // 7) Empaquetar a ZIP con mismo nombre base
+      final now = DateTime.now();
+      final baseName =
+          '${widget.dbName}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_relevamiento_de_datos';
+
+      final csvName = '$baseName.csv';
+      final txtName = '$baseName.txt';
+      final metName = '$baseName.met';
+      final zipName = '$baseName.zip';
+
+      final archive = Archive()
+        ..addFile(ArchiveFile(csvName, csvBytes.length, csvBytes))
+        ..addFile(ArchiveFile(txtName, txtBytes.length, txtBytes))
+        ..addFile(ArchiveFile(metName, dbFileBytes.length, dbFileBytes));
+
+      final zipData = ZipEncoder().encode(archive)!;
+
+      // 8) Guardar ZIP internamente (por si el usuario cancela el picker)
       final internalDir = await getApplicationSupportDirectory();
-      final internalCsvDir = Directory('${internalDir.path}/csv_servicios');
-      if (!await internalCsvDir.exists()) {
-        await internalCsvDir.create(recursive: true);
+      final bundleDir = Directory('${internalDir.path}/export_bundles');
+      if (!await bundleDir.exists()) {
+        await bundleDir.create(recursive: true);
       }
+      final internalZipPath = join(bundleDir.path, zipName);
+      await File(internalZipPath).writeAsBytes(zipData);
 
-      final internalFileName =
-          '${widget.dbName}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}_relevamiento_de_datos.csv';
-      final internalFile = File('${internalCsvDir.path}/$internalFileName');
-      await internalFile.writeAsBytes(csvBytes);
-
-      // 7. Permitir al usuario elegir ubicación adicional
-      if (!mounted) return;
-      Navigator.of(context).pop(); // Cerrar diálogo de carga
-
+      // 9) Elegir carpeta destino para guardar el ZIP
+      if (mounted) Navigator.of(context).pop();
       final directoryPath = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Seleccione carpeta para guardar el archivo',
+        dialogTitle: 'Seleccione carpeta para guardar el ZIP',
       );
 
       if (directoryPath != null) {
-        final userFile = File('$directoryPath/$internalFileName');
-        await userFile.writeAsBytes(csvBytes);
-        _showSnackBar(
-            context, 'Archivo guardado en: $directoryPath/$internalFileName');
+        final outZip = File(join(directoryPath, zipName));
+        await outZip.writeAsBytes(zipData);
+        if (mounted) {
+          _showSnackBar(context, 'ZIP guardado en: ${outZip.path}');
+        }
       } else {
-        _showSnackBar(context, 'Exportación completada (guardado localmente)');
+        if (mounted) {
+          _showSnackBar(
+            context,
+            'Exportación completada (ZIP guardado internamente en: $internalZipPath)',
+          );
+        }
       }
-
-      // 8. Crear respaldo automático
-      await _crearRespaldoAutomatico(csvBytes, internalFileName);
     } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context).pop(); // Cerrar diálogo de carga en caso de error
-      _showSnackBar(context, 'Error al exportar: ${e.toString()}',
-          isError: true);
-      debugPrint('Error al exportar CSV: $e');
+      if (mounted) {
+        Navigator.of(context).pop(); // cerrar diálogo si estaba abierto
+        _showSnackBar(context, 'Error en exportación: $e', isError: true);
+      }
+      debugPrint('ExportAllAndZip error: $e');
     } finally {
+      await db?.close();
       _isExporting = false;
     }
   }
 
-  Future<void> _crearRespaldoAutomatico(
-      List<int> csvBytes, String fileName) async {
-    try {
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        final backupDir =
-            Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
-        if (!await backupDir.exists()) {
-          await backupDir.create(recursive: true);
-        }
-        final backupFile = File('${backupDir.path}/$fileName');
-        await backupFile.writeAsBytes(csvBytes);
-      }
-    } catch (e) {
-      debugPrint('Error al crear respaldo automático: $e');
-    }
-  }
-
   Future<void> _confirmarSeleccionOtraBalanza(BuildContext context) async {
-    final bool confirmado = await showDialog(
+    final bool? confirmado = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -236,8 +315,10 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
             children: [
               Text('¿Está seguro que desea seleccionar otra balanza?'),
               SizedBox(height: 10),
-              Text('Se generará un respaldo CSV antes de continuar.',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                'Se generará un respaldo CSV antes de continuar.',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           actions: <Widget>[
@@ -245,48 +326,58 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
               ),
-              child: const Text('Cancelar'),
               onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
               ),
-              child: const Text('Sí, continuar'),
               onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Sí, continuar'),
             ),
           ],
         );
       },
     );
 
-    if (confirmado == true) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 20),
-              Text('Preparando datos para nueva balanza...'),
-            ],
-          ),
+    // Verificar si el usuario confirmó la acción
+    if (confirmado != true) return;
+
+    // Mostrar diálogo de progreso
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 20),
+            Text('Preparando datos para nueva balanza...'),
+          ],
         ),
-      );
+      ),
+    );
 
-      try {
-        await _exportBackupCSV();
-        await _copyDataFromId1();
+    try {
+      // Copiar los datos a la base de datos interna
+      await _copyToInternalDatabase();
 
-        if (!mounted) return;
+      // Exportar los datos a CSV, TXT y MET, y crear el ZIP
+      await _exportAllAndZip(context);
+
+      // Cerrar el diálogo de progreso si el widget sigue montado
+      if (mounted) {
         Navigator.of(context).pop();
+      }
 
-        Navigator.push(
+      // Navegar a la pantalla de selección de balanza
+      if (mounted) {
+        await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => IdenBalanzaScreen(
+            builder: (BuildContext context) => IdenBalanzaScreen(
               dbName: widget.dbName,
               dbPath: widget.dbPath,
               otValue: widget.otValue,
@@ -297,14 +388,25 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
             ),
           ),
         );
-      } catch (e) {
-        if (!mounted) return;
+      }
+    } catch (e) {
+      // Cerrar el diálogo de progreso si ocurre un error
+      if (mounted) {
         Navigator.of(context).pop();
-        _showSnackBar(context, 'Error al preparar nueva balanza: $e',
-            isError: true);
+      }
+
+      // Mostrar mensaje de error
+      if (mounted) {
+        _showSnackBar(
+          context,
+          'Error al preparar nueva balanza: ${e.toString()}',
+          isError: true,
+        );
       }
     }
   }
+
+
 
   Future<void> _exportBackupCSV() async {
     final path = join(widget.dbPath, '${widget.dbName}.db');
@@ -318,8 +420,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         ON icb.cod_metrica = rdd.cod_metrica
       ''');
 
-      final List<Map<String, dynamic>> registrosDepurados =
-          await _depurarDatos(registros);
+      final List<Map<String, dynamic>> registrosDepurados = _dedupeRegistros(registros);
       if (registrosDepurados.isEmpty) {
         throw Exception('No hay datos para exportar');
       }
@@ -348,14 +449,12 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       }
 
       String csv =
-          const ListToCsvConverter(fieldDelimiter: ';', textDelimiter: '"')
-              .convert(rows);
+      const ListToCsvConverter(fieldDelimiter: ';', textDelimiter: '"').convert(rows);
       final csvBytes = utf8.encode(csv);
 
       final externalDir = await getExternalStorageDirectory();
       if (externalDir != null) {
-        final backupDir =
-            Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
+        final backupDir = Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
         if (!await backupDir.exists()) {
           await backupDir.create(recursive: true);
         }
@@ -371,45 +470,28 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   }
 
   Future<void> _copyDataFromId1() async {
-    String path = join(widget.dbPath, '${widget.dbName}.db');
+    final path = join(widget.dbPath, '${widget.dbName}.db');
     final db = await openDatabase(path);
 
     try {
-      final List<Map<String, dynamic>> result = await db.query(
-        'relevamiento_de_datos',
-        where: 'id = ?',
-        whereArgs: [1],
-      );
+      await db.transaction((txn) async {
+        final res = await txn.query('relevamiento_de_datos', where: 'id = ?', whereArgs: [1]);
+        if (res.isEmpty) return;
 
-      if (result.isNotEmpty) {
-        final Map<String, dynamic> data = Map.from(result.first);
-        data.remove('id');
+        final data = Map.of(res.first)..remove('id');
 
-        final List<Map<String, dynamic>> allRows =
-            await db.query('relevamiento_de_datos');
-        final int nextId = allRows.isEmpty ? 2 : allRows.last['id'] + 1;
+        final maxRow =
+        await txn.rawQuery('SELECT COALESCE(MAX(id), 1) AS max_id FROM relevamiento_de_datos');
+        final nextId = ((maxRow.first['max_id'] as int) + 1);
 
-        await db.insert('relevamiento_de_datos', {...data, 'id': nextId});
+        await txn.insert('relevamiento_de_datos', {...data, 'id': nextId});
 
-        final List<Map<String, dynamic>> tableInfo =
-            await db.rawQuery('PRAGMA table_info(relevamiento_de_datos)');
-        final List<String> allColumns =
-            tableInfo.map((col) => col['name'] as String).toList();
+        final colsInfo = await txn.rawQuery('PRAGMA table_info(relevamiento_de_datos)');
+        final allCols = colsInfo.map((c) => c['name'] as String).toList();
+        final emptyData = {for (final c in allCols) if (c != 'id') c: ''};
 
-        final Map<String, dynamic> emptyData = {};
-        for (final column in allColumns) {
-          if (column != 'id') {
-            emptyData[column] = '';
-          }
-        }
-
-        await db.update(
-          'relevamiento_de_datos',
-          emptyData,
-          where: 'id = ?',
-          whereArgs: [1],
-        );
-      }
+        await txn.update('relevamiento_de_datos', emptyData, where: 'id = ?', whereArgs: [1]);
+      });
     } catch (e) {
       setState(() {
         errorMessage = 'Error copiando datos: $e';
@@ -442,8 +524,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         throw Exception("No se pudo acceder al almacenamiento externo");
       }
 
-      final backupDir =
-          Directory('${externalDir.path}/RespaldoSM/Database_Backups');
+      final backupDir = Directory('${externalDir.path}/RespaldoSM/Database_Backups');
       if (!await backupDir.exists()) {
         await backupDir.create(recursive: true);
       }
@@ -452,8 +533,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       final formattedDate =
           "${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_"
           "${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}";
-      final backupPath =
-          join(backupDir.path, '${widget.dbName}_backup_$formattedDate.db');
+      final backupPath = join(backupDir.path, '${widget.dbName}_backup_$formattedDate.db');
 
       final dbFile = File(dbPath);
       if (await dbFile.exists()) {
@@ -466,8 +546,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop();
-      _showSnackBar(context, 'ERROR AL REALIZAR EL RESPALDO: $e',
-          isError: true);
+      _showSnackBar(context, 'ERROR AL REALIZAR EL RESPALDO: $e', isError: true);
     }
   }
 
@@ -507,47 +586,49 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                  child: Container(color: Colors.black.withOpacity(0.4)),
-                ),
-              )
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(color: Colors.black.withOpacity(0.4)),
+          ),
+        )
             : null,
         iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-          left: 16.0, // Tu padding horizontal original
-          right: 16.0, // Tu padding horizontal original
-          bottom: 16.0, // Tu padding inferior original
+          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40,
+          left: 16.0,
+          right: 16.0,
+          bottom: 16.0,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildInfoSection(
-              'EXPORTAR CSV',
-              'Al dar clic se generará el archivo CSV con todos los datos registrados del módulo de RELEVAMIENTO DE DATOS, si pasara a otro módulo, debe generar el archivo CSV antes de continuar.',
+              'EXPORTAR',
+              'Generará un ZIP con CSV, TXT (ambos con ;) y una copia MET de la base. '
+                  'Antes de exportar se replicarán los datos en la BD interna "servicios_soporte_tecnino.db".',
               textColor,
             ),
             _buildActionCard(
               'images/tarjetas/t4.png',
-              'EXPORTAR CSV',
-              () => _exportDataToCSV(context),
+              'EXPORTAR',
+                  () => _exportAllAndZip(context),
               textColor,
               cardOpacity,
             ),
             const SizedBox(height: 40),
             _buildInfoSection(
               'SELECCIONAR OTRA BALANZA',
-              'Al dar clic se volverá a la pantalla de identificación de balanza para seleccionar otra balanza del cliente seleccionado.',
+              'Volverá a la pantalla de identificación para seleccionar otra balanza del cliente. '
+                  'Se generará un CSV de respaldo automático antes de continuar.',
               textColor,
             ),
             _buildActionCard(
               'images/tarjetas/t7.png',
               'SELECCIONAR OTRA BALANZA',
-              () => _confirmarSeleccionOtraBalanza(context),
+                  () => _confirmarSeleccionOtraBalanza(context),
               textColor,
               cardOpacity,
             ),
@@ -559,16 +640,13 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  (route) => false,
+                      (route) => false,
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFdf0000),
               ),
-              child: const Text(
-                'FINALIZAR SERVICIO',
-
-              ),
+              child: const Text('FINALIZAR SERVICIO'),
             ),
           ],
         ),
@@ -612,12 +690,12 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   }
 
   Widget _buildActionCard(
-    String imagePath,
-    String title,
-    VoidCallback onTap,
-    Color textColor,
-    double opacity,
-  ) {
+      String imagePath,
+      String title,
+      VoidCallback onTap,
+      Color textColor,
+      double opacity,
+      ) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       child: InkWell(
@@ -650,7 +728,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         shadows: [

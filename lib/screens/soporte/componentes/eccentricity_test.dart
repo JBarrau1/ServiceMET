@@ -232,7 +232,18 @@ class _EccentricityTestState extends State<EccentricityTest> {
               },
             ),
           const SizedBox(height: 20),
-          if (_selectedImagePath != null) Image.asset(_selectedImagePath!),
+          if (_selectedImagePath != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: SizedBox(
+                height: 130,
+                child: Image.asset(
+                  _selectedImagePath!,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+
           const SizedBox(height: 20),
           TextFormField(
             controller: _loadController,
@@ -329,8 +340,7 @@ class _EccentricityTestState extends State<EccentricityTest> {
   }
 
   Widget _buildPositionRow(int index) {
-    final balanza =
-        Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
+    final balanza = Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
     final d1 = balanza?.d1 ?? 0.1;
 
     return Padding(

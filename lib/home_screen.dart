@@ -21,11 +21,13 @@ class ServicioSeca {
   final String seca;
   final int cantidadBalanzas;
   final List<Map<String, dynamic>> balanzas;
+  final String tipoServicio;
 
   ServicioSeca({
     required this.seca,
     required this.cantidadBalanzas,
     required this.balanzas,
+    required this.tipoServicio,
   });
 }
 
@@ -84,25 +86,54 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _getTotalServiciosSop() async {
     try {
-      String dbPath = join(await getDatabasesPath(), 'servcios_soporte_tecnico.db');
+      String dbPath = join(await getDatabasesPath(), 'servicios_soporte_tecnico.db');
 
       if (await databaseExists(dbPath)) {
-        final db = await openDatabase(dbPath);
-        final result = await db.rawQuery('SELECT COUNT(*) as total FROM inf_cliente_balanza');
-        await db.close();
-        int count = result.isNotEmpty ? result.first['total'] as int : 0;
-        setState(() {
-          totalServiciosSop = count;
-        });
+        Database? db;
+        try {
+          db = await openDatabase(dbPath, readOnly: false);
+
+          // Verificar si la tabla existe
+          final tableExists = await _tableExists(db, 'inf_cliente_balanza');
+          if (!tableExists) {
+            setState(() {
+              totalServiciosSop = 0;
+            });
+            return;
+          }
+
+          final result = await db.rawQuery('SELECT COUNT(*) as total FROM inf_cliente_balanza');
+          int count = result.isNotEmpty ? result.first['total'] as int : 0;
+
+          if (mounted) {
+            setState(() {
+              totalServiciosSop = count;
+            });
+          }
+        } catch (e) {
+          print('Error consultando total servicios soporte: $e');
+          if (mounted) {
+            setState(() {
+              totalServiciosSop = 0;
+            });
+          }
+        } finally {
+          await db?.close();
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            totalServiciosSop = 0;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error en _getTotalServiciosSop: $e');
+      if (mounted) {
         setState(() {
           totalServiciosSop = 0;
         });
       }
-    } catch (e) {
-      setState(() {
-        totalServiciosSop = 0;
-      });
     }
   }
 
@@ -159,38 +190,177 @@ class _HomeScreenState extends State<HomeScreen> {
     final List<ServicioSeca> servicios = [];
 
     try {
-      String dbPath = join(await getDatabasesPath(), 'calibracion.db');
+      // === 1. CONSULTAR BASE DE DATOS DE CALIBRACIÓN ===
+      String dbPathCalibracion = join(await getDatabasesPath(), 'calibracion.db');
 
-      if (await databaseExists(dbPath)) {
-        final db = await openDatabase(dbPath);
-        final List<Map<String, dynamic>> registros = await db.query('registros_calibracion');
-        final Map<String, List<Map<String, dynamic>>> agrupados = {};
+      if (await databaseExists(dbPathCalibracion)) {
+        Database? dbCalibracion;
+        try {
+          dbCalibracion = await openDatabase(
+            dbPathCalibracion,
+            readOnly: false, // Asegurar que no sea solo lectura
+          );
 
-        for (var registro in registros) {
-          final String seca = registro['seca']?.toString() ?? 'Sin SECA';
+          final List<Map<String, dynamic>> registrosCalibracion =
+          await dbCalibracion.query('registros_calibracion');
 
-          if (!agrupados.containsKey(seca)) {
-            agrupados[seca] = [];
+          final Map<String, List<Map<String, dynamic>>> agrupadosCalibracion = {};
+
+          for (var registro in registrosCalibracion) {
+            final String seca = registro['seca']?.toString() ?? 'Sin SECA';
+
+            if (!agrupadosCalibracion.containsKey(seca)) {
+              agrupadosCalibracion[seca] = [];
+            }
+
+            agrupadosCalibracion[seca]!.add(registro);
           }
 
-          agrupados[seca]!.add(registro);
+          // Crear ServicioSeca para calibración
+          agrupadosCalibracion.forEach((seca, balanzas) {
+            servicios.add(ServicioSeca(
+              seca: 'SECA $seca',
+              cantidadBalanzas: balanzas.length,
+              balanzas: balanzas,
+              tipoServicio: 'calibracion',
+            ));
+          });
+
+        } catch (e) {
+          print('Error consultando calibración: $e');
+        } finally {
+          await dbCalibracion?.close();
         }
-
-        agrupados.forEach((seca, balanzas) {
-          servicios.add(ServicioSeca(
-            seca: seca,
-            cantidadBalanzas: balanzas.length,
-            balanzas: balanzas,
-          ));
-        });
-
-        await db.close();
       }
 
+      // === 2. CONSULTAR BASE DE DATOS DE SOPORTE TÉCNICO ===
+      String dbPathSoporte = join(await getDatabasesPath(), 'servicios_soporte_tecnico.db');
+
+      if (await databaseExists(dbPathSoporte)) {
+        Database? dbSoporte;
+        try {
+          dbSoporte = await openDatabase(
+            dbPathSoporte,
+            readOnly: false, // Asegurar que no sea solo lectura
+          );
+
+          // Lista de todas las tablas de soporte técnico
+          final List<String> tablasSoporte = [
+            'inf_cliente_balanza',
+            'relevamiento_de_datos',
+            'ajustes_metrológicos',
+            'diagnostico',
+            'mnt_prv_regular_stac',
+            'mnt_prv_regular_stil',
+            'mnt_prv_avanzado_stac',
+            'mnt_prv_avanzado_stil',
+            'mnt_correctivo',
+            'instalacion',
+            'verificaciones_internas'
+          ];
+
+          final Map<String, Map<String, List<Map<String, dynamic>>>> agrupadosSoporte = {};
+
+          // Consultar cada tabla individualmente y verificar existencia
+          for (String tabla in tablasSoporte) {
+            try {
+              // Verificar si la tabla existe antes de consultarla
+              final tableExists = await _tableExists(dbSoporte, tabla);
+              if (!tableExists) {
+                print('Tabla $tabla no existe, saltando...');
+                continue;
+              }
+
+              final List<Map<String, dynamic>> registrosTabla = await dbSoporte.query(tabla);
+
+              for (var registro in registrosTabla) {
+                // Obtener OTST y tipo de servicio
+                String otst = '';
+                String tipoServicio = '';
+
+                // Diferentes campos según la tabla
+                if (tabla == 'inf_cliente_balanza') {
+                  otst = registro['otst']?.toString() ?? 'Sin OTST';
+                  tipoServicio = 'Información Cliente'; // Valor por defecto
+                } else {
+                  otst = registro['cod_metrica']?.toString() ?? 'Sin OTST';
+                  tipoServicio = registro['tipo_servicio']?.toString() ?? 'Sin Tipo';
+                }
+
+                // Solo procesar si tenemos datos válidos
+                if (otst.isNotEmpty && otst != 'Sin OTST') {
+                  // Crear clave única: OTST + Tipo de Servicio
+                  final String claveGrupo = '$otst - $tipoServicio';
+
+                  if (!agrupadosSoporte.containsKey(claveGrupo)) {
+                    agrupadosSoporte[claveGrupo] = {};
+                  }
+
+                  if (!agrupadosSoporte[claveGrupo]!.containsKey(tabla)) {
+                    agrupadosSoporte[claveGrupo]![tabla] = [];
+                  }
+
+                  // Agregar información de la tabla al registro
+                  registro['tabla_origen'] = tabla;
+                  agrupadosSoporte[claveGrupo]![tabla]!.add(registro);
+                }
+              }
+            } catch (e) {
+              print('Error consultando tabla $tabla: $e');
+              // Continuar con la siguiente tabla en caso de error
+              continue;
+            }
+          }
+
+          // Crear ServicioSeca para soporte técnico
+          agrupadosSoporte.forEach((claveGrupo, tablas) {
+            // Contar total de registros en todas las tablas para este grupo
+            int totalRegistros = 0;
+            List<Map<String, dynamic>> todosLosRegistros = [];
+
+            tablas.forEach((tabla, registros) {
+              totalRegistros += registros.length;
+              todosLosRegistros.addAll(registros);
+            });
+
+            if (totalRegistros > 0) { // Solo agregar si hay registros
+              servicios.add(ServicioSeca(
+                seca: 'OTST $claveGrupo',
+                cantidadBalanzas: totalRegistros,
+                balanzas: todosLosRegistros,
+                tipoServicio: 'soporte',
+              ));
+            }
+          });
+
+        } catch (e) {
+          print('Error general en soporte técnico: $e');
+        } finally {
+          await dbSoporte?.close();
+        }
+      }
+
+      // Ordenar por nombre
       servicios.sort((a, b) => a.seca.compareTo(b.seca));
       return servicios;
+
     } catch (e) {
+      print('Error en _getServiciosAgrupadosPorSeca: $e');
       return [];
+    }
+  }
+
+  // Método auxiliar para verificar si una tabla existe
+  Future<bool> _tableExists(Database db, String tableName) async {
+    try {
+      final result = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        [tableName],
+      );
+      return result.isNotEmpty;
+    } catch (e) {
+      print('Error verificando existencia de tabla $tableName: $e');
+      return false;
     }
   }
 
@@ -482,13 +652,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                          gradient: LinearGradient(
+                            colors: servicio.tipoServicio == 'calibracion'
+                                ? [const Color(0xFF667EEA), const Color(0xFF764BA2)]
+                                : [const Color(0xFF11998E), const Color(0xFF38EF7D)],
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
-                          FontAwesomeIcons.building,
+                        child: Icon(
+                          servicio.tipoServicio == 'calibracion'
+                              ? FontAwesomeIcons.scaleBalanced
+                              : FontAwesomeIcons.screwdriverWrench,
                           color: Colors.white,
                           size: 20,
                         ),
@@ -499,7 +673,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'SECA ${servicio.seca}',
+                              servicio.seca,
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -507,11 +681,32 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             Text(
-                              '${servicio.cantidadBalanzas} balanza${servicio.cantidadBalanzas != 1 ? 's' : ''} registrada${servicio.cantidadBalanzas != 1 ? 's' : ''}',
+                              '${servicio.cantidadBalanzas} ${servicio.tipoServicio == 'calibracion' ? 'balanza' : 'registro'}${servicio.cantidadBalanzas != 1 ? 's' : ''}',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 color: Colors.grey[600],
                                 fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            // Mostrar tipo de servicio
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: servicio.tipoServicio == 'calibracion'
+                                    ? Colors.blue.withOpacity(0.1)
+                                    : Colors.green.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                servicio.tipoServicio == 'calibracion' ? 'Calibración' : 'Soporte Técnico',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: servicio.tipoServicio == 'calibracion'
+                                      ? Colors.blue[700]
+                                      : Colors.green[700],
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -520,7 +715,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF667EEA).withOpacity(0.1),
+                          color: servicio.tipoServicio == 'calibracion'
+                              ? const Color(0xFF667EEA).withOpacity(0.1)
+                              : const Color(0xFF11998E).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -528,7 +725,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF667EEA),
+                            color: servicio.tipoServicio == 'calibracion'
+                                ? const Color(0xFF667EEA)
+                                : const Color(0xFF11998E),
                           ),
                         ),
                       ),
@@ -550,7 +749,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: const Icon(FontAwesomeIcons.eye, size: 16),
                           label: const Text('Ver detalles'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF667EEA),
+                            backgroundColor: servicio.tipoServicio == 'calibracion'
+                                ? const Color(0xFF667EEA)
+                                : const Color(0xFF11998E),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -567,12 +768,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: const Icon(FontAwesomeIcons.download, size: 16),
                           label: const Text('Exportar'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF667EEA),
+                            foregroundColor: servicio.tipoServicio == 'calibracion'
+                                ? const Color(0xFF667EEA)
+                                : const Color(0xFF11998E),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            side: const BorderSide(color: Color(0xFF667EEA)),
+                            side: BorderSide(
+                              color: servicio.tipoServicio == 'calibracion'
+                                  ? const Color(0xFF667EEA)
+                                  : const Color(0xFF11998E),
+                            ),
                           ),
                         ),
                       ),
@@ -659,9 +866,9 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Servicios por SECA',
+                  'Servicios por SECA u OTST',
                   style: GoogleFonts.poppins(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
                   ),
