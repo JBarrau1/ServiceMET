@@ -11,8 +11,6 @@ class DatabaseHelperSop {
 
   DatabaseHelperSop._internal();
 
-  //=== FUNCIONES DEL PRIMER CÓDIGO APLICADAS ===//
-
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
@@ -21,7 +19,7 @@ class DatabaseHelperSop {
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'servicios_soporte_tecnico.db');
-    bool dbExists = await databaseExists(path);
+    bool dbExists = await databaseExists( path);
 
     if (!dbExists) {
       try {
@@ -300,7 +298,6 @@ class DatabaseHelperSop {
 
   Future<void> _onCreate(Database db, int version) async {
     // Crear todas las tablas exactamente como en el código original
-    await _createInfClienteBalanza(db);
     await _createRelevamientoDeDatos(db);
     await _createAjustesMetrologicos(db);
     await _createDiagnostico(db);
@@ -313,22 +310,24 @@ class DatabaseHelperSop {
     await _createVerificacionesInternas(db);
   }
 
-  //=== MÉTODOS DE CREACIÓN DE TABLAS (IDÉNTICOS AL ORIGINAL) ===//
-
-  Future<void> _createInfClienteBalanza(Database db) async {
+  Future<void> _createRelevamientoDeDatos(Database db) async {
     await db.execute('''
-      CREATE TABLE inf_cliente_balanza (
+      CREATE TABLE relevamiento_de_datos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT DEFAULT '',
+        tipo_servicio TEXT DEFAULT '',
         otst TEXT DEFAULT '',
         fecha_servicio TEXT DEFAULT '',
         tec_responsable TEXT DEFAULT '',
+        --CLIENTE
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
         direccion_planta TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
         instrumento TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
         cod_interno TEXT DEFAULT '',
@@ -352,17 +351,8 @@ class DatabaseHelperSop {
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
         foto_balanza TEXT DEFAULT '',
-        session_id TEXT DEFAULT ''
-      )
-    ''');
-  }
-
-  Future<void> _createRelevamientoDeDatos(Database db) async {
-    await db.execute('''
-      CREATE TABLE relevamiento_de_datos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_servicio TEXT DEFAULT '',
-        cod_metrica TEXT DEFAULT '',
+        
+        --DATOS SERVICIO ENTORNO
         hora_inicio TEXT DEFAULT '',
         hora_fin TEXT DEFAULT '',
         comentario_general TEXT DEFAULT '',
@@ -450,6 +440,7 @@ class DatabaseHelperSop {
         retorno_cero TEXT DEFAULT '',
         carga_retorno_cero TEXT DEFAULT '',
         
+        --EXCENTRICIDAD
         tipo_plataforma TEXT DEFAULT '',
         puntos_ind TEXT DEFAULT '',
         carga TEXT DEFAULT '',
@@ -535,7 +526,7 @@ class DatabaseHelperSop {
         excentricidad_final_punto3_ida_indicacion TEXT DEFAULT '',
         excentricidad_final_punto3_ida_retorno TEXT DEFAULT '',
 
-        excentricidad_final_punto4_ida_num极 '',
+        excentricidad_final_punto4_ida_numero '',
         excentricidad_final_punto4_ida_indicacion TEXT DEFAULT '',
         excentricidad_final_punto4_ida_retorno TEXT DEFAULT '',
 
@@ -572,6 +563,7 @@ class DatabaseHelperSop {
         excentricidad_final_punto12_vuelta_indicacion TEXT DEFAULT '',
         excentricidad_final_punto12_vuelta_retorno TEXT DEFAULT '',
         
+        -- REPETIBILIDAD
         repetibilidad1 REAL DEFAULT '',
         indicacion1_1 REAL DEFAULT '',
         retorno1_1 REAL DEFAULT '',      
@@ -638,6 +630,7 @@ class DatabaseHelperSop {
         indicacion3_10 REAL DEFAULT '',
         retorno3_10 REAL DEFAULT '',
         
+        --LINEALIDAD
         linealidad_comentario TEXT DEFAULT '',
         metodo TEXT DEFAULT '',
         metodo_carga TEXT DEFAULT '',
@@ -677,7 +670,7 @@ class DatabaseHelperSop {
         lin12 REAL DEFAULT '',
         ind12 REAL DEFAULT '',
         retorno_lin12 REAL DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }
@@ -686,12 +679,47 @@ class DatabaseHelperSop {
     await db.execute('''
     CREATE TABLE ajustes_metrológicos (  
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT DEFAULT '',
         tipo_servicio TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '',
         
+        --DATOS SERVICIO 
         --Comentarios
+        tipo_servicio TEXT DEFAULT '',
         comentario_1 TEXT DEFAULT '',
         comentario_2 TEXT DEFAULT '',
         comentario_3 TEXT DEFAULT '',
@@ -875,6 +903,7 @@ class DatabaseHelperSop {
         excentricidad_final_punto12_vuelta_indicacion TEXT DEFAULT '',
         excentricidad_final_punto12_vuelta_retorno TEXT DEFAULT '',
         
+        -- REPETIBILIDAD INICIAL 
         -- Carga 1
         repetibilidad_inicial_carga1_valor TEXT DEFAULT '',
         repetibilidad_inicial_carga1_prueba1_indicacion TEXT DEFAULT '',
@@ -945,7 +974,7 @@ class DatabaseHelperSop {
         repetibilidad_inicial_carga3_prueba10_retorno TEXT DEFAULT '',
 
        
-        -- Repetibilidad Final
+        -- REPETIBILIDAD FINAL
         repetibilidad_final_cantidad_cargas INTEGER DEFAULT '',
         repetibilidad_final_cantidad_pruebas INTEGER DEFAULT '',
         
@@ -1018,7 +1047,7 @@ class DatabaseHelperSop {
         repetibilidad_final_carga3_prueba10_indicacion REAL DEFAULT '',
         repetibilidad_final_carga3_prueba10_retorno REAL DEFAULT '',
         
-        -- Linealidad Inicial
+        -- LINEALIDAD INICIAL
         linealidad_inicial_cantidad_puntos INTEGER DEFAULT '',
         linealidad_inicial_punto1_lt REAL DEFAULT '',
         linealidad_inicial_punto1_indicacion REAL DEFAULT '',
@@ -1069,7 +1098,7 @@ class DatabaseHelperSop {
         linealidad_inicial_punto12_retorno REAL DEFAULT '',
         linealidad_inicial_punto12_error REAL DEFAULT '',
         
-        -- Linealidad Final
+        -- LINEALIDAD FINAL
         linealidad_final_cantidad_puntos INTEGER DEFAULT '',
         linealidad_final_punto1_lt REAL DEFAULT '',
         linealidad_final_punto1_indicacion REAL DEFAULT '',
@@ -1119,7 +1148,7 @@ class DatabaseHelperSop {
         linealidad_final_punto12_indicacion REAL DEFAULT '',
         linealidad_final_punto12_retorno REAL DEFAULT '',
         linealidad_final_punto12_error REAL DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
        )
     ''');
   }
@@ -1128,12 +1157,42 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE diagnostico (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_servicio TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',
-        reporte TEXT DEFAULT '',
-        evaluacion TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '', 
         
         --Comentarios
         comentario_1 TEXT DEFAULT '',
@@ -1356,7 +1415,7 @@ class DatabaseHelperSop {
         linealidad_inicial_punto12_indicacion REAL DEFAULT '',
         linealidad_inicial_punto12_retorno REAL DEFAULT '',
         linealidad_inicial_punto12_error REAL DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }
@@ -1365,10 +1424,44 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_prv_regular_stac (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_servicio TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '',
+        
+        -- Comentarios y Recomendaciones
         comentario_general TEXT DEFAULT '',
         recomendacion TEXT DEFAULT '',
         fisico TEXT DEFAULT '',
@@ -1993,7 +2086,7 @@ class DatabaseHelperSop {
         otros TEXT DEFAULT '',
         otros_foto TEXT DEFAULT '',
         conclusion TEXT DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }
@@ -2002,10 +2095,44 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_prv_regular_stil (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_servicio TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '',
+        
+        -- Inspección Visual
         comentario_general TEXT DEFAULT '',
         estado_fisico TEXT DEFAULT '',
         estado_operacional TEXT DEFAULT '',
@@ -2594,7 +2721,7 @@ class DatabaseHelperSop {
         personal_apoyo TEXT DEFAULT '',
         estado_final TEXT DEFAULT '',
         conclusion TEXT DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }
@@ -2603,10 +2730,44 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_prv_avanzado_stac (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_servicio TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '',
+        
+        -- Inspección Visual
         comentario_general TEXT DEFAULT '',
         recomendacion TEXT DEFAULT '',
         fisico TEXT DEFAULT '',
@@ -3267,7 +3428,7 @@ class DatabaseHelperSop {
         otros TEXT DEFAULT '',
         otros_foto TEXT DEFAULT '',
         conclusion TEXT DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }
@@ -3276,10 +3437,44 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_prv_avanzado_stil (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_servicio TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '',
+        
+        -- Inspección Visual
         comentario_general TEXT DEFAULT '',
         recomendacion TEXT DEFAULT '',
         estado_fisico TEXT DEFAULT '',
@@ -3730,7 +3925,7 @@ class DatabaseHelperSop {
         lin_final_12 TEXT DEFAULT '',
         ind_final_12 TEXT DEFAULT '',
         retorno_lin_final_12 TEXT DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }
@@ -3739,10 +3934,44 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_correctivo (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_servicio TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '',
+        
+        -- Inspección Visual
         reporte TEXT DEFAULT '',
         evaluacion TEXT DEFAULT '',
         
@@ -4351,7 +4580,7 @@ class DatabaseHelperSop {
         linealidad_final_punto12_indicacion REAL DEFAULT '',
         linealidad_final_punto12_retorno REAL DEFAULT '',
         linealidad_final_punto12_error REAL DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }
@@ -4360,11 +4589,44 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE instalacion (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_servicio TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',   
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '',
 
+        --INSTALACION
         entorno_valor TEXT DEFAULT '',
         entorno_comentario TEXT DEFAULT '',
         nivelacion_valor TEXT DEFAULT '',
@@ -4596,7 +4858,7 @@ class DatabaseHelperSop {
         linealidad_inicial_punto12_indicacion REAL DEFAULT '',
         linealidad_inicial_punto12_retorno REAL DEFAULT '',
         linealidad_inicial_punto12_error REAL DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }
@@ -4604,10 +4866,45 @@ class DatabaseHelperSop {
   Future<void> _createVerificacionesInternas(Database db) async {
     await db.execute('''
       CREATE TABLE verificaciones_internas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        fecha_servicio TEXT DEFAULT '',
+        tec_responsable TEXT DEFAULT '',
+        --CLIENTE
+        cliente TEXT DEFAULT '',
+        razon_social TEXT DEFAULT '',
+        planta TEXT DEFAULT '',
+        dep_planta TEXT DEFAULT '',
+        direccion_planta TEXT DEFAULT '',
+        --BALANZA
         cod_metrica TEXT DEFAULT '',
-        tipo_servicio TEXT DEFAULT '',
-        hora_inicio TEXT DEFAULT '',
-        hora_fin TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
+        instrumento TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_interno TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        foto_balanza TEXT DEFAULT '',
+        
+        --apartados
         reporte TEXT DEFAULT '',
         evaluacion TEXT DEFAULT '',
       
@@ -4887,7 +5184,7 @@ class DatabaseHelperSop {
         linealidad_inicial_punto12_indicacion REAL DEFAULT '',
         linealidad_inicial_punto12_retorno REAL DEFAULT '',
         linealidad_inicial_punto12_error REAL DEFAULT '',
-        session_id TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
     ''');
   }

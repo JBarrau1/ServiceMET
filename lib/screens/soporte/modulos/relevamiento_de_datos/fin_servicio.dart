@@ -66,7 +66,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       // Abrimos la DB de origen en solo lectura
       src = await openDatabase(srcPath, readOnly: true);
 
-      // Usamos SIEMPRE la conexión del helper (esto garantiza usar servicios_soporte_tecnico.db)
+      // Usamos SIEMPRE la conexión del helper
       final dest = await DatabaseHelperSop().database;
 
       // Ajusta las tablas a copiar según tu esquema
@@ -81,13 +81,18 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         // Obtenemos columnas válidas en destino para esa tabla
         final destColsInfo = await dest.rawQuery('PRAGMA table_info($table)');
         if (destColsInfo.isEmpty) {
-          // La tabla no existe en destino; NO la creamos aquí para no romper el control del helper.
           debugPrint('Tabla $table no existe en la DB interna; omitiendo copia.');
           continue;
         }
 
         final destCols = destColsInfo.map((c) => (c['name'] as String)).toSet();
         final hasId = destCols.contains('id');
+
+        // CORREGIDO: Primero eliminamos registros existentes de esta sesión/cod_metrica
+        await dest.delete(table,
+            where: 'cod_metrica = ?',
+            whereArgs: [widget.codMetrica]
+        );
 
         // Insertamos en transacción
         await dest.transaction((txn) async {
@@ -100,12 +105,9 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
             // Filtramos a solo columnas que existen en destino
             data.removeWhere((k, _) => !destCols.contains(k));
 
-            // Inserción "sucesiva"; si hay duplicados y quieres ignorarlos, usa IGNORE
-            await txn.insert(
-              table,
-              data,
-              conflictAlgorithm: ConflictAlgorithm.ignore, // o replace según tu política
-            );
+            if (data.isNotEmpty) {
+              await txn.insert(table, data);
+            }
           }
         });
       }
@@ -117,53 +119,98 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     }
   }
 
+
   /// ---- NUEVO: Construye un JOIN con alias para evitar colisiones de columnas en SELECT *
   Future<Map<String, dynamic>> _buildAliasedJoin(Database db) async {
-    final icbCols = (await db.rawQuery('PRAGMA table_info(inf_cliente_balanza)'))
-        .map((c) => c['name'] as String)
-        .toList();
-    final rddCols = (await db.rawQuery('PRAGMA table_info(relevamiento_de_datos)'))
-        .map((c) => c['name'] as String)
-        .toList();
+    try {
+      // Obtenemos información de las tablas
+      final icbColsInfo = await db.rawQuery('PRAGMA table_info(inf_cliente_balanza)');
+      final rddColsInfo = await db.rawQuery('PRAGMA table_info(relevamiento_de_datos)');
 
-    final icbSelect = icbCols.map((c) => 'icb."$c" AS icb_$c').join(', ');
-    final rddSelect = rddCols.map((c) => 'rdd."$c" AS rdd_$c').join(', ');
+      final icbCols = icbColsInfo.map((c) => c['name'] as String).toList();
+      final rddCols = rddColsInfo.map((c) => c['name'] as String).toList();
 
-    final sql = '''
+      // CORREGIDO: Usamos alias internos solo para evitar colisiones, pero mapeamos a nombres originales
+      final icbSelect = icbCols.map((c) => 'icb."$c" AS icb_$c').join(', ');
+      final rddSelect = rddCols.map((c) => 'rdd."$c" AS rdd_$c').join(', ');
+
+      final sql = '''
       SELECT $icbSelect, $rddSelect
       FROM inf_cliente_balanza icb
       LEFT JOIN relevamiento_de_datos rdd
         ON icb.cod_metrica = rdd.cod_metrica
+      WHERE icb.cod_metrica = ?
     ''';
 
-    final rows = await db.rawQuery(sql);
+      debugPrint('SQL Query: $sql');
+      final rawRows = await db.rawQuery(sql, [widget.codMetrica]);
+      debugPrint('Filas obtenidas: ${rawRows.length}');
 
-    return {
-      'icbCols': icbCols,
-      'rddCols': rddCols,
-      'rows': rows,
-    };
+      // CORREGIDO: Convertimos los datos con alias internos a nombres originales
+      final processedRows = rawRows.map((row) {
+        final processedRow = <String, dynamic>{};
+
+        // Mapear columnas de inf_cliente_balanza (remover prefijo icb_)
+        for (final col in icbCols) {
+          final aliasedKey = 'icb_$col';
+          if (row.containsKey(aliasedKey)) {
+            processedRow[col] = row[aliasedKey];
+          }
+        }
+
+        // Mapear columnas de relevamiento_de_datos (remover prefijo rdd_)
+        for (final col in rddCols) {
+          final aliasedKey = 'rdd_$col';
+          if (row.containsKey(aliasedKey)) {
+            processedRow[col] = row[aliasedKey];
+          }
+        }
+
+        return processedRow;
+      }).toList();
+
+      return {
+        'icbCols': icbCols,
+        'rddCols': rddCols,
+        'rows': processedRows,
+      };
+    } catch (e) {
+      debugPrint('Error en _buildAliasedJoin: $e');
+      rethrow;
+    }
   }
+
 
   /// ---- NUEVO: Dedupe básico por (reca, cod_metrica, sticker) y elige el más "reciente" por hora_fin
   List<Map<String, dynamic>> _dedupeRegistros(List<Map<String, dynamic>> regs) {
-    regs.removeWhere((r) => r.values.every((v) => v == null || v == ''));
+    // Filtrar registros completamente vacíos
+    regs.removeWhere((r) => r.values.every((v) => v == null || v.toString().trim().isEmpty));
+
+    debugPrint('Registros antes de deduplicar: ${regs.length}');
 
     final Map<String, Map<String, dynamic>> unicos = {};
+
     for (final r in regs) {
-      final reca = (r['icb_reca'] ?? r['reca'] ?? '').toString();
-      final cod = (r['icb_cod_metrica'] ?? r['cod_metrica'] ?? '').toString();
-      final stick = (r['icb_sticker'] ?? r['sticker'] ?? '').toString();
-      final horaFin = (r['rdd_hora_fin'] ?? r['hora_fin'] ?? '').toString();
+      // CORREGIDO: Usar nombres originales sin prefijos
+      final reca = (r['reca'] ?? '').toString().trim();
+      final cod = (r['cod_metrica'] ?? '').toString().trim();
+      final stick = (r['sticker'] ?? '').toString().trim();
+      final horaFin = (r['hora_fin'] ?? '').toString().trim();
 
       final clave = '$reca|$cod|$stick';
-      final horaPrev =
-      (unicos[clave]?['rdd_hora_fin'] ?? unicos[clave]?['hora_fin'] ?? '').toString();
 
-      if (!unicos.containsKey(clave) || horaPrev.compareTo(horaFin) < 0) {
+      if (!unicos.containsKey(clave)) {
         unicos[clave] = r;
+      } else {
+        // Si ya existe, comparar por hora_fin (mantener el más reciente)
+        final horaExistente = (unicos[clave]!['hora_fin'] ?? '').toString().trim();
+        if (horaFin.compareTo(horaExistente) > 0) {
+          unicos[clave] = r;
+        }
       }
     }
+
+    debugPrint('Registros después de deduplicar: ${unicos.length}');
     return unicos.values.toList();
   }
 
@@ -203,6 +250,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       final rddCols = (aliased['rddCols'] as List).cast<String>();
       final rows = (aliased['rows'] as List).cast<Map<String, dynamic>>();
 
+      debugPrint('Datos obtenidos del JOIN: ${rows.length} filas');
+
       final depurados = _dedupeRegistros(rows);
       if (depurados.isEmpty) {
         if (mounted) {
@@ -211,21 +260,32 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         }
         return;
       }
-      // 3) Headers en orden estable
+
+      // 3) CORREGIDO: Headers con nombres originales de las columnas (SIN prefijos)
       final headers = [
-        ...icbCols,  // Usa solo los nombres originales de las columnas de 'inf_cliente_balanza'
-        ...rddCols,  // Usa solo los nombres originales de las columnas de 'relevamiento_de_datos'
+        ...icbCols,  // Nombres originales de inf_cliente_balanza
+        ...rddCols,  // Nombres originales de relevamiento_de_datos
       ];
 
+      debugPrint('Headers generados: ${headers.length}');
+      debugPrint('Primeros headers: ${headers.take(5).toList()}');
 
-      // 4) Matriz de datos
+      // 4) CORREGIDO: Matriz de datos usando nombres originales
       final matrix = <List<dynamic>>[
-        headers,
-        ...depurados.map((reg) => headers.map((h) {
-          final v = reg[h];
-          return (v is num) ? v.toString() : (v?.toString() ?? '');
-        }).toList())
+        headers,  // Headers con nombres originales
+        ...depurados.map((reg) {
+          final row = headers.map((header) {
+            final value = reg[header];  // Usar nombre original directamente
+            return (value is num) ? value.toString() : (value?.toString() ?? '');
+          }).toList();
+          return row;
+        })
       ];
+
+      debugPrint('Matriz generada: ${matrix.length} filas (incluyendo header)');
+      if (matrix.length > 1) {
+        debugPrint('Primera fila de datos: ${matrix[1].take(5).toList()}');
+      }
 
       // 5) CSV y TXT (ambos ; como separador)
       final csvString = const ListToCsvConverter(
