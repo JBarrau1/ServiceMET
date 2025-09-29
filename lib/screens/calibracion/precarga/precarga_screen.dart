@@ -132,7 +132,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           child: AppBar(
             toolbarHeight: 70,
             title: Text(
-              'CALIBRACION',
+              'CALIBRACIÓN',
               style: GoogleFonts.poppins(
                 color: isDarkMode ? Colors.white : Colors.black,
                 fontWeight: FontWeight.w700,

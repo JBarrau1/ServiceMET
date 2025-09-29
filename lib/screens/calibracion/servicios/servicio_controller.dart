@@ -5,6 +5,8 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../database/app_database.dart';
+
 class ServicioController extends ChangeNotifier {
   // Parámetros del servicio
   final String dbName;
@@ -20,6 +22,8 @@ class ServicioController extends ChangeNotifier {
     required this.nReca,
     required this.sessionId,
   });
+
+  final AppDatabase _dbHelper = AppDatabase();
 
   // Estados del flujo
   int _currentStep = 0;
@@ -182,8 +186,8 @@ class ServicioController extends ChangeNotifier {
   // Inicialización
   Future<void> initializeServicio() async {
     try {
-      // Inicializar con datos por defecto si es necesario
-      _horaInicio = _getCurrentTime();
+      _tiempoEstabilizacion = null; // Dejar vacío
+      _tiempoBalanza = null; // Dejar vacío
 
       // Inicializar precargas por defecto (5 precargas)
       for (int i = 0; i < 5; i++) {
@@ -210,6 +214,12 @@ class ServicioController extends ChangeNotifier {
     } catch (e) {
       throw Exception('Error al inicializar servicio: $e');
     }
+  }
+
+  void restoreInitialCondiciones(Map<String, String> initialValues) {
+    _condicionesEntorno.clear();
+    _condicionesEntorno.addAll(initialValues);
+    notifyListeners();
   }
 
   void _initializeRepetibilidadData() {
@@ -307,10 +317,15 @@ class ServicioController extends ChangeNotifier {
     return _condicionesFinales.isNotEmpty;
   }
 
+  void setDataSaved(bool value) {
+    _isDataSaved = value;
+    notifyListeners();
+  }
+
   // Métodos para condiciones iniciales
   void setHoraInicio(String hora) {
     _horaInicio = hora;
-    notifyListeners();
+    notifyListeners(); // IMPORTANTE: notificar cambios
   }
 
   void setTiempoEstabilizacion(String tiempo) {
@@ -569,204 +584,304 @@ class ServicioController extends ChangeNotifier {
   }
 
   // Métodos de guardado por paso
-  Future<void> saveCurrentStepData() async {
-    switch (_currentStep) {
-      case 0:
-        await _saveCondicionesIniciales();
-        break;
-      case 1:
-        await _savePrecargas();
-        break;
-      case 2:
-        await _saveExcentricidad();
-        break;
-      case 3:
-        await _saveRepetibilidad();
-        break;
-      case 4:
-        await _saveLinealidad();
-        break;
-      case 5:
-        await _saveCondicionesFinales();
-        break;
-    }
+  Future<void> saveCurrentStepData([Map<String, TextEditingController>? comentarioControllers]) async {
+    try {
+      switch (_currentStep) {
+        case 0:
+          await _saveCondicionesIniciales(comentarioControllers);
+          break;
+        case 1:
+          await _savePrecargas();
+          break;
+        case 2:
+          await _saveExcentricidad();
+          break;
+        case 3:
+          await _saveRepetibilidad();
+          break;
+        case 4:
+          await _saveLinealidad();
+          break;
+        case 5:
+          await _saveCondicionesFinales();
+          break;
+      }
 
-    await _createBackup();
-    _isDataSaved = true;
-    notifyListeners();
+      _isDataSaved = true;
+      notifyListeners();
+
+    } catch (e) {
+      _isDataSaved = false;
+      notifyListeners();
+      rethrow;
+    }
   }
 
-  Future<void> _saveCondicionesIniciales() async {
-    final db = await _getDatabase();
+  Future<void> _saveCondicionesIniciales([Map<String, TextEditingController>? comentarioControllers]) async {
+    try {
+      final existingRecord = await _dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-    final registro = {
-      'hora_inicio': _horaInicio ?? '',
-      'tiempo_estab': _tiempoEstabilizacion ?? '',
-      't_ope_balanza': _tiempoBalanza ?? '',
-      'foto_balanza': _condicionesPhotosTomadas ? 1 : 0,
-    };
+      final registro = {
+        'seca': secaValue,
+        'session_id': sessionId,
+        'cod_metrica': codMetrica,
+        'n_reca': nReca,
+        'hora_inicio': _horaInicio ?? '',
+        'tiempo_estab': _tiempoEstabilizacion ?? '',
+        't_ope_balanza': _tiempoBalanza ?? '',
+        'foto_balanza': _condicionesPhotosTomadas ? 1 : 0,
 
-    // Agregar datos de entorno
-    _condicionesEntorno.forEach((key, value) {
-      registro[_getDbFieldName(key)] = value.toString();
-    });
+        // Condiciones con comentarios
+        'vibracion': _condicionesEntorno['Vibración'] ?? '',
+        'vibracion_comentario': comentarioControllers?['Vibración']?.text ?? 'Sin Comentario',
+        'polvo': _condicionesEntorno['Polvo'] ?? '',
+        'polvo_comentario': comentarioControllers?['Polvo']?.text ?? 'Sin Comentario',
+        'temp': _condicionesEntorno['Temperatura'] ?? '',
+        'temp_comentario': comentarioControllers?['Temperatura']?.text ?? 'Sin Comentario',
+        'humedad': _condicionesEntorno['Humedad'] ?? '',
+        'humedad_comentario': comentarioControllers?['Humedad']?.text ?? 'Sin Comentario',
+        'mesada': _condicionesEntorno['Mesada'] ?? '',
+        'mesada_comentario': comentarioControllers?['Mesada']?.text ?? 'Sin Comentario',
+        'iluminacion': _condicionesEntorno['Iluminación'] ?? '',
+        'iluminacion_comentario': comentarioControllers?['Iluminación']?.text ?? 'Sin Comentario',
+        'limp_foza': _condicionesEntorno['Limpieza de Fosa'] ?? '',
+        'limp_foza_comentario': comentarioControllers?['Limpieza de Fosa']?.text ?? 'Sin Comentario',
+        'estado_drenaje': _condicionesEntorno['Estado de Drenaje'] ?? '',
+        'estado_drenaje_comentario': comentarioControllers?['Estado de Drenaje']?.text ?? 'Sin Comentario',
+        'limp_general': _condicionesEntorno['Limpieza General'] ?? '',
+        'limp_general_comentario': comentarioControllers?['Limpieza General']?.text ?? 'Sin Comentario',
+        'golpes_terminal': _condicionesEntorno['Golpes al Terminal'] ?? '',
+        'golpes_terminal_comentario': comentarioControllers?['Golpes al Terminal']?.text ?? 'Sin Comentario',
+        'nivelacion': _condicionesEntorno['Nivelación'] ?? '',
+        'nivelacion_comentario': comentarioControllers?['Nivelación']?.text ?? 'Sin Comentario',
+        'limp_recepto': _condicionesEntorno['Limpieza Receptor'] ?? '',
+        'limp_recepto_comentario': comentarioControllers?['Limpieza Receptor']?.text ?? 'Sin Comentario',
+        'golpes_receptor': _condicionesEntorno['Golpes al receptor de Carga'] ?? '',
+        'golpes_receptor_comentario': comentarioControllers?['Golpes al receptor de Carga']?.text ?? 'Sin Comentario',
+        'encendido': _condicionesEntorno['Encendido'] ?? '',
+        'encendido_comentario': comentarioControllers?['Encendido']?.text ?? 'Sin Comentario',
+      };
 
-    await db.update(
-      'registros_calibracion',
-      registro,
-      where: 'id = ?',
-      whereArgs: [1],
-    );
+      if (existingRecord != null) {
+        await _dbHelper.upsertRegistroCalibracion(registro);
+      } else {
+        await _dbHelper.insertRegistroCalibracion(registro);
+      }
 
-    await db.close();
+    } catch (e, stackTrace) {
+      debugPrint('Error al guardar condiciones iniciales: $e');
+      debugPrint('StackTrace: $stackTrace');
+      rethrow;
+    }
   }
 
   Future<void> _savePrecargas() async {
-    final db = await _getDatabase();
+    try {
+      // ✅ AGREGAR: Verificar si existe el registro primero
+      final existingRecord = await _dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-    final registro = <String, dynamic>{};
+      final registro = <String, dynamic>{};
 
-    // Guardar precargas
-    for (int i = 0; i < _precargas.length && i < 6; i++) {
-      registro['precarga${i + 1}'] = _precargas[i]['precarga'] ?? '';
-      registro['p_indicador${i + 1}'] = _precargas[i]['indicacion'] ?? '';
+      // Precargas
+      for (int i = 0; i < _precargas.length && i < 6; i++) {
+        registro['precarga${i + 1}'] = _precargas[i]['precarga'] ?? '';
+        registro['p_indicador${i + 1}'] = _precargas[i]['indicacion'] ?? '';
+      }
+
+      // Limpiar precargas no usadas
+      for (int i = _precargas.length; i < 6; i++) {
+        registro['precarga${i + 1}'] = '';
+        registro['p_indicador${i + 1}'] = '';
+      }
+
+      // Datos adicionales
+      registro.addAll(_ajusteData);
+      registro.addAll(_condicionesAmbientales);
+
+      // ✅ AGREGAR: Siempre incluir seca y session_id para el upsert
+      registro['seca'] = secaValue;
+      registro['session_id'] = sessionId;
+
+      // ✅ CORREGIR: Usar la misma lógica de upsert
+      if (existingRecord != null) {
+        await _dbHelper.upsertRegistroCalibracion(registro);
+      } else {
+        await _dbHelper.insertRegistroCalibracion(registro);
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint('Error al guardar precargas: $e');
+      debugPrint('StackTrace: $stackTrace');
+      rethrow;
     }
-
-    // Limpiar precargas no usadas
-    for (int i = _precargas.length; i < 6; i++) {
-      registro['precarga${i + 1}'] = '';
-      registro['p_indicador${i + 1}'] = '';
-    }
-
-    // Guardar datos de ajuste
-    registro.addAll(_ajusteData);
-    registro.addAll(_condicionesAmbientales);
-
-    await db.update(
-      'registros_calibracion',
-      registro,
-      where: 'id = ?',
-      whereArgs: [1],
-    );
-
-    await db.close();
   }
 
+
   Future<void> _saveExcentricidad() async {
-    final db = await _getDatabase();
+    try {
+      // ✅ AGREGAR: Verificar si existe el registro primero
+      final existingRecord = await _dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-    final registro = {
-      'tipo_plataforma': _selectedPlataforma ?? '',
-      'puntos_ind': _selectedOpcionExcentricidad ?? '',
-      'carga': _cargaExcentricidad ?? '',
-    };
+      final registro = {
+        'tipo_plataforma': _selectedPlataforma ?? '',
+        'puntos_ind': _selectedOpcionExcentricidad ?? '',
+        'carga': _cargaExcentricidad ?? '',
+        // ✅ AGREGAR: Siempre incluir seca y session_id
+        'seca': secaValue,
+        'session_id': sessionId,
+      };
 
-    // Guardar posiciones
-    for (int i = 0; i < _posicionesExcentricidad.length && i < 6; i++) {
-      registro['posicion${i + 1}'] =
-          _posicionesExcentricidad[i]['posicion'] ?? '';
-      registro['indicacion${i + 1}'] =
-          _posicionesExcentricidad[i]['indicacion'] ?? '';
-      registro['retorno${i + 1}'] =
-          _posicionesExcentricidad[i]['retorno'] ?? '';
+      // Posiciones de excentricidad
+      for (int i = 0; i < _posicionesExcentricidad.length && i < 6; i++) {
+        registro['posicion${i + 1}'] = _posicionesExcentricidad[i]['posicion'] ?? '';
+        registro['indicacion${i + 1}'] = _posicionesExcentricidad[i]['indicacion'] ?? '';
+        registro['retorno${i + 1}'] = _posicionesExcentricidad[i]['retorno'] ?? '';
+      }
+
+      // Limpiar posiciones no usadas
+      for (int i = _posicionesExcentricidad.length; i < 6; i++) {
+        registro['posicion${i + 1}'] = '';
+        registro['indicacion${i + 1}'] = '';
+        registro['retorno${i + 1}'] = '';
+      }
+
+      // ✅ CORREGIR: Usar la misma lógica de upsert
+      if (existingRecord != null) {
+        await _dbHelper.upsertRegistroCalibracion(registro);
+      } else {
+        await _dbHelper.insertRegistroCalibracion(registro);
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint('Error al guardar excentricidad: $e');
+      debugPrint('StackTrace: $stackTrace');
+      rethrow;
     }
-
-    // Limpiar posiciones no usadas
-    for (int i = _posicionesExcentricidad.length; i < 6; i++) {
-      registro['posicion${i + 1}'] = '';
-      registro['indicacion${i + 1}'] = '';
-      registro['retorno${i + 1}'] = '';
-    }
-
-    await db.update(
-      'registros_calibracion',
-      registro,
-      where: 'id = ?',
-      whereArgs: [1],
-    );
-
-    await db.close();
   }
 
   Future<void> _saveRepetibilidad() async {
-    final db = await _getDatabase();
+    try {
+      // ✅ AGREGAR: Verificar si existe el registro primero
+      final existingRecord = await _dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-    final registro = <String, dynamic>{};
+      final registro = <String, dynamic>{
+        // ✅ AGREGAR: Siempre incluir seca y session_id
+        'seca': secaValue,
+        'session_id': sessionId,
+      };
 
-    // Guardar datos de repetibilidad
-    for (int carga = 0;
-        carga < _repetibilidadData.length && carga < 3;
-        carga++) {
-      for (int fila = 0;
-          fila < _repetibilidadData[carga].length && fila < 10;
-          fila++) {
-        registro['indicacion${carga + 1}_${fila + 1}'] =
-            _repetibilidadData[carga][fila]['indicacion'] ?? '';
-        registro['retorno${carga + 1}_${fila + 1}'] =
-            _repetibilidadData[carga][fila]['retorno'] ?? '';
+      // Datos de repetibilidad
+      for (int carga = 0; carga < _repetibilidadData.length && carga < 3; carga++) {
+        for (int fila = 0; fila < _repetibilidadData[carga].length && fila < 10; fila++) {
+          registro['indicacion${carga + 1}_${fila + 1}'] =
+              _repetibilidadData[carga][fila]['indicacion'] ?? '';
+          registro['retorno${carga + 1}_${fila + 1}'] =
+              _repetibilidadData[carga][fila]['retorno'] ?? '';
+        }
       }
+
+      // ✅ CORREGIR: Usar la misma lógica de upsert
+      if (existingRecord != null) {
+        await _dbHelper.upsertRegistroCalibracion(registro);
+      } else {
+        await _dbHelper.insertRegistroCalibracion(registro);
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint('Error al guardar repetibilidad: $e');
+      debugPrint('StackTrace: $stackTrace');
+      rethrow;
     }
-
-    await db.update(
-      'registros_calibracion',
-      registro,
-      where: 'id = ?',
-      whereArgs: [1],
-    );
-
-    await db.close();
   }
 
   Future<void> _saveLinealidad() async {
-    final db = await _getDatabase();
+    try {
+      // ✅ AGREGAR: Verificar si existe el registro primero
+      final existingRecord = await _dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-    final registro = {
-      'metodo': _selectedMetodoLinealidad ?? '',
-      'metodo_carga': _selectedMetodoCarga ?? '',
-    };
+      final registro = {
+        'metodo': _selectedMetodoLinealidad ?? '',
+        'metodo_carga': _selectedMetodoCarga ?? '',
+        // ✅ AGREGAR: Siempre incluir seca y session_id
+        'seca': secaValue,
+        'session_id': sessionId,
+      };
 
-    // Guardar filas de linealidad
-    for (int i = 0; i < _linealidadRows.length && i < 60; i++) {
-      registro['lin${i + 1}'] = _linealidadRows[i]['lt'] ?? '';
-      registro['ind${i + 1}'] = _linealidadRows[i]['indicacion'] ?? '';
-      registro['retorno_lin${i + 1}'] = _linealidadRows[i]['retorno'] ?? '';
+      // Filas de linealidad
+      for (int i = 0; i < _linealidadRows.length && i < 60; i++) {
+        registro['lin${i + 1}'] = _linealidadRows[i]['lt'] ?? '';
+        registro['ind${i + 1}'] = _linealidadRows[i]['indicacion'] ?? '';
+        registro['retorno_lin${i + 1}'] = _linealidadRows[i]['retorno'] ?? '';
+      }
+
+      // Limpiar filas no usadas
+      for (int i = _linealidadRows.length; i < 60; i++) {
+        registro['lin${i + 1}'] = '';
+        registro['ind${i + 1}'] = '';
+        registro['retorno_lin${i + 1}'] = '';
+      }
+
+      // ✅ CORREGIR: Usar la misma lógica de upsert
+      if (existingRecord != null) {
+        await _dbHelper.upsertRegistroCalibracion(registro);
+      } else {
+        await _dbHelper.insertRegistroCalibracion(registro);
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint('Error al guardar linealidad: $e');
+      debugPrint('StackTrace: $stackTrace');
+      rethrow;
     }
-
-    // Limpiar filas no usadas
-    for (int i = _linealidadRows.length; i < 60; i++) {
-      registro['lin${i + 1}'] = '';
-      registro['ind${i + 1}'] = '';
-      registro['retorno_lin${i + 1}'] = '';
-    }
-
-    await db.update(
-      'registros_calibracion',
-      registro,
-      where: 'id = ?',
-      whereArgs: [1],
-    );
-
-    await db.close();
   }
 
   Future<void> _saveCondicionesFinales() async {
-    final db = await _getDatabase();
+    try {
+      // ✅ AGREGAR: Verificar si existe el registro primero
+      final existingRecord = await _dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-    final registro = <String, dynamic>{};
-    registro.addAll(_condicionesFinales);
-    registro['foto_final'] = _condicionesFinalesPhotosTomadas ? 1 : 0;
+      final registro = <String, dynamic>{
+        // ✅ AGREGAR: Siempre incluir seca y session_id
+        'seca': secaValue,
+        'session_id': sessionId,
+      };
 
-    await db.update(
-      'registros_calibracion',
-      registro,
-      where: 'id = ?',
-      whereArgs: [1],
-    );
+      registro.addAll(_condicionesFinales);
+      registro['foto_final'] = _condicionesFinalesPhotosTomadas ? 1 : 0;
 
-    await db.close();
+      // ✅ CORREGIR: Usar la misma lógica de upsert
+      if (existingRecord != null) {
+        await _dbHelper.upsertRegistroCalibracion(registro);
+      } else {
+        await _dbHelper.insertRegistroCalibracion(registro);
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint('Error al guardar condiciones finales: $e');
+      debugPrint('StackTrace: $stackTrace');
+      rethrow;
+    }
   }
 
-  // Finalización del servicio
+  void _loadDataFromRecord(Map<String, dynamic> record) {
+    // Cargar datos según el paso actual
+    _horaInicio = record['hora_inicio']?.toString();
+    _tiempoEstabilizacion = record['tiempo_estab']?.toString();
+    _tiempoBalanza = record['t_ope_balanza']?.toString();
+
+    // Cargar condiciones de entorno
+    _condicionesEntorno['Vibración'] = record['vibracion']?.toString();
+    // ... cargar todas las condiciones
+  }
+
+
+  String _getCurrentTime() {
+    final now = DateTime.now();
+    return '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}';
+  }
+
   Future<void> finalizeServicio() async {
     if (!validateCurrentStep()) {
       throw Exception('Debe completar todos los campos antes de finalizar');
@@ -774,38 +889,12 @@ class ServicioController extends ChangeNotifier {
 
     await saveCurrentStepData();
 
-    final db = await _getDatabase();
-    await db.update(
-      'registros_calibracion',
-      {'estado_servicio_bal': 'Balanza Calibrada'},
-      where: 'id = ?',
-      whereArgs: [1],
-    );
-    await db.close();
-  }
+    // Actualizar estado del servicio
+    final registro = {
+      'estado_servicio_bal': 'Balanza Calibrada'
+    };
 
-  // Utilidades
-  Future<Database> _getDatabase() async {
-    String path = join(await getDatabasesPath(), '$dbName.db');
-    return await openDatabase(path);
-  }
-
-  Future<void> _createBackup() async {
-    try {
-      String mainPath = join(await getDatabasesPath(), '$dbName.db');
-      String backupPath = join(await getDatabasesPath(),
-          '${dbName}_step${_currentStep}_respaldo.db');
-      await File(mainPath).copy(backupPath);
-    } catch (e) {
-      debugPrint('Error al crear respaldo: $e');
-    }
-  }
-
-  String _getCurrentTime() {
-    final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}:'
-        '${now.minute.toString().padLeft(2, '0')}:'
-        '${now.second.toString().padLeft(2, '0')}';
+    await _dbHelper.upsertRegistroCalibracion(registro);
   }
 
   String _getDbFieldName(String displayName) {
@@ -829,24 +918,16 @@ class ServicioController extends ChangeNotifier {
         displayName.toLowerCase().replaceAll(' ', '_');
   }
 
-  // Cálculos matemáticos
   Future<double> getD1FromDatabase() async {
     try {
-      final db = await _getDatabase();
-      final result = await db.query(
-        'registros_calibracion',
-        columns: ['d1'],
-        where: 'id = ?',
-        whereArgs: [1],
-        limit: 1,
-      );
-      await db.close();
+      final existingRecord = await _dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-      if (result.isNotEmpty && result.first['d1'] != null) {
-        return double.tryParse(result.first['d1'].toString()) ?? 0.1;
+      if (existingRecord != null && existingRecord['d1'] != null) {
+        return double.tryParse(existingRecord['d1'].toString()) ?? 0.1;
       }
       return 0.1;
     } catch (e) {
+      debugPrint('Error al obtener d1 desde la base de datos: $e');
       return 0.1;
     }
   }

@@ -120,9 +120,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
               backgroundColor: const Color(0xFF326677),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
             ),
           ),
         ),
@@ -139,9 +136,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
               backgroundColor: const Color(0xFF327734),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+
             ),
           ),
         ),
@@ -426,7 +421,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
         const SizedBox(height: 20),
 
         // Rango 1
-        _buildRangoCard('RANGO 1 (Obligatorio)', [
+        _buildRangoCard('RANGO 1', [
           ['cap_max1', 'd1'],
           ['e1', 'dec1'],
         ], Colors.blue),
@@ -434,7 +429,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
         const SizedBox(height: 16),
 
         // Rango 2 (Opcional)
-        _buildRangoCard('RANGO 2 (Opcional)', [
+        _buildRangoCard('RANGO 2', [
           ['cap_max2', 'd2'],
           ['e2', 'dec2'],
         ], Colors.orange),
@@ -442,7 +437,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
         const SizedBox(height: 16),
 
         // Rango 3 (Opcional)
-        _buildRangoCard('RANGO 3 (Opcional)', [
+        _buildRangoCard('RANGO 3', [
           ['cap_max3', 'd3'],
           ['e3', 'dec3'],
         ], Colors.green),
@@ -647,7 +642,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: Text(
-                'Balanzas Disponibles',
+                'BALANZAS DISPONIBLES',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

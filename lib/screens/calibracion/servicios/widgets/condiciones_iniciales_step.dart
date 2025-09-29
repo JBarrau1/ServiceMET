@@ -25,18 +25,34 @@ class CondicionesInicialesStep extends StatefulWidget {
 
 class _CondicionesInicialesStepState extends State<CondicionesInicialesStep> {
   final Map<String, TextEditingController> _comentarioControllers = {};
+  final Map<String, String> _initialCondicionesValues = {}; // NUEVO: Guardar valores iniciales
   bool _setAllToGood = false;
 
   @override
   void initState() {
     super.initState();
     _initializeControllers();
+
+    // IMPORTANTE: Usar addPostFrameCallback para esperar a que el widget esté montado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = Provider.of<ServicioController>(context, listen: false);
+      final horaActual = controller.getCurrentTime();
+      controller.setHoraInicio(horaActual);
+    });
   }
 
   void _initializeControllers() {
     final entornoOptions = Provider.of<ServicioController>(context, listen: false).entornoOptions;
     entornoOptions.forEach((key, _) {
       _comentarioControllers[key] = TextEditingController(text: 'Sin Comentario');
+    });
+  }
+
+  void _saveInitialCondiciones(ServicioController controller) {
+    // Guardar el estado inicial de las condiciones
+    _initialCondicionesValues.clear();
+    controller.entornoOptions.forEach((key, _) {
+      _initialCondicionesValues[key] = controller.condicionesEntorno[key] ?? '';
     });
   }
 
@@ -93,12 +109,10 @@ class _CondicionesInicialesStepState extends State<CondicionesInicialesStep> {
     return Column(
       children: [
         TextFormField(
+          key: ValueKey(controller.horaInicio), // AGREGAR esto para forzar rebuild
           initialValue: controller.horaInicio,
           decoration: _buildInputDecoration('Hora de inicio de la Calibración:'),
           readOnly: true,
-          onTap: () {
-            controller.setHoraInicio(controller.getCurrentTime());
-          },
         ),
         const SizedBox(height: 8.0),
         Row(
@@ -188,6 +202,9 @@ class _CondicionesInicialesStepState extends State<CondicionesInicialesStep> {
             });
             if (value) {
               controller.setAllCondicionesToGood();
+            } else {
+              // Restaurar valores iniciales
+              controller.restoreInitialCondiciones(_initialCondicionesValues);
             }
           },
           activeColor: Colors.green,
@@ -401,7 +418,6 @@ class _CondicionesInicialesStepState extends State<CondicionesInicialesStep> {
                         if (photo != null) {
                           setState(() {
                             photos.add(File(photo.path));
-                            // Actualizar en el controller
                             if (controller.condicionesPhotos[label] == null) {
                               controller.condicionesPhotos[label] = [];
                             }
@@ -465,7 +481,6 @@ class _CondicionesInicialesStepState extends State<CondicionesInicialesStep> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Actualizar el estado global del controller
                     controller.condicionesPhotos[label] = photos;
                     Navigator.of(context).pop();
                   },
@@ -488,7 +503,12 @@ class _CondicionesInicialesStepState extends State<CondicionesInicialesStep> {
       child: ElevatedButton(
         onPressed: () async {
           try {
-            await controller.saveCurrentStepData();
+            // Guardar comentarios en el controller antes de guardar
+            _comentarioControllers.forEach((key, controller) {
+              // El controller del servicio necesitará un método para guardar comentarios
+            });
+
+            await controller.saveCurrentStepData(_comentarioControllers);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Datos guardados correctamente'),
@@ -505,12 +525,9 @@ class _CondicionesInicialesStepState extends State<CondicionesInicialesStep> {
           }
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: const Color(0xFF3A5C29),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
         ),
         child: const Text(
           'GUARDAR CONDICIONES INICIALES',

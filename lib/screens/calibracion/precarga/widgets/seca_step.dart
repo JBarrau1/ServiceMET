@@ -171,11 +171,23 @@ class SecaStep extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Ícono
-          // BUSCAR esta sección (alrededor de línea 150-180):
-          // BUSCAR esta sección del código SECA (alrededor de línea 150-180) y REEMPLAZAR por:
+          // Etiqueta
+          Text(
+            controller.secaConfirmed ? 'SECA Confirmado:' : 'SECA Sugerido:',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              color: controller.secaConfirmed
+                  ? Colors.green[700]
+                  : Colors.blue[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Código SECA - ÚNICO CAMPO (editable o fijo según estado)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -213,7 +225,7 @@ class SecaStep extends StatelessWidget {
                 Text(
                   _getFixedSecaPart(controller),
                   style: GoogleFonts.robotoMono(
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.blue[800],
                     letterSpacing: 2,
@@ -221,88 +233,57 @@ class SecaStep extends StatelessWidget {
                 ),
                 // Campo editable para el número de cotización (C01, C02, etc.)
                 Container(
-                  width: 80,
+                  width: 90,
                   child: TextField(
-                    controller: TextEditingController(text: _getCotizacionPart(controller)),
+                    controller: TextEditingController(
+                      text: _getCotizacionPart(controller),
+                    ),
                     style: GoogleFonts.robotoMono(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue[800],
                       letterSpacing: 2,
                     ),
                     decoration: InputDecoration(
                       border: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.blue[300]!),
+                        borderSide: BorderSide(
+                          color: Colors.blue[300]!,
+                          width: 2,
+                        ),
                       ),
-                      contentPadding: EdgeInsets.zero,
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Colors.blue[600]!,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 4),
                       hintText: 'C01',
                       hintStyle: GoogleFonts.robotoMono(
-                        fontSize: 24,
-                        color: Colors.blue[400],
+                        fontSize: 20,
+                        color: Colors.blue[300],
                         letterSpacing: 2,
                       ),
                     ),
                     textAlign: TextAlign.center,
                     maxLength: 3,
-                    buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                    buildCounter: (context,
+                        {required currentLength,
+                          required isFocused,
+                          maxLength}) =>
+                    null,
                     onChanged: (value) {
                       // Validar formato C + número
-                      if (value.isNotEmpty && !RegExp(r'^C\d{0,2}$').hasMatch(value)) {
+                      if (value.isNotEmpty &&
+                          !RegExp(r'^C\d{0,2}$').hasMatch(value)) {
                         return; // No permitir caracteres inválidos
                       }
-                      controller.updateNumeroCotizacion(value.isEmpty ? 'C01' : value);
+                      controller.updateNumeroCotizacion(
+                          value.isEmpty ? 'C01' : value);
                     },
                   ),
                 ),
               ],
-            ),
-          ).animate(delay: 400.ms).fadeIn().slideX(begin: 0.3),
-
-          const SizedBox(height: 24),
-
-          // Etiqueta
-          Text(
-            controller.secaConfirmed ? 'SECA Confirmado:' : 'SECA Sugerido:',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: controller.secaConfirmed
-                  ? Colors.green[700]
-                  : Colors.blue[700],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Código SECA
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: controller.secaConfirmed
-                    ? Colors.green[200]!
-                    : Colors.blue[200]!,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Text(
-              controller.generatedSeca ?? 'Generando...',
-              style: GoogleFonts.robotoMono(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: controller.secaConfirmed
-                    ? Colors.green[800]
-                    : Colors.blue[800],
-                letterSpacing: 2,
-              ),
             ),
           ).animate(delay: 400.ms).fadeIn().slideX(begin: 0.3),
 
