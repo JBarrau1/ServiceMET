@@ -387,13 +387,15 @@ class ServicioController extends ChangeNotifier {
 
   // Métodos para precargas
   void updatePrecarga(int index, String precarga, String indicacion) {
-    if (index < _precargas.length) {
-      _precargas[index]['precarga'] = precarga;
-      _precargas[index]['indicacion'] = indicacion;
+    if (index >= 0 && index < _precargas.length) {
+      _precargas[index] = {
+        'precarga': precarga,
+        'indicacion': indicacion,
+      };
+      debugPrint('✅ Precarga $index actualizada: precarga=$precarga, indicacion=$indicacion');
       notifyListeners();
     }
   }
-
   void addPrecarga() {
     if (_precargas.length < 6) {
       _precargas.add({

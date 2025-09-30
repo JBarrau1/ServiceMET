@@ -35,45 +35,29 @@ class _ServicioScreenState extends State<ServicioScreen> {
   final _formKey = GlobalKey<FormState>();
   final Map<String, Map<String, dynamic>> _fieldData =
       {}; // Almacena comentarios e imágenes
-  final TextEditingController _vibracionComentarioController =
-      TextEditingController();
-  final TextEditingController _polvoComentarioController =
-      TextEditingController();
-  final TextEditingController _temperaturaComentarioController =
-      TextEditingController();
-  final TextEditingController _humedadComentarioController =
-      TextEditingController();
-  final TextEditingController _mesadaComentarioController =
-      TextEditingController();
-  final TextEditingController _iluminacionComentarioController =
-      TextEditingController();
-  final TextEditingController _limpiezaFosaComentarioController =
-      TextEditingController();
-  final TextEditingController _estadoDrenajeComentarioController =
-      TextEditingController();
-  final TextEditingController _limpiezaGeneralComentarioController =
-      TextEditingController();
-  final TextEditingController _golpesTerminalComentarioController =
-      TextEditingController();
-  final TextEditingController _nivelacionComentarioController =
-      TextEditingController();
-  final TextEditingController _limpiezaReceptorComentarioController =
-      TextEditingController();
-  final TextEditingController _golpesReceptorComentarioController =
-      TextEditingController();
-  final TextEditingController _encendidoComentarioController =
-      TextEditingController();
+  final TextEditingController _vibracionComentarioController = TextEditingController();
+  final TextEditingController _polvoComentarioController = TextEditingController();
+  final TextEditingController _temperaturaComentarioController = TextEditingController();
+  final TextEditingController _humedadComentarioController = TextEditingController();
+  final TextEditingController _mesadaComentarioController = TextEditingController();
+  final TextEditingController _iluminacionComentarioController = TextEditingController();
+  final TextEditingController _limpiezaFosaComentarioController = TextEditingController();
+  final TextEditingController _estadoDrenajeComentarioController = TextEditingController();
+  final TextEditingController _limpiezaGeneralComentarioController = TextEditingController();
+  final TextEditingController _golpesTerminalComentarioController = TextEditingController();
+  final TextEditingController _nivelacionComentarioController = TextEditingController();
+  final TextEditingController _limpiezaReceptorComentarioController = TextEditingController();
+  final TextEditingController _golpesReceptorComentarioController = TextEditingController();
+  final TextEditingController _encendidoComentarioController = TextEditingController();
   final ValueNotifier<bool> _isNextButtonVisible = ValueNotifier<bool>(false);
   final ImagePicker _imagePicker = ImagePicker();
 
+  bool _isSaving = false;
   bool _setAllToGood = false;
   String? _horaInicio;
   String? _tiempoMin;
   String? _tiempoBalanza;
-  String? _createdFolderPath;
-  DatabaseHelper? _dbHelper;
-  bool _isDataSaved =
-      false; // Variable para rastrear si los datos se han guardado
+  bool _isDataSaved = false; // Variable para rastrear si los datos se han guardado
   DateTime? _lastPressedTime;
 
   @override
@@ -109,7 +93,7 @@ class _ServicioScreenState extends State<ServicioScreen> {
       _setAllToGood = value;
 
       if (value) {
-        // Establecer todos los campos a sus valores "Bueno" o equivalentes
+        // Solo establecer valores por defecto, sin bloquear edición
         _fieldData['Vibración'] = {'value': 'Inexistente'};
         _fieldData['Polvo'] = {'value': 'Inexistente'};
         _fieldData['Temperatura'] = {'value': 'Bueno'};
@@ -124,10 +108,8 @@ class _ServicioScreenState extends State<ServicioScreen> {
         _fieldData['Limpieza Receptor'] = {'value': 'Inexistente'};
         _fieldData['Golpes al receptor de Carga'] = {'value': 'Sin Daños'};
         _fieldData['Encendido'] = {'value': 'Bueno'};
-      } else {
-        // Limpiar todos los campos
-        _fieldData.clear();
       }
+      // NO limpiar _fieldData cuando se desactiva, para mantener ediciones
     });
   }
 
@@ -161,68 +143,36 @@ class _ServicioScreenState extends State<ServicioScreen> {
   }
 
   Future<void> _saveAllDataAndPhotos(BuildContext context) async {
-    // 1. Manejo de fotos (igual que en IdenBalanzaScreen)
-    bool hasPhotos = _fieldPhotos.values.any((photos) => photos.isNotEmpty);
+    if (_isSaving) return; // Evitar múltiples ejecuciones
 
-    if (hasPhotos) {
-      try {
-        final archive = Archive();
-        _fieldPhotos.forEach((label, photos) {
-          for (var i = 0; i < photos.length; i++) {
-            final file = photos[i];
-            final fileName = '${label}_${i + 1}.jpg'.replaceAll(' ', '_');
-            archive.addFile(ArchiveFile(
-                fileName,
-                file.lengthSync(),
-                file.readAsBytesSync()
-            ));
-          }
-        });
+    _isSaving = true;
 
-        final zipEncoder = ZipEncoder();
-        final zipData = zipEncoder.encode(archive);
-        final uint8ListData = Uint8List.fromList(zipData!);
-        final zipFileName = '${widget.secaValue}_${widget.codMetrica}_FotosEntornoBalanza.zip';
-
-        final filePath = await FlutterFileDialog.saveFile(
-          params: SaveFileDialogParams(
-            data: uint8ListData,
-            fileName: zipFileName,
-            mimeTypesFilter: ['application/zip'],
-          ),
-        );
-
-        if (filePath == null) {
-          _showSnackBar(context, 'No se seleccionó ubicación para guardar las fotos');
-        }
-      } catch (e) {
-        _showSnackBar(context, 'Error al comprimir fotos: $e', isError: true);
-        debugPrint('Error al comprimir fotos: $e');
-      }
-    }
-
-    // 2. Validaciones (como en CalibracionScreen)
-    if (_horaInicio == null || _horaInicio!.isEmpty) {
-      _showSnackBar(context, 'Ingrese la hora de inicio', isError: true);
-      return;
-    }
-
+    // Validaciones básicas
     if (_tiempoMin == null || _tiempoMin!.isEmpty) {
       _showSnackBar(context, 'Ingrese el tiempo de estabilización', isError: true);
+      _isSaving = false;
       return;
     }
 
     if (_tiempoBalanza == null || _tiempoBalanza!.isEmpty) {
       _showSnackBar(context, 'Ingrese el tiempo de operación de la balanza', isError: true);
+      _isSaving = false;
       return;
     }
 
-    // 3. Guardado en BD (patrón consistente con otras pantallas)
     try {
+      // 1. Guardar fotos primero
+      final photosSaved = await _savePhotosToZip(context);
+      if (!photosSaved) {
+        _isSaving = false;
+        return; // Usuario canceló el guardado de fotos
+      }
+
+      // 2. Guardar en base de datos
       final dbHelper = AppDatabase();
       final existingRecord = await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
 
-      // Preparar datos con misma estructura que otras pantallas
+      // Preparar datos para la base de datos
       final registro = {
         'seca': widget.secaValue,
         'session_id': widget.sessionId,
@@ -261,7 +211,7 @@ class _ServicioScreenState extends State<ServicioScreen> {
         'encendido_comentario': _encendidoComentarioController.text,
       };
 
-      // Usar el mismo método upsert que en CalibracionScreen
+      // Usar el mismo método upsert
       if (existingRecord != null) {
         await dbHelper.upsertRegistroCalibracion(registro);
       } else {
@@ -274,10 +224,80 @@ class _ServicioScreenState extends State<ServicioScreen> {
 
       _showSnackBar(context, 'Datos guardados correctamente');
       _isNextButtonVisible.value = true;
+
     } catch (e, stackTrace) {
       _showSnackBar(context, 'Error al guardar en la base de datos: $e', isError: true);
       debugPrint('Error al guardar: $e');
       debugPrint('StackTrace: $stackTrace');
+    } finally {
+      _isSaving = false;
+    }
+  }
+
+  Future<bool> _savePhotosToZip(BuildContext context) async {
+    bool hasPhotos = _fieldPhotos.values.any((photos) => photos.isNotEmpty);
+
+    if (!hasPhotos) {
+      return true; // No hay fotos, continuar con el guardado normal
+    }
+
+    try {
+      final archive = Archive();
+      _fieldPhotos.forEach((label, photos) {
+        for (var i = 0; i < photos.length; i++) {
+          final file = photos[i];
+          final fileName = '${label}_${i + 1}.jpg'.replaceAll(' ', '_');
+          archive.addFile(ArchiveFile(
+              fileName,
+              file.lengthSync(),
+              file.readAsBytesSync()
+          ));
+        }
+      });
+
+      final zipEncoder = ZipEncoder();
+      final zipData = zipEncoder.encode(archive);
+      final uint8ListData = Uint8List.fromList(zipData!);
+      final zipFileName = '${widget.secaValue}_${widget.codMetrica}_FotosEntornoBalanza.zip';
+
+      final filePath = await FlutterFileDialog.saveFile(
+        params: SaveFileDialogParams(
+          data: uint8ListData,
+          fileName: zipFileName,
+          mimeTypesFilter: ['application/zip'],
+        ),
+      );
+
+      if (filePath == null) {
+        // Usuario canceló el guardado, preguntar si continuar
+        final shouldContinue = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Fotos no guardadas'),
+              content: const Text('¿Desea continuar sin guardar las fotos?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Continuar'),
+                ),
+              ],
+            );
+          },
+        ) ?? false;
+
+        return shouldContinue;
+      }
+
+      return true;
+    } catch (e) {
+      _showSnackBar(context, 'Error al comprimir fotos: $e', isError: true);
+      debugPrint('Error al comprimir fotos: $e');
+      return false;
     }
   }
 
@@ -374,13 +394,15 @@ class _ServicioScreenState extends State<ServicioScreen> {
               child: TextFormField(
                 controller: commentController,
                 decoration: buildInputDecoration('Comentario $label'),
+                maxLength: 150,
+                buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
+                  return Text('$currentLength/$maxLength');
+                },
                 onTap: () {
                   if (commentController.text == 'Sin Comentario') {
                     commentController.clear();
                   }
                 },
-                readOnly:
-                    _setAllToGood, // Hacer el campo de solo lectura si el switch está activado
               ),
             ),
             const SizedBox(width: 10),
@@ -540,7 +562,6 @@ class _ServicioScreenState extends State<ServicioScreen> {
     return WillPopScope(
       onWillPop: () => _onWillPop(context),
       child: Scaffold(
-        extendBodyBehindAppBar: true,
         appBar: AppBar(
           toolbarHeight: 70,
           title: const Text(
@@ -575,22 +596,17 @@ class _ServicioScreenState extends State<ServicioScreen> {
           centerTitle: true,
         ),
         body: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            top: kToolbarHeight + MediaQuery.of(context).padding.top + 40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-            left: 16.0, // Tu padding horizontal original
-            right: 16.0, // Tu padding horizontal original
-            bottom: 16.0, // Tu padding inferior original
-          ),
+          padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
             child: Column(
               children: [
                 const Text(
-                  'REGISTRO DE DATOS DE CONDICIONES DEL EQUIPO A CALIBRAR',
+                  'REGISTRO DE DATOS DE CONDICIONES \n DEL EQUIPO A CALIBRAR',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16.0),
+                const SizedBox(height: 20.0),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -858,55 +874,46 @@ class _ServicioScreenState extends State<ServicioScreen> {
                                               return;
                                             }
 
-                                            if (_formKey.currentState!
-                                                .validate()) {
+                                            if (_formKey.currentState!.validate()) {
                                               showDialog(
                                                 context: context,
-                                                builder:
-                                                    (BuildContext context) {
+                                                builder: (BuildContext context) {
                                                   return AlertDialog(
                                                     title: const Text(
                                                       'CONFIRMACIÓN',
                                                       style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w900,
+                                                        fontWeight: FontWeight.w900,
                                                         fontSize: 17,
                                                       ),
                                                     ),
-                                                    content: const Text(
-                                                        '¿Desea continuar con las pruebas de carga?, Verifique los datos ingresados antes de empezar con las pruebas de carga.'),
+                                                    content: const Text('¿Desea continuar con las pruebas de carga?, Verifique los datos ingresados antes de empezar con las pruebas de carga.'),
                                                     actions: <Widget>[
                                                       TextButton(
                                                         onPressed: () {
-                                                          Navigator.of(context)
-                                                              .pop();
+                                                          Navigator.of(context).pop();
                                                         },
-                                                        child: const Text(
-                                                            'Cancelar'),
+                                                        child: const Text('Cancelar'),
                                                       ),
                                                       ElevatedButton(
                                                         onPressed: () {
-                                                          Navigator.of(context)
-                                                              .pop();
+                                                          Navigator.of(context).pop();
                                                           Navigator.push(
                                                             context,
                                                             MaterialPageRoute(
-                                                                builder:
-                                                                    (context) =>
-                                                                        PruebasScreen(
-                                                                          codMetrica: widget.codMetrica,
-                                                                          secaValue: widget.secaValue,
-                                                                          sessionId: widget.sessionId,
-                                                                        )),
+                                                                builder: (context) => PruebasScreen(
+                                                                      codMetrica: widget.codMetrica,
+                                                                      secaValue: widget.secaValue,
+                                                                      sessionId: widget.sessionId,
+                                                                      nReca: widget.nReca,
+                                                                    )
+                                                            ),
                                                           );
                                                         },
                                                         style: ElevatedButton
                                                             .styleFrom(
-                                                          backgroundColor:
-                                                              Colors.green,
+                                                          backgroundColor: Colors.green,
                                                         ),
-                                                        child: const Text(
-                                                            'Aceptar'),
+                                                        child: const Text('Aceptar'),
                                                       ),
                                                     ],
                                                   );

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../servicios/servicio_screen.dart';
+import 'package:service_met/screens/calibracion/servicio_screen.dart';
 import 'precarga_controller.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/cliente_step.dart';
@@ -397,7 +397,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             nReca: _nRecaController.text,
             secaValue: controller.generatedSeca!,
             sessionId: controller.generatedSessionId!,
-            dbName: '',
+
           ),
         ),
       );

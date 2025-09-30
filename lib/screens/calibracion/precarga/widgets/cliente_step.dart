@@ -61,6 +61,18 @@ class _ClienteStepState extends State<ClienteStep> {
             // Información del cliente seleccionado
             if (controller.selectedClienteName != null)
               _buildSelectedClientInfo(controller),
+
+            // Botón de selección de termohigrómetros (FUERA del info card)
+            if (controller.selectedClienteName != null && controller.equipos.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _buildTermohigrometroSelection(controller),
+            ],
+
+            // Mostrar termohigrómetros seleccionados
+            if (controller.selectedTermohigrometros.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _buildSelectedTermohigrometrosInfo(controller),
+            ],
           ],
         );
       },
@@ -290,7 +302,7 @@ class _ClienteStepState extends State<ClienteStep> {
       child: Column(
         children: [
           Text(
-            'SELECCIÓN INICIAL DE TERMOHIGRÓMETROS',
+            'SELECCIÓN DE TERMOHIGRÓMETROS',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -320,6 +332,136 @@ class _ClienteStepState extends State<ClienteStep> {
         ],
       ),
     ).animate(delay: 800.ms).fadeIn().slideY(begin: 0.3);
+  }
+
+  Widget _buildSelectedTermohigrometrosInfo(PrecargaController controller) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.blue[50]!,
+            Colors.blue[100]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[200],
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.device_thermostat,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Termohigrómetros Seleccionados',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...controller.selectedTermohigrometros.map((termo) {
+            final certFecha = DateTime.parse(termo['cert_fecha']);
+            final difference = DateTime.now().difference(certFecha).inDays;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${termo['cod_instrumento']}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[900],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${termo['instrumento']}',
+                    style: GoogleFonts.inter(fontSize: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Certificado: ${termo['cert_fecha']}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: difference > 365
+                              ? Colors.red
+                              : difference > 300
+                              ? Colors.orange
+                              : Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '($difference días)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.verified, size: 14, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Ente: ${termo['ente_calibrador']}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    ).animate(delay: 900.ms).fadeIn().slideY(begin: 0.3);
   }
 
   void _showTermohigrometrosSelection(PrecargaController controller) {
@@ -601,14 +743,6 @@ class _ClienteStepState extends State<ClienteStep> {
               ),
             ),
           ],
-          // Agregar después de _buildSelectedClientInfo()
-          if (controller.selectedClienteName != null && controller.equipos.isNotEmpty)
-            Column(
-              children: [
-                const SizedBox(height: 30),
-                _buildTermohigrometroSelection(controller),
-              ],
-            ),
         ],
       ),
     ).animate(delay: 600.ms).fadeIn().slideY(begin: 0.3);
