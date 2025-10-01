@@ -1,51 +1,96 @@
 import 'package:flutter/material.dart';
 import 'linealidad_controller.dart';
 
-class LinearityRow extends StatelessWidget {
+class LinearityRow extends StatefulWidget {
   final int index;
   final VoidCallback onRemove;
-  final LinealidadController controller; // Agregar esto
+  final LinealidadController controller;
 
   const LinearityRow({
     super.key,
     required this.index,
     required this.onRemove,
-    required this.controller, // ← Y guardarlo aquí
+    required this.controller,
   });
 
   @override
+  State<LinearityRow> createState() => _LinearityRowState();
+}
+
+class _LinearityRowState extends State<LinearityRow> {
+  double _dValue = 0.1;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDValue();
+  }
+
+  Future<void> _loadDValue() async {
+    try {
+      // Obtener el valor de LT para calcular el D apropiado
+      final ltText = widget.controller.rows[widget.index]['lt']?.text ?? '';
+      final ltValue = double.tryParse(ltText.replaceAll(',', '.')) ?? 0.0;
+
+      final dValue = await widget.controller.getDForCarga(ltValue);
+      setState(() {
+        _dValue = dValue;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _dValue = 0.1;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(LinearityRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Recargar D value cuando cambie el valor de LT
+    final oldLt = oldWidget.controller.rows[widget.index]['lt']?.text ?? '';
+    final newLt = widget.controller.rows[widget.index]['lt']?.text ?? '';
+    if (oldLt != newLt) {
+      _loadDValue();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final row = controller.rows[index];
-    final d1 = controller.getD1Value();
-    final decimalPlaces = d1.toString().split('.').last.length;
+    if (_isLoading) {
+      return const CircularProgressIndicator();
+    }
+
+    final row = widget.controller.rows[widget.index];
+    final decimalPlaces = _getDecimalPlaces(_dValue);
 
     return Column(
       children: [
-        _buildLtField(context, controller, row, index, decimalPlaces),
+        _buildLtField(context, row, decimalPlaces),
         const SizedBox(height: 10),
-        _buildIndicacionRetornoFields(row, d1, decimalPlaces),
+        _buildIndicacionRetornoFields(row, decimalPlaces),
         const Divider(height: 30),
       ],
     );
   }
 
   Widget _buildLtField(
-    BuildContext context,
-    LinealidadController controller,
-    Map<String, TextEditingController> row,
-    int index,
-    int decimalPlaces,
-  ) {
+      BuildContext context,
+      Map<String, TextEditingController> row,
+      int decimalPlaces,
+      ) {
     return Row(
       children: [
         Expanded(
           child: TextFormField(
             controller: row['lt'],
             decoration: buildInputDecoration(
-              'LT ${index + 1}',
+              'LT ${widget.index + 1}',
             ),
             keyboardType: TextInputType.number,
-            validator: (value) => _validateLt(value, controller, index),
+            validator: (value) => _validateLt(value, row, decimalPlaces),
             onChanged: (value) {
               final indicacion = row['indicacion'];
               // Siempre que el valor de LT no esté vacío, actualiza 'indicacion'
@@ -56,6 +101,8 @@ class LinearityRow extends StatelessWidget {
               else {
                 indicacion?.text = '';
               }
+              // Recalcular D value cuando cambia LT
+              _loadDValue();
             },
           ),
         ),
@@ -74,21 +121,24 @@ class LinearityRow extends StatelessWidget {
   }
 
   Widget _buildIndicacionRetornoFields(
-    Map<String, TextEditingController> row,
-    double d1,
-    int decimalPlaces,
-  ) {
+      Map<String, TextEditingController> row,
+      int decimalPlaces,
+      ) {
     return Row(
       children: [
         Expanded(
           child: TextFormField(
             controller: row['indicacion'],
             decoration: buildInputDecoration(
-              'Indicación ${index + 1}',
-              suffixIcon: _buildPopupMenu(row, d1, decimalPlaces),
+              'Indicación ${widget.index + 1}',
+              suffixIcon: _buildPopupMenu(row, decimalPlaces),
             ),
             keyboardType: TextInputType.number,
             validator: (value) => _validateRequired(value),
+            onChanged: (value) {
+              // Recalcular diferencia cuando cambia la indicación
+              _calculateDifference(row, decimalPlaces);
+            },
           ),
         ),
         const SizedBox(width: 10),
@@ -96,7 +146,7 @@ class LinearityRow extends StatelessWidget {
           child: TextFormField(
             controller: row['retorno'],
             decoration: buildInputDecoration(
-              'Retorno ${index + 1}',
+              'Retorno ${widget.index + 1}',
             ),
             keyboardType: TextInputType.number,
             validator: (value) => _validateRequired(value),
@@ -107,17 +157,21 @@ class LinearityRow extends StatelessWidget {
   }
 
   PopupMenuButton<String> _buildPopupMenu(
-    Map<String, TextEditingController> row,
-    double d1,
-    int decimalPlaces,
-  ) {
+      Map<String, TextEditingController> row,
+      int decimalPlaces,
+      ) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.arrow_drop_down),
-      onSelected: (value) => row['indicacion']?.text = value,
+      onSelected: (value) {
+        row['indicacion']?.text = value;
+        _calculateDifference(row, decimalPlaces);
+      },
       itemBuilder: (context) {
-        final baseValue = double.tryParse(row['indicacion']?.text ?? '') ?? 0.0;
+        final currentText = row['indicacion']?.text ?? '';
+        final baseValue = double.tryParse(currentText.replaceAll(',', '.')) ?? 0.0;
+
         return List.generate(11, (i) {
-          final value = baseValue + ((i - 5) * d1);
+          final value = baseValue + ((i - 5) * _dValue);
           return PopupMenuItem<String>(
             value: value.toStringAsFixed(decimalPlaces),
             child: Text(value.toStringAsFixed(decimalPlaces)),
@@ -127,7 +181,19 @@ class LinearityRow extends StatelessWidget {
     );
   }
 
-  String? _validateLt(String? value, LinealidadController controller, int index) {
+  void _calculateDifference(Map<String, TextEditingController> row, int decimalPlaces) {
+    final ltText = row['lt']?.text ?? '';
+    final indicacionText = row['indicacion']?.text ?? '';
+
+    if (ltText.isNotEmpty && indicacionText.isNotEmpty) {
+      final ltValue = double.tryParse(ltText.replaceAll(',', '.')) ?? 0.0;
+      final indValue = double.tryParse(indicacionText.replaceAll(',', '.')) ?? 0.0;
+      final difference = indValue - ltValue;
+      row['difference']?.text = difference.toStringAsFixed(decimalPlaces);
+    }
+  }
+
+  String? _validateLt(String? value, Map<String, TextEditingController> row, int decimalPlaces) {
     if (value == null || value.isEmpty) {
       return 'Campo obligatorio';
     }
@@ -137,13 +203,12 @@ class LinearityRow extends StatelessWidget {
     }
 
     // Calcular diferencia automáticamente
-    final indicacion = controller.rows[index]['indicacion']?.text;
+    final indicacion = row['indicacion']?.text;
     if (indicacion != null && indicacion.isNotEmpty) {
       final indValue = double.tryParse(indicacion.replaceAll(',', '.'));
       if (indValue != null) {
         final difference = indValue - ltValue;
-        final decimalPlaces = controller.getD1Value().toString().split('.').last.length;
-        controller.rows[index]['difference']?.text = difference.toStringAsFixed(decimalPlaces);
+        row['difference']?.text = difference.toStringAsFixed(decimalPlaces);
       }
     }
 
@@ -154,11 +219,19 @@ class LinearityRow extends StatelessWidget {
     return value == null || value.isEmpty ? 'Campo obligatorio' : null;
   }
 
+  int _getDecimalPlaces(double dValue) {
+    if (dValue >= 1) return 0;
+    if (dValue >= 0.1) return 1;
+    if (dValue >= 0.01) return 2;
+    if (dValue >= 0.001) return 3;
+    return 1; // por defecto
+  }
+
   InputDecoration buildInputDecoration(
-    String labelText, {
-    Widget? suffixIcon,
-    String? suffixText,
-  }) {
+      String labelText, {
+        Widget? suffixIcon,
+        String? suffixText,
+      }) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(

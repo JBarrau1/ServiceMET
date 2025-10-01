@@ -4,7 +4,7 @@ import 'package:service_met/provider/balanza_provider.dart';
 import '../../../../models/balanza_model.dart';
 import 'excentricidad_controller.dart';
 
-class PositionRow extends StatelessWidget {
+class PositionRow extends StatefulWidget {
   final ExcentricidadController controller;
   final int index;
 
@@ -15,10 +15,53 @@ class PositionRow extends StatelessWidget {
   });
 
   @override
+  State<PositionRow> createState() => _PositionRowState();
+}
+
+class _PositionRowState extends State<PositionRow> {
+  double _dValue = 0.1;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDValue();
+  }
+
+  Future<void> _loadDValue() async {
+    final carga = double.tryParse(
+      widget.controller.cargaController.text.replaceAll(',', '.'),
+    ) ?? 0.0;
+
+    try {
+      final dValue = await widget.controller.getDForCarga(carga);
+      setState(() {
+        _dValue = dValue;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _dValue = 0.1;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(PositionRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Recargar D value cuando cambie la carga
+    if (oldWidget.controller.cargaController.text !=
+        widget.controller.cargaController.text) {
+      _loadDValue();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final balanza = context.select<BalanzaProvider, Balanza?>(
-          (p) => p.selectedBalanza,
-    );
+    if (_isLoading) {
+      return const CircularProgressIndicator();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,7 +70,7 @@ class PositionRow extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
           child: Text(
-            "Posición: ${controller.positionControllers[index].text}",
+            "Posición: ${widget.controller.positionControllers[widget.index].text}",
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
@@ -39,15 +82,15 @@ class PositionRow extends StatelessWidget {
             // Indicación
             Expanded(
               child: _IndicationField(
-                controller: controller,
-                index: index,
-                balanza: balanza, // puede ser null; el campo sigue habilitado
+                controller: widget.controller,
+                index: widget.index,
+                dValue: _dValue, // Pasamos el valor ya obtenido
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: TextFormField(
-                controller: controller.returnControllers[index],
+                controller: widget.controller.returnControllers[widget.index],
                 decoration: _buildInputDecoration('Retorno'),
                 keyboardType: TextInputType.number,
                 validator: (value) {
@@ -67,20 +110,15 @@ class _IndicationField extends StatelessWidget {
   const _IndicationField({
     required this.controller,
     required this.index,
-    required this.balanza,
+    required this.dValue,
   });
 
   final ExcentricidadController controller;
   final int index;
-  final Balanza? balanza;
+  final double dValue; // Ahora recibe double directamente
 
   @override
   Widget build(BuildContext context) {
-    final carga = double.tryParse(
-      controller.cargaController.text.replaceAll(',', '.'),
-    ) ?? 0.0;
-
-    final dValue = controller.getDForCarga(carga, balanza);
     final decimalPlaces = _decimalPlacesForStep(dValue);
 
     return TextFormField(
@@ -97,7 +135,7 @@ class _IndicationField extends StatelessWidget {
           itemBuilder: (context) {
             final currentText =
             controller.indicationControllers[index].text.trim();
-            // Si está vacío, usa la carga como base; así el flujo es igual.
+            // Si está vacío, usa la carga como base
             final baseValue = double.tryParse(
               (currentText.isEmpty
                   ? controller.cargaController.text

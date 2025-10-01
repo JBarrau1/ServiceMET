@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/screens/calibracion/servicio_screen.dart';
+import '../../../database/app_database.dart';
 import 'precarga_controller.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/cliente_step.dart';
@@ -17,10 +18,16 @@ import 'widgets/equipos_step.dart';
 
 class PrecargaScreen extends StatefulWidget {
   final String userName;
+  final int initialStep; // AGREGAR
+  final String? sessionId; // AGREGAR
+  final String? secaValue; // AGREGAR
 
   const PrecargaScreen({
     super.key,
     required this.userName,
+    this.initialStep = 0, // Por defecto empieza en paso 0
+    this.sessionId,
+    this.secaValue,
   });
 
   @override
@@ -72,12 +79,51 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     });
   }
 
+
   Future<void> _initializeData() async {
     try {
       await controller.fetchClientes();
       await controller.fetchEquipos();
+
+      // Si hay sessionId y secaValue, cargar datos existentes y avanzar al paso
+      if (widget.sessionId != null && widget.secaValue != null) {
+        await _loadExistingSession();
+      }
     } catch (e) {
       _showSnackBar('Error al inicializar: $e', isError: true);
+    }
+  }
+
+  Future<void> _loadExistingSession() async {
+    try {
+      final dbHelper = AppDatabase();
+      final registro = await dbHelper.getRegistroBySeca(
+        widget.secaValue!,
+        widget.sessionId!,
+      );
+
+      if (registro != null) {
+        // Establecer los valores internos del controller
+        controller.setInternalValues(
+          sessionId: widget.sessionId!,
+          seca: widget.secaValue!,
+          clienteName: registro['cliente']?.toString(),
+          clienteRazonSocial: registro['razon_social']?.toString(),
+          plantaDir: registro['dir_planta']?.toString(),
+          plantaDep: registro['dep_planta']?.toString(),
+          plantaCodigo: registro['cod_planta']?.toString(),
+        );
+
+        // Esperar un momento para que se procesen los datos
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        // Ir al paso inicial especificado
+        if (widget.initialStep > 0 && widget.initialStep <= 4) {
+          controller.setCurrentStep(widget.initialStep);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al cargar sesión existente: $e');
     }
   }
 
@@ -166,6 +212,11 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           balanzaControllers: _balanzaControllers,
           nRecaController: _nRecaController,
           stickerController: _stickerController,
+          secaValue: controller.generatedSeca ?? '',
+          sessionId: controller.generatedSessionId ?? '',
+          selectedPlantaCodigo: controller.selectedPlantaCodigo ?? '',
+          selectedCliente: controller.selectedClienteId ?? '',
+          loadFromSharedPreferences: false,
         );
       case 4:
         return const EquiposStep();

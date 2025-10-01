@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/repetibilidad_controller.dart';
 
-class TestRow extends StatelessWidget {
+class TestRow extends StatefulWidget {
   final RepetibilidadController controller;
   final int cargaIndex;
   final int testIndex;
@@ -14,26 +14,69 @@ class TestRow extends StatelessWidget {
   });
 
   @override
+  State<TestRow> createState() => _TestRowState();
+}
+
+class _TestRowState extends State<TestRow> {
+  double _dValue = 0.1;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDValue();
+  }
+
+  Future<void> _loadDValue() async {
+    try {
+      final dValue = await widget.controller.getDValueForCargaController(widget.cargaIndex);
+      setState(() {
+        _dValue = dValue;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _dValue = 0.1;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(TestRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Recargar D value cuando cambie la carga
+    if (oldWidget.controller.cargaControllers[widget.cargaIndex].text !=
+        widget.controller.cargaControllers[widget.cargaIndex].text) {
+      _loadDValue();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const CircularProgressIndicator();
+    }
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: TextFormField(
-                controller: controller.indicacionControllers[cargaIndex][testIndex],
+                controller: widget.controller.indicacionControllers[widget.cargaIndex][widget.testIndex],
                 decoration: buildInputDecoration(
-                  'Indicación ${testIndex + 1}',
+                  'Indicación ${widget.testIndex + 1}',
                   suffixIcon: PopupMenuButton<String>(
                     icon: const Icon(Icons.arrow_drop_down),
                     onSelected: (value) {
-                      controller.indicacionControllers[cargaIndex][testIndex].text = value;
+                      widget.controller.indicacionControllers[widget.cargaIndex][widget.testIndex].text = value;
                     },
                     itemBuilder: (context) {
-                      // 🔥 CAMBIO 1: Usar el método que selecciona el D correcto según la carga
-                      final dValue = controller.getDValueForCargaController(cargaIndex);
+                      // CORREGIDO: Usar _dValue que ya está cargado
+                      final dValue = _dValue;
 
-                      // 🔥 CAMBIO 2: Calcular decimales basado en el valor D
+                      // CORREGIDO: Calcular decimales basado en el valor D
                       int decimalPlaces = 1; // por defecto
                       if (dValue >= 1) {
                         decimalPlaces = 0;
@@ -45,15 +88,15 @@ class TestRow extends StatelessWidget {
                         decimalPlaces = 3;
                       }
 
-                      // 🔥 CAMBIO 3: Usar la carga como base si el campo está vacío
-                      final currentText = controller.indicacionControllers[cargaIndex][testIndex].text.trim();
+                      // ✅ CORREGIDO: Usar la carga como base si el campo está vacío
+                      final currentText = widget.controller.indicacionControllers[widget.cargaIndex][widget.testIndex].text.trim();
                       final baseValue = double.tryParse(
                           (currentText.isEmpty
-                              ? controller.cargaControllers[cargaIndex].text
+                              ? widget.controller.cargaControllers[widget.cargaIndex].text
                               : currentText).replaceAll(',', '.')
                       ) ?? 0.0;
 
-                      // 🔥 CAMBIO 4: Usar dValue en lugar de d1
+                      // ✅ CORREGIDO: Usar _dValue en lugar de d1
                       return List.generate(11, (i) {
                         final value = baseValue + ((i - 5) * dValue);
                         return PopupMenuItem<String>(
@@ -76,14 +119,14 @@ class TestRow extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: TextFormField(
-                controller: controller.retornoControllers[cargaIndex][testIndex],
+                controller: widget.controller.retornoControllers[widget.cargaIndex][widget.testIndex],
                 decoration: buildInputDecoration(
-                  'Retorno ${testIndex + 1}',
+                  'Retorno ${widget.testIndex + 1}',
                 ),
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
                   if (value.isEmpty) {
-                    controller.retornoControllers[cargaIndex][testIndex].text = '0';
+                    widget.controller.retornoControllers[widget.cargaIndex][widget.testIndex].text = '0';
                   }
                 },
                 validator: (value) {

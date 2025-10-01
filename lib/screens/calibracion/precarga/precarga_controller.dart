@@ -126,6 +126,39 @@ class PrecargaController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setCurrentStep(int step) {
+    if (step >= 0 && step <= 4) { // Hay 5 pasos (0-4)
+      _currentStep = step;
+      notifyListeners();
+    }
+  }
+
+  void setInternalValues({
+    required String sessionId,
+    required String seca,
+    String? clienteName,
+    String? clienteRazonSocial,
+    String? plantaDir,
+    String? plantaDep,
+    String? plantaCodigo,
+  }) {
+    _generatedSessionId = sessionId;
+    _generatedSeca = seca;
+    _secaConfirmed = true;
+
+    if (clienteName != null) _selectedClienteName = clienteName;
+    if (clienteRazonSocial != null) _selectedClienteRazonSocial = clienteRazonSocial;
+    if (plantaDir != null) _selectedPlantaDir = plantaDir;
+    if (plantaDep != null) _selectedPlantaDep = plantaDep;
+    if (plantaCodigo != null) {
+      _selectedPlantaCodigo = plantaCodigo;
+      // Cargar balanzas para esta planta
+      fetchBalanzas(plantaCodigo);
+    }
+
+    notifyListeners();
+  }
+
   // MÉTODOS DE CLIENTE
   Future<void> fetchClientes() async {
     try {

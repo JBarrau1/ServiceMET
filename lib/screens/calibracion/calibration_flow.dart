@@ -1,13 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/excentricidad/excentricidad_screen.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/linealidad/linealidad_screen.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/repetibilidad_screen.dart';
 import 'package:service_met/screens/calibracion/rca_final_screen.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../provider/balanza_provider.dart';
 
 class CalibrationFlowScreen extends StatefulWidget {
@@ -29,67 +29,94 @@ class CalibrationFlowScreen extends StatefulWidget {
 }
 
 class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
+  int _currentStep = 0;
   DateTime? _lastPressedTime;
 
-  void _showSnackBar(BuildContext context, String message,
-      {bool isError = false}) {
+  final List<Map<String, dynamic>> _stepInfo = [
+    {'title': 'Exc', 'icon': Icons.center_focus_strong},
+    {'title': 'Rep', 'icon': Icons.repeat},
+    {'title': 'Lin', 'icon': Icons.show_chart},
+  ];
+
+  void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white),
-        ),
+        content: Text(message),
         backgroundColor: isError ? Colors.red : Colors.green,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
       ),
     );
   }
 
-  Future<bool> _onWillPop(BuildContext context) async {
+  Future<bool> _onWillPop() async {
     final now = DateTime.now();
     if (_lastPressedTime == null ||
         now.difference(_lastPressedTime!) > const Duration(seconds: 2)) {
       _lastPressedTime = now;
-      _showSnackBar(context,
-          'Presione nuevamente para retroceder. Los datos registrados se perderán.');
+      _showSnackBar(
+          'Presione nuevamente para salir. Los datos no guardados se perderán.',
+          isError: true);
       return false;
     }
     return true;
   }
 
-  Future<void> _showConfirmationDialog(BuildContext context) async {
+  Future<void> _showConfirmationDialog() async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
+      barrierDismissible: true, // Cambiar a true para mejor UX
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'CONFIRMACIÓN',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 17,
-            ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          content: const Text(
-              '¿Estás seguro de que deseas finalizar las pruebas metrológicas?'),
+          title: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.green, size: 28),
+              const SizedBox(width: 12),
+              Text(
+                'FINALIZAR PRUEBAS',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '¿Estás seguro de que deseas finalizar las pruebas metrológicas?',
+            style: GoogleFonts.inter(fontSize: 15),
+          ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancelar'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              child: Text(
+                'Seguir Editando',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: () {
-                Navigator.of(context).pop();
-                _navigateToRcaFinalScreen(context);
+                Navigator.of(dialogContext).pop();
+                _navigateToRcaFinalScreen();
               },
-              child: const Text('Aceptar'),
+              child: Text(
+                'Continuar',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             )
           ],
         );
@@ -97,7 +124,7 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
     );
   }
 
-  void _navigateToRcaFinalScreen(BuildContext context) {
+  void _navigateToRcaFinalScreen() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -111,436 +138,610 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
     );
   }
 
+  void _navigateToStep(int stepIndex) {
+    if (stepIndex >= 0 && stepIndex < _stepInfo.length) {
+      setState(() {
+        _currentStep = stepIndex;
+      });
+    }
+  }
+
+  void _onStepCompleted() {
+    _showSnackBar('Datos de ${_stepInfo[_currentStep]['title']} guardados correctamente');
+
+    // Navegar automáticamente al siguiente paso si no es el último
+    if (_currentStep < _stepInfo.length - 1) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        _navigateToStep(_currentStep + 1);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final balanza = Provider.of<BalanzaProvider>(context).selectedBalanza;
 
     return WillPopScope(
-      onWillPop: () => _onWillPop(context),
+      onWillPop: _onWillPop,
       child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          toolbarHeight: 70,
-          title: const Text(
-            'CALIBRACIÓN',
-            style: TextStyle(
-              fontSize: 16.0,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? Colors.transparent
-              : Colors.white,
-          elevation: 0,
-          flexibleSpace: Theme.of(context).brightness == Brightness.dark
-              ? ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-              child: Container(
-                color: Colors.black.withOpacity(0.4),
+        appBar: _buildAppBar(isDarkMode),
+        body: Column(
+          children: [
+            _buildStepIndicator(),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: _buildCurrentStepContent(),
               ),
             ),
-          )
-              : null,
-          iconTheme: IconThemeData(color: Theme.of(context).iconTheme.color),
-          titleTextStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black,
-          ),
-          centerTitle: true,
+            _buildBottomButtons(),
+          ],
         ),
-        body: Stack(
-          children: [
-            // Contenido principal con padding para la AppBar
-            Padding(
-              padding: const EdgeInsets.only(top: kToolbarHeight), // Añade espacio para la AppBar
-              child: Column(
-                children: [
-                  Expanded(
+        floatingActionButton: _buildSpeedDial(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+      ),
+    );
+  }
 
-                    child: PageView(
-                      controller: _pageController,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentPage = index;
-                        });
-                      },
-                      children: [
-                        // Página 1: Excentricidad
-                        ExcentricidadScreen(
-                          sessionId: widget.sessionId,
-                          codMetrica: widget.codMetrica,
-                          secaValue: widget.secaValue,
-                          selectedBalanza: widget.selectedBalanza,
-                          onNext: () => _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          ),
-                        ),
+  PreferredSizeWidget _buildAppBar(bool isDarkMode) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(70),
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+          child: AppBar(
+            toolbarHeight: 70,
+            title: Column(
+              children: [
+                Text(
+                  'CALIBRACIÓN',
+                  style: GoogleFonts.poppins(
+                    color: isDarkMode ? Colors.white : Colors.black,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16.0,
+                  ),
+                ),
+                Text(
+                  'Pruebas Metrológicas',
+                  style: GoogleFonts.inter(
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                    fontWeight: FontWeight.w400,
+                    fontSize: 12.0,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: isDarkMode
+                ? Colors.black.withOpacity(0.4)
+                : Colors.white.withOpacity(0.7),
+            elevation: 0,
+            centerTitle: true,
+          ),
+        ),
+      ),
+    );
+  }
 
-                        // Página 2: Repetibilidad
-                        RepetibilidadScreen(
-                          sessionId: widget.sessionId,
-                          codMetrica: widget.codMetrica,
-                          secaValue: widget.secaValue,
-                          onNext: () => _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          ),
-                        ),
+  Widget _buildStepIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          // Fila de círculos conectados
+          SizedBox(
+            height: 40,
+            child: Stack(
+              children: [
+                // Línea de fondo continua
+                Positioned(
+                  top: 19,
+                  left: 40,
+                  right: 40,
+                  child: Container(
+                    height: 2,
+                    color: Colors.grey[300],
+                  ),
+                ),
+                // Círculos
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(_stepInfo.length, (index) {
+                    return GestureDetector(
+                      onTap: () => _navigateToStep(index),
+                      child: _buildStepCircle(index),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Fila de títulos
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(_stepInfo.length, (index) {
+              final isActive = index == _currentStep;
 
-                        // Página 3: Linealidad
-                        LinealidadScreen(
-                          sessionId: widget.sessionId,
-                          codMetrica: widget.codMetrica,
-                          secaValue: widget.secaValue,
-                          onNext: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => RcaFinalScreen(
-                                  secaValue: widget.secaValue,
-                                  selectedBalanza: widget.selectedBalanza,
-                                  codMetrica: widget.codMetrica,
-                                  sessionId: widget.sessionId,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => _navigateToStep(index),
+                  child: Text(
+                    _stepInfo[index]['title'],
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      height: 1.2,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                      color: isActive ? const Color(0xFF667EEA) : Colors.grey[600],
                     ),
                   ),
-                  // Espacio reservado para los botones
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
-            // Botones de navegación fijos en la parte inferior
-            Positioned(
-              bottom: 20,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    SmoothPageIndicator(
-                      controller: _pageController,
-                      count: 3,
-                      effect: const WormEffect(
-                        dotHeight: 10,
-                        dotWidth: 10,
-                        activeDotColor: Color(0xFF3a6d8b),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (_currentPage > 0)
-                          TextButton(
-                            onPressed: () => _pageController.previousPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            ),
-                            child: const Text('Anterior'),
-                          )
-                        else
-                          const SizedBox(width: 100),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
 
-                        if (_currentPage < 2)
-                          ElevatedButton(
-                            onPressed: () => _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF478b3a),
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Siguiente'),
-                          )
-                        else
-                          ElevatedButton(
-                            onPressed: () => _showConfirmationDialog(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF478b3a),
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Finalizar Pruebas Metrológicas'),
-                          ),
-                      ],
+  Widget _buildStepCircle(int index) {
+    final isActive = index == _currentStep;
+
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isActive ? const Color(0xFF667EEA) : Colors.grey[300],
+        border: Border.all(
+          color: isActive ? const Color(0xFF667EEA) : Colors.transparent,
+          width: 3,
+        ),
+        boxShadow: isActive
+            ? [
+          BoxShadow(
+            color: const Color(0xFF667EEA).withOpacity(0.3),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ]
+            : null,
+      ),
+      child: Center(
+        child: Icon(
+          _stepInfo[index]['icon'],
+          color: isActive ? Colors.white : Colors.grey[600],
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentStepContent() {
+    switch (_currentStep) {
+      case 0:
+        return ExcentricidadScreen(
+          sessionId: widget.sessionId,
+          codMetrica: widget.codMetrica,
+          secaValue: widget.secaValue,
+          selectedBalanza: widget.selectedBalanza,
+          onDataSaved: _onStepCompleted, // Cambiar por la nueva función
+        );
+      case 1:
+        return RepetibilidadScreen(
+          sessionId: widget.sessionId,
+          codMetrica: widget.codMetrica,
+          secaValue: widget.secaValue,
+          onDataSaved: _onStepCompleted, // Cambiar por la nueva función
+        );
+      case 2:
+        return LinealidadScreen(
+          sessionId: widget.sessionId,
+          codMetrica: widget.codMetrica,
+          secaValue: widget.secaValue,
+          onDataSaved: _onStepCompleted, // Cambiar por la nueva función
+        );
+      default:
+        return const Center(child: Text('Paso no disponible'));
+    }
+  }
+
+  Widget _buildBottomButtons() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            // Botón Anterior
+            if (_currentStep > 0)
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _navigateToStep(_currentStep - 1),
+                  icon: const Icon(Icons.arrow_back, size: 18),
+                  label: const Text('Anterior'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey[700],
+                    side: BorderSide(color: Colors.grey[400]!),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    textStyle: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
+                  ),
+                ),
+              ),
+
+            if (_currentStep > 0) const SizedBox(width: 12),
+
+            // Botón Siguiente o Finalizar
+            Expanded(
+              child: _currentStep < _stepInfo.length - 1
+                  ? ElevatedButton.icon(
+                onPressed: () => _navigateToStep(_currentStep + 1),
+                icon: const Icon(Icons.arrow_forward, size: 18),
+                label: const Text('Siguiente'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF667EEA),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 2,
+                  textStyle: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+                  : ElevatedButton.icon(
+                onPressed: _showConfirmationDialog,
+                icon: const Icon(Icons.check_circle, size: 18),
+                label: const Text('Finalizar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 2,
+                  textStyle: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
           ],
         ),
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.only(bottom: 80.0),
-          child: SpeedDial(
-            icon: Icons.menu,
-            activeIcon: Icons.close,
-            iconTheme: const IconThemeData(color: Colors.black54),
-            backgroundColor: const Color(0xFFF9E300),
-            foregroundColor: Colors.white,
-            children: [
-              SpeedDialChild(
-                child: const Icon(Icons.info),
-                backgroundColor: Colors.blueAccent,
-                label: 'Información de la balanza',
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              const Text(
-                                'Información de la balanza',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              if (balanza != null) ...[
-                                _buildDetailContainer(
-                                    'Código Métrica',
-                                    balanza.cod_metrica,
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'Unidades',
-                                    balanza.unidad.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'pmax1',
-                                    balanza.cap_max1,
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'd1',
-                                    balanza.d1.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'e1',
-                                    balanza.e1.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'dec1',
-                                    balanza.dec1.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'pmax2',
-                                    balanza.cap_max2,
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'd2',
-                                    balanza.d2.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'e2',
-                                    balanza.e2.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'dec2',
-                                    balanza.dec2.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'pmax3',
-                                    balanza.cap_max3,
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'd3',
-                                    balanza.d3.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'e3',
-                                    balanza.e3.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                                _buildDetailContainer(
-                                    'dec3',
-                                    balanza.dec3.toString(),
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color ??
-                                        Colors.black,
-                                    Colors.grey),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              SpeedDialChild(
-                child: const Icon(Icons.info),
-                backgroundColor: Colors.orangeAccent,
-                label: 'Datos del Último Servicio',
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (BuildContext context) {
-                      final lastServiceData = Provider.of<BalanzaProvider>(context, listen: false).lastServiceData;
-                      if (lastServiceData == null) {
-                        return const Center(child: Text('No hay datos de servicio'));
-                      }
-
-                      final textColor = Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black;
-                      final dividerColor = Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black;
-
-                      final Map<String, String> fieldLabels = {
-                        'reg_fecha': 'Fecha del Último Servicio',
-                        'reg_usuario': 'Técnico Responsable',
-                        'seca': 'Último SECA',
-                        'exc': 'Exc',
-                      };
-
-                      for (int i = 1; i <= 30; i++) {
-                        fieldLabels['rep$i'] = 'rep $i';
-                      }
-
-                      for (int i = 1; i <= 60; i++) {
-                        fieldLabels['lin$i'] = 'lin $i';
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'REGISTRO DE ÚLTIMOS SERVICIOS DE CALIBRACIÓN',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              ...lastServiceData.entries
-                                  .where((entry) => entry.value != null && fieldLabels.containsKey(entry.key))
-                                  .map((entry) => _buildDetailContainer(
-                                  fieldLabels[entry.key]!,
-                                  entry.key == 'reg_fecha'
-                                      ? DateFormat('yyyy-MM-dd').format(DateTime.parse(entry.value))
-                                      : entry.value.toString(),
-                                  textColor,
-                                  dividerColor)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
 
-  Widget _buildDetailContainer(
-      String label, String value, Color textColor, Color borderColor) {
+  Widget _buildSpeedDial() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: SpeedDial(
+        icon: Icons.menu,
+        activeIcon: Icons.close,
+        spacing: 12,
+        spaceBetweenChildren: 12,
+        iconTheme: const IconThemeData(color: Colors.black87, size: 24),
+        backgroundColor: const Color(0xFFF9E300),
+        foregroundColor: Colors.black87,
+        overlayColor: Colors.black,
+        overlayOpacity: 0.5,
+        elevation: 8,
+        animationCurve: Curves.easeInOut,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.info_outline, size: 24),
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            label: 'Info de la balanza',
+            labelStyle: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            labelBackgroundColor: Colors.blue,
+            onTap: _showBalanzaInfo,
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.history, size: 24),
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            label: 'Último servicio',
+            labelStyle: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            labelBackgroundColor: Colors.orange,
+            onTap: _showLastServiceData,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBalanzaInfo() {
+    final balanza = Provider.of<BalanzaProvider>(context, listen: false)
+        .selectedBalanza;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  // Handle bar
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.scale, color: Colors.blue, size: 28),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Información de la Balanza',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: Colors.grey[300]),
+                  const SizedBox(height: 8),
+                  // Content
+                  Expanded(
+                    child: balanza != null
+                        ? ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      children: [
+                        _buildDetailContainer(
+                            'Código Métrica', balanza.cod_metrica),
+                        _buildDetailContainer(
+                            'Unidades', balanza.unidad.toString()),
+                        _buildSectionHeader('Rango 1'),
+                        _buildDetailContainer('pmax1', balanza.cap_max1),
+                        _buildDetailContainer('d1', balanza.d1.toString()),
+                        _buildDetailContainer('e1', balanza.e1.toString()),
+                        _buildDetailContainer('dec1', balanza.dec1.toString()),
+                        _buildSectionHeader('Rango 2'),
+                        _buildDetailContainer('pmax2', balanza.cap_max2),
+                        _buildDetailContainer('d2', balanza.d2.toString()),
+                        _buildDetailContainer('e2', balanza.e2.toString()),
+                        _buildDetailContainer('dec2', balanza.dec2.toString()),
+                        _buildSectionHeader('Rango 3'),
+                        _buildDetailContainer('pmax3', balanza.cap_max3),
+                        _buildDetailContainer('d3', balanza.d3.toString()),
+                        _buildDetailContainer('e3', balanza.e3.toString()),
+                        _buildDetailContainer('dec3', balanza.dec3.toString()),
+                        const SizedBox(height: 20),
+                      ],
+                    )
+                        : Center(
+                      child: Text(
+                        'No hay información disponible',
+                        style: GoogleFonts.inter(fontSize: 15),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showLastServiceData() {
+    final lastServiceData =
+        Provider.of<BalanzaProvider>(context, listen: false).lastServiceData;
+
+    if (lastServiceData == null) {
+      _showSnackBar('No hay datos de servicio disponibles', isError: true);
+      return;
+    }
+
+    final Map<String, String> fieldLabels = {
+      'reg_fecha': 'Fecha del Último Servicio',
+      'reg_usuario': 'Técnico Responsable',
+      'seca': 'Último SECA',
+      'exc': 'Excentricidad',
+    };
+
+    for (int i = 1; i <= 30; i++) {
+      fieldLabels['rep$i'] = 'Repetibilidad $i';
+    }
+
+    for (int i = 1; i <= 60; i++) {
+      fieldLabels['lin$i'] = 'Linealidad $i';
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  // Handle bar
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.history, color: Colors.orange, size: 28),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Último Servicio',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: Colors.grey[300]),
+                  const SizedBox(height: 8),
+                  // Content
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      children: [
+                        ...lastServiceData.entries
+                            .where((entry) =>
+                        entry.value != null &&
+                            fieldLabels.containsKey(entry.key))
+                            .map((entry) => _buildDetailContainer(
+                            fieldLabels[entry.key]!,
+                            entry.key == 'reg_fecha'
+                                ? DateFormat('dd/MM/yyyy')
+                                .format(DateTime.parse(entry.value))
+                                : entry.value.toString()))
+                            .toList(),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF667EEA),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailContainer(String label, String value) {
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final borderColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withOpacity(0.1)
+        : Colors.grey.withOpacity(0.2);
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      padding: const EdgeInsets.all(16.0),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         border: Border.all(color: borderColor),
-        borderRadius: BorderRadius.circular(20.0),
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white.withOpacity(0.03)
+            : Colors.grey.withOpacity(0.03),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: textColor,
+              ),
+            ),
           ),
-          Text(
-            value,
-            style: TextStyle(color: textColor),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 1,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: textColor.withOpacity(0.8),
+              ),
+            ),
           ),
         ],
       ),

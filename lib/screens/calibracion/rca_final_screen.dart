@@ -34,6 +34,11 @@ class RcaFinalScreen extends StatefulWidget {
 }
 
 class _RcaFinalScreenState extends State<RcaFinalScreen> {
+
+  double? _hriInicial;
+  double? _tiInicial;
+  double? _patmiInicial;
+
   String? _selectedEmp23001;
   DatabaseHelper? _dbHelper; // Declaración de _dbHelper
   bool _isDataSaved =
@@ -62,6 +67,41 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
   void initState() {
     super.initState();
     _dbHelper = DatabaseHelper(); // Inicializa _dbHelper aquí
+    _loadInitialValues();
+  }
+
+  Future<void> _loadInitialValues() async {
+    try {
+      final dbHelper = AppDatabase();
+      final registro = await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
+
+      if (registro != null) {
+        setState(() {
+          _hriInicial = double.tryParse(registro['hri']?.toString() ?? '');
+          _tiInicial = double.tryParse(registro['ti']?.toString() ?? '');
+          _patmiInicial = double.tryParse(registro['patmi']?.toString() ?? '');
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar valores iniciales: $e');
+    }
+  }
+
+  Color _getValidationColor(double? initialValue, String currentText) {
+    if (initialValue == null || currentText.isEmpty) {
+      return Colors.grey; // Color por defecto
+    }
+
+    final currentValue = double.tryParse(currentText);
+    if (currentValue == null) return Colors.grey;
+
+    final difference = (currentValue - initialValue).abs();
+
+    if (difference <= 4) {
+      return Colors.green; // Dentro del rango permitido
+    } else {
+      return Colors.red; // Fuera del rango
+    }
   }
 
   void _showSnackBar(BuildContext context, String message,
@@ -90,12 +130,8 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
         _mantenimientoController.text.isEmpty ||
         _ventaPesasController.text.isEmpty ||
         _reemplazoController.text.isEmpty ||
-        _obscomController.text.isEmpty ||
-        _selectedEmp23001 == null ||
-        _selectedEmp23001!.isEmpty ||
-        _indicarController.text.isEmpty ||
-        _factorSeguridadController.text.isEmpty ||
-        _selectedReglaAceptacion == null
+        _obscomController.text.isEmpty
+
     // ... resto de validaciones
     ) {
       _showSnackBar(context, 'Error, termine de llenar todos los campos', isError: true);
@@ -123,10 +159,6 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
         'venta_pesas': _ventaPesasController.text,
         'reemplazo': _reemplazoController.text,
         'observaciones': _obscomController.text,
-        'emp': _selectedEmp23001,
-        'indicar': _indicarController.text,
-        'factor': _factorSeguridadController.text,
-        'regla_aceptacion': _selectedReglaAceptacion,
         'estado_servicio_bal': 'Balanza Calibrada',
       };
 
@@ -435,7 +467,6 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
     final String horaFinal = DateFormat('HH:mm').format(DateTime.now());
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 70, // Ajusta la altura del AppBar según lo necesites
         title: const Text(
@@ -470,12 +501,7 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 30, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-          left: 16.0, // Tu padding horizontal original
-          right: 16.0, // Tu padding horizontal original
-          bottom: 16.0, // Tu padding inferior original
-        ),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -627,75 +653,129 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                     ],
                   ),
                   const SizedBox(height: 20.0),
-                  TextFormField(
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal:
-                            true), // Permite solo números con punto decimal
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(
-                          r'^\d*\.?\d*')), // Solo permite números y el punto decimal
-                    ],
-                    controller: _hrifinController,
-                    decoration: buildInputDecoration(
-                      'HRi (%)',
-                      suffixText: '%',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor ingrese un valor';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Por favor ingrese un número válido';
-                      }
-                      return null;
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _hrifinController,
+                    builder: (context, value, child) {
+                      final borderColor = _getValidationColor(_hriInicial, value.text);
+                      return TextFormField(
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        ],
+                        controller: _hrifinController,
+                        decoration: buildInputDecoration(
+                          'HRi (%)',
+                          suffixText: '%',
+                        ).copyWith(
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            borderSide: BorderSide(color: borderColor, width: 2.0),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            borderSide: BorderSide(color: borderColor, width: 2.5),
+                          ),
+                          prefixIcon: Icon(
+                            borderColor == Colors.green
+                                ? Icons.check_circle
+                                : (borderColor == Colors.red ? Icons.warning : Icons.info),
+                            color: borderColor,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese un valor';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Por favor ingrese un número válido';
+                          }
+                          return null;
+                        },
+                      );
                     },
                   ),
                   const SizedBox(height: 20.0),
-                  TextFormField(
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal:
-                            true), // Permite solo números con punto decimal
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(
-                          r'^\d*\.?\d*')), // Solo permite números y el punto decimal
-                    ],
-                    controller: _tifinController,
-                    decoration: buildInputDecoration(
-                      'ti (°C)',
-                      suffixText: '°C',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor ingrese un valor';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Por favor ingrese un número válido';
-                      }
-                      return null;
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _tifinController,
+                    builder: (context, value, child) {
+                      final borderColor = _getValidationColor(_tiInicial, value.text);
+                      return TextFormField(
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        ],
+                        controller: _tifinController,
+                        decoration: buildInputDecoration(
+                          'ti (°C)',
+                          suffixText: '°C',
+                        ).copyWith(
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            borderSide: BorderSide(color: borderColor, width: 2.0),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            borderSide: BorderSide(color: borderColor, width: 2.5),
+                          ),
+                          prefixIcon: Icon(
+                            borderColor == Colors.green
+                                ? Icons.check_circle
+                                : (borderColor == Colors.red ? Icons.warning : Icons.info),
+                            color: borderColor,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese un valor';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Por favor ingrese un número válido';
+                          }
+                          return null;
+                        },
+                      );
                     },
                   ),
                   const SizedBox(height: 20.0),
-                  TextFormField(
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal:
-                            true), // Permite solo números con punto decimal
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(
-                          r'^\d*\.?\d*')), // Solo permite números y el punto decimal
-                    ],
-                    controller: _patmifinController,
-                    decoration: buildInputDecoration(
-                      'Patmi (hPa)',
-                      suffixText: 'hPa',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor ingrese un valor';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Por favor ingrese un número válido';
-                      }
-                      return null;
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _patmifinController,
+                    builder: (context, value, child) {
+                      final borderColor = _getValidationColor(_patmiInicial, value.text);
+                      return TextFormField(
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        ],
+                        controller: _patmifinController,
+                        decoration: buildInputDecoration(
+                          'Patmi (hPa)',
+                          suffixText: 'hPa',
+                        ).copyWith(
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            borderSide: BorderSide(color: borderColor, width: 2.0),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                            borderSide: BorderSide(color: borderColor, width: 2.5),
+                          ),
+                          prefixIcon: Icon(
+                            borderColor == Colors.green
+                                ? Icons.check_circle
+                                : (borderColor == Colors.red ? Icons.warning : Icons.info),
+                            color: borderColor,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese un valor';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Por favor ingrese un número válido';
+                          }
+                          return null;
+                        },
+                      );
                     },
                   ),
                 ],
@@ -783,73 +863,6 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                 }
                 return null;
               },
-            ),
-            const SizedBox(height: 20.0),
-            const SizedBox(height: 20.0),
-            DropdownButtonFormField<String>(
-              decoration: buildInputDecoration(
-                'EMP NB 23001',
-              ),
-              value: _selectedEmp23001,
-              items: ['Sí', 'No'].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedEmp23001 = newValue!;
-                });
-              },
-              validator: (value) =>
-                  value == null ? 'Por favor seleccione una opción' : null,
-            ),
-            const SizedBox(height: 20.0),
-            TextFormField(
-              keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true), // Permite solo números con punto decimal
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(
-                    r'^\d*\.?\d*')), // Solo permite números y el punto decimal
-              ],
-              controller: _indicarController,
-              decoration: buildInputDecoration(
-                'Indicar (%)',
-              ),
-            ),
-            const SizedBox(height: 20.0),
-            TextFormField(
-              keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true), // Permite solo números con punto decimal
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(
-                    r'^\d*\.?\d*')), // Solo permite números y el punto decimal
-              ],
-              controller: _factorSeguridadController,
-              decoration: buildInputDecoration(
-                'Factor Seguridad',
-              ),
-            ),
-            const SizedBox(height: 20.0),
-            DropdownButtonFormField<String>(
-              decoration: buildInputDecoration(
-                'Regla de Aceptación:',
-              ),
-              value: _selectedReglaAceptacion,
-              items: ['Ninguna', 'Simple', 'Conservadora'].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedReglaAceptacion = newValue!;
-                });
-              },
-              validator: (value) =>
-                  value == null ? 'Por favor seleccione una opción' : null,
             ),
             const SizedBox(height: 20.0),
             Row(

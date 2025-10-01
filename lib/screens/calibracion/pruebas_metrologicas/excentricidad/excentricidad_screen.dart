@@ -19,6 +19,7 @@ class ExcentricidadScreen extends StatefulWidget {
     required this.codMetrica,
     required this.secaValue,
     this.onNext,
+    required void Function() onDataSaved,
   });
 
   @override
@@ -64,8 +65,7 @@ class _ExcentricidadScreenState extends State<ExcentricidadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: ExcentricidadForm(controller: _controller),
-    );
+    // ✅ Elimina el Scaffold, solo devuelve el contenido
+    return ExcentricidadForm(controller: _controller);
   }
 }

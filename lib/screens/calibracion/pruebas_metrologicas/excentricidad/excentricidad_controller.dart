@@ -252,32 +252,56 @@ class ExcentricidadController {
     }
   }
 
-  double getDForCarga(double carga, Balanza? balanza) {
-    if (balanza == null) {
-      // Balanza “nueva” o no seleccionada aún → usa resolución por defecto
-      return 0.1;
+  Future<double> getDForCarga(double carga) async {
+    try {
+      final dbHelper = AppDatabase();
+      final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+
+      if (existingRecord == null) {
+        return 0.1; // Valor por defecto si no existe registro
+      }
+
+      // Obtener valores de la base de datos
+      final pmax1 = double.tryParse(existingRecord['cap_max1']?.toString() ?? '0') ?? 0.0;
+      final pmax2 = double.tryParse(existingRecord['cap_max2']?.toString() ?? '0') ?? 0.0;
+      final pmax3 = double.tryParse(existingRecord['cap_max3']?.toString() ?? '0') ?? 0.0;
+
+      final d1 = double.tryParse(existingRecord['d1']?.toString() ?? '0.1') ?? 0.1;
+      final d2 = double.tryParse(existingRecord['d2']?.toString() ?? '0.1') ?? 0.1;
+      final d3 = double.tryParse(existingRecord['d3']?.toString() ?? '0.1') ?? 0.1;
+
+      // Lógica de selección según la carga
+      if (carga <= pmax1) return d1;
+      if (carga <= pmax2) return d2;
+      if (carga <= pmax3) return d3;
+      return d3; // fallback
+    } catch (e) {
+      debugPrint('Error al obtener D de la base de datos: $e');
+      return 0.1; // Valor por defecto en caso de error
     }
-
-    final capMax1 = double.tryParse(balanza.cap_max1.toString()) ?? 0.0;
-    final capMax2 = double.tryParse(balanza.cap_max2.toString()) ?? 0.0;
-    final capMax3 = double.tryParse(balanza.cap_max3.toString()) ?? 0.0;
-
-    if (carga <= capMax1) return balanza.d1;
-    if (carga <= capMax2) return balanza.d2;
-    if (carga <= capMax3) return balanza.d3;
-    return balanza.d3; // fallback dentro del último rango
   }
 
-  Future<Map<String, double>> getDValues(BuildContext context) async {
-    final balanzaProvider =
-        Provider.of<BalanzaProvider>(context, listen: false);
-    final balanza = balanzaProvider.selectedBalanza;
+  Future<Map<String, double>> getDValues() async {
+    try {
+      final dbHelper = AppDatabase();
+      final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-    return {
-      'd1': balanza?.d1 ?? 0.1,
-      'd2': balanza?.d2 ?? 0.1,
-      'd3': balanza?.d3 ?? 0.1
-    };
+      if (existingRecord == null) {
+        return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1};
+      }
+
+      return {
+        'd1': double.tryParse(existingRecord['d1']?.toString() ?? '0.1') ?? 0.1,
+        'd2': double.tryParse(existingRecord['d2']?.toString() ?? '0.1') ?? 0.1,
+        'd3': double.tryParse(existingRecord['d3']?.toString() ?? '0.1') ?? 0.1,
+        'pmax1': double.tryParse(existingRecord['cap_max1']?.toString() ?? '0') ?? 0.0,
+        'pmax2': double.tryParse(existingRecord['cap_max2']?.toString() ?? '0') ?? 0.0,
+        'pmax3': double.tryParse(existingRecord['cap_max3']?.toString() ?? '0') ?? 0.0,
+      };
+    } catch (e) {
+      debugPrint('Error al obtener valores D de la BD: $e');
+      return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1};
+    }
   }
 
   void updatePlatform(String? platform) {

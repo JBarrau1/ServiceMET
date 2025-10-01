@@ -10,7 +10,6 @@ class LinealidadController {
   final ValueNotifier<bool> updateNotifier = ValueNotifier(false);
   final List<VoidCallback> _updateCallbacks = [];
   final CalibrationProvider provider;
-  final double Function() getD1Value;
   final String codMetrica;
   final String secaValue;
   final String sessionId;
@@ -42,9 +41,94 @@ class LinealidadController {
     required this.secaValue,
     required this.sessionId,
     required this.context,
-    required this.getD1Value,
     this.onUpdate,
   });
+
+  // Método para obtener el valor D correcto según la carga desde la BD
+  Future<double> getDForCarga(double carga) async {
+    try {
+      final dbHelper = AppDatabase();
+
+      // Buscar primero por sessionId y seca
+      var balanzaData = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+
+      // Si no encuentra, buscar por codMetrica
+      balanzaData ??= await dbHelper.getRegistroByCodMetrica(codMetrica);
+
+      if (balanzaData != null) {
+        // Obtener valores D de la base de datos
+        final d1 = double.tryParse(balanzaData['d1']?.toString() ?? '') ?? 0.1;
+        final d2 = double.tryParse(balanzaData['d2']?.toString() ?? '') ?? 0.1;
+        final d3 = double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1;
+
+        // Obtener capacidades máximas
+        final capMax1 = double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0;
+        final capMax2 = double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0;
+        final capMax3 = double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0;
+
+        // Lógica de selección según la carga
+        if (carga <= capMax1 && capMax1 > 0) return d1;
+        if (carga <= capMax2 && capMax2 > 0) return d2;
+        if (carga <= capMax3 && capMax3 > 0) return d3;
+        return d1; // fallback al primer rango
+      } else {
+        debugPrint('No se encontraron datos de balanza, usando valor por defecto d=0.1');
+        return 0.1;
+      }
+
+    } catch (e) {
+      debugPrint('Error al obtener D desde la base de datos: $e');
+      return 0.1; // Valor por defecto en caso de error
+    }
+  }
+
+  // Método para obtener todos los valores D desde la BD
+  Future<Map<String, double>> getAllDValues() async {
+    try {
+      final dbHelper = AppDatabase();
+
+      // Buscar primero por sessionId y seca
+      var balanzaData = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+
+      // Si no encuentra, buscar por codMetrica
+      balanzaData ??= await dbHelper.getRegistroByCodMetrica(codMetrica);
+
+      if (balanzaData != null) {
+        return {
+          'd1': double.tryParse(balanzaData['d1']?.toString() ?? '') ?? 0.1,
+          'd2': double.tryParse(balanzaData['d2']?.toString() ?? '') ?? 0.1,
+          'd3': double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1,
+          'pmax1': double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0,
+          'pmax2': double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0,
+          'pmax3': double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0,
+        };
+      } else {
+        debugPrint('No se encontraron datos de balanza, usando valores por defecto');
+        return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1, 'pmax1': 0.0, 'pmax2': 0.0, 'pmax3': 0.0};
+      }
+
+    } catch (e) {
+      debugPrint('Error al obtener valores D desde la BD: $e');
+      return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1, 'pmax1': 0.0, 'pmax2': 0.0, 'pmax3': 0.0};
+    }
+  }
+
+  // Método para obtener el valor D1 (para compatibilidad con código existente)
+  Future<double> getD1Value() async {
+    final dValues = await getAllDValues();
+    return dValues['d1'] ?? 0.1;
+  }
+
+  // Método para obtener decimal places basado en el valor D
+  Future<int> getDecimalPlacesForCarga(double carga) async {
+    final dValue = await getDForCarga(carga);
+
+    if (dValue >= 1) return 0;
+    if (dValue >= 0.1) return 1;
+    if (dValue >= 0.01) return 2;
+    if (dValue >= 0.001) return 3;
+    return 1; // por defecto
+  }
 
   void initControllers(int rowCount) {
     cargaControllers = List.generate(rowCount, (_) => TextEditingController());
@@ -124,7 +208,7 @@ class LinealidadController {
     }
   }
 
-// Método para cargar desde AppDatabase
+  // Método para cargar desde AppDatabase
   Future<Map<String, dynamic>> _loadFromAppDatabase() async {
     try {
       final dbHelper = AppDatabase();
@@ -140,7 +224,7 @@ class LinealidadController {
     }
   }
 
-// Procesar datos de precarga_database.db
+  // Procesar datos de precarga_database.db
   void _createRowsFromPrecargaData(Map<String, dynamic> data) {
     int valoresCargados = 0;
 
@@ -168,7 +252,7 @@ class LinealidadController {
     debugPrint('Valores cargados desde precarga: $valoresCargados');
   }
 
-// Procesar datos de AppDatabase
+  // Procesar datos de AppDatabase
   void _createRowsFromAppDatabaseData(Map<String, dynamic> data) {
     int valoresCargados = 0;
 
@@ -199,14 +283,14 @@ class LinealidadController {
     debugPrint('Valores cargados desde AppDatabase: $valoresCargados');
   }
 
-// Crear filas vacías por defecto
+  // Crear filas vacías por defecto
   void _createDefaultEmptyRows() {
     for (int i = 0; i < 6; i++) {
       addRow();
     }
   }
 
-// Mostrar mensaje de no hay datos
+  // Mostrar mensaje de no hay datos
   void _showNoDataMessage() {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -222,7 +306,7 @@ class LinealidadController {
     }
   }
 
-// Persistir datos temporales y actualizar UI
+  // Persistir datos temporales y actualizar UI
   Future<void> _persistTempDataAndUpdate() async {
     await Future.microtask(() {
       provider.updateTempDataForTest('linealidad', toMap());
@@ -230,7 +314,7 @@ class LinealidadController {
     onUpdate?.call();
   }
 
-// Manejo de errores
+  // Manejo de errores
   void _handleLoadError(dynamic error) {
     debugPrint('Error en carga de datos: $error');
 
@@ -289,9 +373,6 @@ class LinealidadController {
       print("Error cargando datos previos: $e");
     }
   }
-
-
-  // Reemplazar el método initialize() en LinealidadController
 
   Future<void> initialize() async {
     try {
@@ -479,23 +560,26 @@ class LinealidadController {
     });
   }
 
-  void calculateAllDifferences() {
+  // Método actualizado para calcular diferencias
+  Future<void> calculateAllDifferences() async {
     for (int i = 0; i < rows.length; i++) {
-      calculateDifferenceForRow(i);
+      await calculateDifferenceForRow(i);
     }
     Future.microtask(() {
       provider.updateTempDataForTest('linealidad', toMap());
     });
   }
 
-  void calculateDifferenceForRow(int index) {
+  // Método actualizado para calcular diferencia por fila
+  Future<void> calculateDifferenceForRow(int index) async {
     if (index >= rows.length) return;
     final lt = double.tryParse(rows[index]['lt']?.text ?? '') ?? 0.0;
-    final indicacion =
-        double.tryParse(rows[index]['indicacion']?.text ?? '') ?? 0.0;
-    final decimalPlaces = getD1Value().toString().split('.').last.length;
-    rows[index]['difference']?.text =
-        (indicacion - lt).toStringAsFixed(decimalPlaces);
+    final indicacion = double.tryParse(rows[index]['indicacion']?.text ?? '') ?? 0.0;
+
+    // Obtener decimal places basado en la carga
+    final decimalPlaces = await getDecimalPlacesForCarga(lt);
+
+    rows[index]['difference']?.text = (indicacion - lt).toStringAsFixed(decimalPlaces);
     Future.microtask(() {
       provider.updateTempDataForTest('linealidad', toMap());
     });
@@ -652,5 +736,4 @@ class LinealidadController {
     iCpController.text = map['iCp'] ?? '';
     onUpdate?.call();
   }
-
 }

@@ -23,14 +23,8 @@ class RepetibilidadController {
   final TextEditingController fiftyPercentPmax1Controller = TextEditingController();
   final bool loadExisting;
 
-  double d1 = 0.1; // valor por defecto
-  double d2 = 0.1; // valor por defecto
-  double d3 = 0.1; // valor por defecto
-
-  // Información de capacidades para determinar qué d usar
-  double capMax1 = 0.0;
-  double capMax2 = 0.0;
-  double capMax3 = 0.0;
+  // Eliminamos las variables d1, d2, d3, capMax1, capMax2, capMax3
+  // Ya no las almacenamos aquí, las obtenemos directamente de la BD cuando se necesitan
 
   bool _dataLoadedFromPrecarga = false;
   bool _dataLoadedFromAppDatabase = false;
@@ -44,7 +38,8 @@ class RepetibilidadController {
     this.loadExisting = true,
   });
 
-  Future<void> _loadDValuesFromDatabase() async {
+  // Método para obtener el valor D correcto según la carga desde la BD
+  Future<double> getDForCarga(double carga) async {
     try {
       final dbHelper = AppDatabase();
 
@@ -52,67 +47,108 @@ class RepetibilidadController {
       var balanzaData = await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
       // Si no encuentra, buscar por codMetrica
-      if (balanzaData == null) {
-        balanzaData = await dbHelper.getRegistroByCodMetrica(codMetrica);
-      }
+      balanzaData ??= await dbHelper.getRegistroByCodMetrica(codMetrica);
 
       if (balanzaData != null) {
-        // Cargar valores D - usar 0.1 por defecto si está null o vacío
-        d1 = double.tryParse(balanzaData['d1']?.toString() ?? '') ?? 0.1;
-        d2 = double.tryParse(balanzaData['d2']?.toString() ?? '') ?? 0.1;
-        d3 = double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1;
+        // Obtener valores D de la base de datos
+        final d1 = double.tryParse(balanzaData['d1']?.toString() ?? '') ?? 0.1;
+        final d2 = double.tryParse(balanzaData['d2']?.toString() ?? '') ?? 0.1;
+        final d3 = double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1;
 
-        // Cargar capacidades máximas
-        capMax1 = double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0;
-        capMax2 = double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0;
-        capMax3 = double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0;
+        // Obtener capacidades máximas
+        final capMax1 = double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0;
+        final capMax2 = double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0;
+        final capMax3 = double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0;
 
-        debugPrint('Valores D cargados desde BD - d1: $d1, d2: $d2, d3: $d3');
-        debugPrint('Capacidades cargadas desde BD - cap1: $capMax1, cap2: $capMax2, cap3: $capMax3');
+        // Lógica de selección según la carga
+        if (carga <= capMax1 && capMax1 > 0) return d1;
+        if (carga <= capMax2 && capMax2 > 0) return d2;
+        if (carga <= capMax3 && capMax3 > 0) return d3;
+        return d1; // fallback al primer rango
       } else {
-        debugPrint('No se encontraron datos de balanza, usando valores por defecto d1=d2=d3=0.1');
+        debugPrint('No se encontraron datos de balanza, usando valor por defecto d=0.1');
+        return 0.1;
       }
 
     } catch (e) {
-      debugPrint('Error al cargar valores D desde la base de datos: $e');
-      // Mantener valores por defecto en caso de error
+      debugPrint('Error al obtener D desde la base de datos: $e');
+      return 0.1; // Valor por defecto en caso de error
     }
   }
 
-  // Método para obtener el valor D correcto según la carga
-  double getDForCarga(double carga) {
-    if (carga <= capMax1 && capMax1 > 0) return d1;
-    if (carga <= capMax2 && capMax2 > 0) return d2;
-    if (carga <= capMax3 && capMax3 > 0) return d3;
-    return d1; // fallback al primer rango
-  }
+  // Método para obtener todos los valores D desde la BD
+  Future<Map<String, double>> getAllDValues() async {
+    try {
+      final dbHelper = AppDatabase();
 
-  // Actualizar el método getD1Value para que sea síncrono
-  double getD1Value() {
-    return d1;
-  }
+      // Buscar primero por sessionId y seca
+      var balanzaData = await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-  // Nuevo método para obtener todos los valores D
-  Map<String, double> getAllDValues() {
-    return {
-      'd1': d1,
-      'd2': d2,
-      'd3': d3,
-    };
+      // Si no encuentra, buscar por codMetrica
+      balanzaData ??= await dbHelper.getRegistroByCodMetrica(codMetrica);
+
+      if (balanzaData != null) {
+        return {
+          'd1': double.tryParse(balanzaData['d1']?.toString() ?? '') ?? 0.1,
+          'd2': double.tryParse(balanzaData['d2']?.toString() ?? '') ?? 0.1,
+          'd3': double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1,
+          'pmax1': double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0,
+          'pmax2': double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0,
+          'pmax3': double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0,
+        };
+      } else {
+        debugPrint('No se encontraron datos de balanza, usando valores por defecto');
+        return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1, 'pmax1': 0.0, 'pmax2': 0.0, 'pmax3': 0.0};
+      }
+
+    } catch (e) {
+      debugPrint('Error al obtener valores D desde la BD: $e');
+      return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1, 'pmax1': 0.0, 'pmax2': 0.0, 'pmax3': 0.0};
+    }
   }
 
   // Método para obtener el valor D apropiado basado en el texto de carga
-  double getDValueForCargaController(int cargaIndex) {
-    if (cargaIndex >= cargaControllers.length) return d1;
+  Future<double> getDValueForCargaController(int cargaIndex) async {
+    if (cargaIndex >= cargaControllers.length) return 0.1;
 
     final cargaText = cargaControllers[cargaIndex].text.trim();
-    if (cargaText.isEmpty) return d1;
+    if (cargaText.isEmpty) return 0.1;
 
     final cargaValue = double.tryParse(cargaText.replaceAll(',', '.')) ?? 0.0;
-    return getDForCarga(cargaValue);
+    return await getDForCarga(cargaValue);
   }
 
+  // Método para obtener sugerencias (ahora async)
+  Future<List<String>> getIndicationSuggestions(int cargaIndex, String currentValue) async {
+    final dValue = await getDValueForCargaController(cargaIndex);
 
+    // Si está vacío, usa la carga como base
+    final baseText = currentValue.trim().isEmpty
+        ? cargaControllers[cargaIndex].text
+        : currentValue;
+
+    final baseValue = double.tryParse(baseText.replaceAll(',', '.')) ?? 0.0;
+
+    // Determinar decimales basado en dValue
+    int decimalPlaces = 1; // por defecto
+    if (dValue >= 1) {
+      decimalPlaces = 0;
+    } else if (dValue >= 0.1) {
+      decimalPlaces = 1;
+    } else if (dValue >= 0.01) {
+      decimalPlaces = 2;
+    } else if (dValue >= 0.001) {
+      decimalPlaces = 3;
+    }
+
+    // 11 sugerencias (5 abajo, actual, 5 arriba)
+    return List.generate(11, (i) {
+      final value = baseValue + ((i - 5) * dValue);
+      return value.toStringAsFixed(decimalPlaces);
+    });
+  }
+
+  // Eliminamos _loadDValuesFromDatabase ya que ahora obtenemos los datos directamente
 
   Future<void> loadFromPrecargaOrDatabase() async {
     try {
@@ -199,7 +235,6 @@ class RepetibilidadController {
     }
   }
 
-
   Future<Map<String, dynamic>> _loadFromAppDatabase() async {
     try {
       final dbHelper = AppDatabase();
@@ -223,7 +258,6 @@ class RepetibilidadController {
       return {};
     }
   }
-
 
   void _createRowsFromPrecargaData(Map<String, dynamic> data) {
     _initializeControllers(false);
@@ -290,8 +324,6 @@ class RepetibilidadController {
     _initializeControllers(false);
   }
 
-  // Actualizar los mensajes en RepetibilidadController
-
   void _showDataLoadedMessage(String message) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -356,12 +388,11 @@ class RepetibilidadController {
     }
   }
 
-
   @override
   Future<void> initialize() async {
     try {
-      // Cargar valores D primero
-      await _loadDValuesFromDatabase();
+      // Ya no necesitamos cargar valores D por separado
+      // Se cargan directamente cuando se necesitan
 
       // Luego la búsqueda en cascada para datos de repetibilidad
       await loadFromPrecargaOrDatabase();
@@ -375,36 +406,7 @@ class RepetibilidadController {
     }
   }
 
-  List<String> getIndicationSuggestions(int cargaIndex, String currentValue) {
-    final dValue = getDValueForCargaController(cargaIndex);
-
-    // Si está vacío, usa la carga como base
-    final baseText = currentValue.trim().isEmpty
-        ? cargaControllers[cargaIndex].text
-        : currentValue;
-
-    final baseValue = double.tryParse(baseText.replaceAll(',', '.')) ?? 0.0;
-
-    // Determinar decimales basado en dValue
-    int decimalPlaces = 1; // por defecto
-    if (dValue >= 1) {
-      decimalPlaces = 0;
-    } else if (dValue >= 0.1) {
-      decimalPlaces = 1;
-    } else if (dValue >= 0.01) {
-      decimalPlaces = 2;
-    } else if (dValue >= 0.001) {
-      decimalPlaces = 3;
-    }
-
-    // 11 sugerencias (5 abajo, actual, 5 arriba)
-    return List.generate(11, (i) {
-      final value = baseValue + ((i - 5) * dValue);
-      return value.toStringAsFixed(decimalPlaces);
-    });
-  }
-
-// Método separado para cargar pmax1
+  // Método separado para cargar pmax1
   Future<void> _loadPmax1FromDatabase() async {
     try {
       final dbHelper = AppDatabase();
@@ -470,29 +472,24 @@ class RepetibilidadController {
     }
   }
 
-// NUEVO MÉTODO: Manejar cambios en el valor de carga
+  // NUEVO MÉTODO: Manejar cambios en el valor de carga
   void _onCargaValueChanged(int cargaIndex) {
     final value = cargaControllers[cargaIndex].text;
     debugPrint('Carga $cargaIndex cambiada a: "$value"');
     _replicateCargaToIndicaciones(cargaIndex, value);
   }
 
-// NUEVO MÉTODO: Replicar valor a todas las indicaciones
+  // NUEVO MÉTODO: Replicar valor a todas las indicaciones
+  // VERSIÓN SIMPLIFICADA Y MÁS EFECTIVA
   void _replicateCargaToIndicaciones(int cargaIndex, String value) {
-    if (value.isEmpty) return;
+    debugPrint('Replicando carga $cargaIndex: "$value" a todas las indicaciones');
 
     for (int j = 0; j < indicacionControllers[cargaIndex].length; j++) {
-      final currentValue = indicacionControllers[cargaIndex][j].text;
-
-      if (currentValue.isEmpty ||
-          currentValue == '0' ||
-          value.startsWith(currentValue) ||
-          currentValue.length < value.length) {
-
-        indicacionControllers[cargaIndex][j].text = value;
-        debugPrint('Indicación ${cargaIndex + 1}_${j + 1} = "$value"');
-      }
+      // SIEMPRE actualizar con el nuevo valor, sin excepciones
+      indicacionControllers[cargaIndex][j].text = value;
     }
+
+    debugPrint('Actualizadas ${indicacionControllers[cargaIndex].length} indicaciones para carga $cargaIndex');
   }
 
   void updateRepetibilityCount(int? value, VoidCallback onUpdateUI) {
@@ -564,10 +561,11 @@ class RepetibilidadController {
   }
 
   // Método para restaurar los datos preservados
+  // Método para restaurar los datos preservados - VERSIÓN MEJORADA
   void _restorePreservedData(Map<String, dynamic> data) {
     if (data.isEmpty) return;
 
-    // Restaurar datos de carga
+    // Primero restaurar datos de carga
     for (int i = 0; i < selectedRepetibilityCount && i < cargaControllers.length; i++) {
       final cargaKey = 'repetibilidad${i + 1}';
       if (data[cargaKey] != null) {
@@ -575,7 +573,7 @@ class RepetibilidadController {
       }
     }
 
-    // Restaurar datos de indicaciones y retornos
+    // Luego restaurar datos de indicaciones y retornos
     for (int i = 0; i < selectedRepetibilityCount && i < indicacionControllers.length; i++) {
       for (int j = 0; j < selectedRowCount && j < indicacionControllers[i].length; j++) {
         final indicacionKey = 'indicacion${i + 1}_${j + 1}';
@@ -583,9 +581,15 @@ class RepetibilidadController {
 
         if (data[indicacionKey] != null) {
           indicacionControllers[i][j].text = data[indicacionKey].toString();
+        } else {
+          // SI no hay dato preservado, usar el valor actual de la carga
+          indicacionControllers[i][j].text = cargaControllers[i].text;
         }
+
         if (data[retornoKey] != null) {
           retornoControllers[i][j].text = data[retornoKey].toString();
+        } else {
+          retornoControllers[i][j].text = '0';
         }
       }
     }
@@ -649,8 +653,8 @@ class RepetibilidadController {
     _disposeControllers();
     notaController.dispose();
     comentarioController.dispose();
-    pmax1Controller.dispose(); // ← Nuevo
-    fiftyPercentPmax1Controller.dispose(); // ← Nuevo
+    pmax1Controller.dispose();
+    fiftyPercentPmax1Controller.dispose();
   }
 
   void clearAllFields() {
@@ -664,5 +668,4 @@ class RepetibilidadController {
     notaController.clear();
     comentarioController.clear();
   }
-
 }

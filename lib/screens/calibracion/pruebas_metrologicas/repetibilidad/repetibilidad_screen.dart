@@ -17,6 +17,7 @@ class RepetibilidadScreen extends StatefulWidget {
     required this.secaValue,
     required this.sessionId,
     this.onNext,
+    required void Function() onDataSaved,
   });
 
   @override
@@ -58,13 +59,11 @@ class _RepetibilidadScreenState extends State<RepetibilidadScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      // ✅ Sin Scaffold en el loading
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      body: RepetibilidadForm(controller: _controller),
-    );
+    // ✅ Sin Scaffold, solo el contenido
+    return RepetibilidadForm(controller: _controller);
   }
 }

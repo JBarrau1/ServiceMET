@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:ui';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:service_met/screens/calibracion/precarga/precarga_screen.dart';
+import 'package:service_met/screens/calibracion/precarga/widgets/balanza_step.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:archive/archive.dart'; // Añadir esta dependencia
 import 'package:service_met/bdb/calibracion_bd.dart';
@@ -34,6 +37,138 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   bool _isExporting = false;
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
+  String? _selectedEmp23001;
+  final TextEditingController _indicarController = TextEditingController();
+  final TextEditingController _factorSeguridadController = TextEditingController();
+  String? _selectedReglaAceptacion;
+
+  @override
+  void dispose() {
+    _indicarController.dispose();
+    _factorSeguridadController.dispose();
+    super.dispose();
+  }
+
+  Future<Map<String, String>?> _showAdditionalDataDialog(BuildContext context) async {
+    return await showDialog<Map<String, String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text(
+                'DATOS ADICIONALES PARA EXPORTACIÓN',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'EMP NB 23001',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _selectedEmp23001,
+                      items: ['Sí', 'No'].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setDialogState(() {
+                          _selectedEmp23001 = newValue;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _indicarController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Indicar (%)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _factorSeguridadController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Factor Seguridad',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Regla de Aceptación',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _selectedReglaAceptacion,
+                      items: ['Ninguna', 'Simple', 'Conservadora'].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setDialogState(() {
+                          _selectedReglaAceptacion = newValue;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, null),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF46824B),
+                  ),
+                  onPressed: () {
+                    if (_selectedEmp23001 == null ||
+                        _indicarController.text.isEmpty ||
+                        _factorSeguridadController.text.isEmpty ||
+                        _selectedReglaAceptacion == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Complete todos los campos'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.pop(ctx, {
+                      'emp': _selectedEmp23001!,
+                      'indicar': _indicarController.text,
+                      'factor': _factorSeguridadController.text,
+                      'regla_aceptacion': _selectedReglaAceptacion!,
+                    });
+                  },
+                  child: const Text('Confirmar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showSnackBar(BuildContext context, String message,
       {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -54,7 +189,6 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       final dbHelper = AppDatabase();
       final db = await dbHelper.database;
 
-      // 1) Consulta filtrada
       final rows = await db.query(
         'registros_calibracion',
         where: 'seca = ? AND estado_servicio_bal = ?',
@@ -70,20 +204,45 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         return;
       }
 
-      // 2) Mostrar diálogo de confirmación
+      // 1. Solicitar datos adicionales
+      final additionalData = await _showAdditionalDataDialog(context);
+      if (additionalData == null) {
+        return; // Usuario canceló
+      }
+
+      // 2. Actualizar registros con datos adicionales
+      for (final row in rows) {
+        await db.update(
+          'registros_calibracion',
+          {
+            'emp': additionalData['emp'],
+            'indicar': additionalData['indicar'],
+            'factor': additionalData['factor'],
+            'regla_aceptacion': additionalData['regla_aceptacion'],
+          },
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        );
+      }
+
+      // 3. Obtener rows actualizados
+      final updatedRows = await db.query(
+        'registros_calibracion',
+        where: 'seca = ? AND estado_servicio_bal = ?',
+        whereArgs: [widget.secaValue, 'Balanza Calibrada'],
+      );
+
+      // 4. Mostrar confirmación de exportación
       final confirmado = await showDialog<bool>(
         context: context,
         builder: (ctx) {
           return AlertDialog(
             title: Text(
               'Confirmar exportación'.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
             ),
             content: Text(
-              'Se exportará el SECA "${widget.secaValue}" con $cantidad registros en un archivo ZIP con formatos CSV, TXT y SMET.\n\n¿Desea continuar?',
+              'Se exportará el SECA "${widget.secaValue}" con $cantidad registros.\n\n¿Desea continuar?',
             ),
             actions: [
               TextButton(
@@ -104,8 +263,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       if (confirmado != true) return;
 
-      // 3) Exportar todo en ZIP
-      await _exportToZip(context, rows);
+      await _exportToZip(context, updatedRows);
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -733,8 +891,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
             'CONFIRMAR ACCIÓN',
             style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w900),
           ),
-          content:
-              const Text('¿Está seguro que desea seleccionar otra balanza?'),
+          content: const Text('¿Está seguro que desea seleccionar otra balanza?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancelar'),
@@ -756,26 +913,21 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       final dbHelper = AppDatabase();
       final db = await dbHelper.database;
 
-      // 1) Trae TODAS las filas de la sesión actual, de la más reciente a la más antigua
       final List<Map<String, dynamic>> rows = await db.query(
-          'registros_calibracion',
-          where: 'seca = ? AND session_id = ?',
-          whereArgs: [widget.secaValue, widget.sessionId],
-          orderBy:
-              'id DESC' // usa 'hora_fin DESC' si no tienes 'id' autoincrement
-          );
+        'registros_calibracion',
+        where: 'seca = ? AND session_id = ?',
+        whereArgs: [widget.secaValue, widget.sessionId],
+        orderBy: 'id DESC',
+      );
 
-      // 2) Genera un nuevo sessionId
       final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
 
-      // 3) Registro base
       final Map<String, dynamic> nuevoRegistro = {
         'seca': widget.secaValue,
         'session_id': nuevoSessionId,
         'fecha_servicio': DateFormat('dd-MM-yyyy').format(DateTime.now()),
       };
 
-      // 4) Columnas de "cabecera" que quieres arrastrar
       const columnsToCarry = [
         'cliente',
         'razon_social',
@@ -796,42 +948,35 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         'cantidad7',
       ];
 
-      // 5) Para cada columna, toma el último valor NO NULO / NO VACÍO
       for (final col in columnsToCarry) {
         for (final row in rows) {
-          // rows ya está DESC: último ingresado primero
           final v = row[col];
           if (v != null && (v is! String || v.toString().trim().isNotEmpty)) {
             nuevoRegistro[col] = v;
-            break; // pasa a la siguiente columna
+            break;
           }
         }
       }
 
-      // 6) Inserta el nuevo registro "cabecera" con la nueva sesión
       await dbHelper.upsertRegistroCalibracion(nuevoRegistro);
 
-      // 7) Datos para la navegación
-      final selectedCliente = (nuevoRegistro['cliente'] ?? '').toString();
-      final selectedPlantaCodigo =
-          (nuevoRegistro['cod_planta'] ?? '').toString();
+      final userName = nuevoRegistro['personal']?.toString() ?? 'Usuario';
 
       if (!mounted) return;
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => IdenBalanzaScreen(
-            secaValue: widget.secaValue,
+          builder: (context) => PrecargaScreen(
+            userName: userName,
+            initialStep: 3, // Paso de Balanza
             sessionId: nuevoSessionId,
-            selectedPlantaCodigo: selectedPlantaCodigo,
-            selectedCliente: selectedCliente,
-            loadFromSharedPreferences: false,
+            secaValue: widget.secaValue,
           ),
         ),
       );
     } catch (e) {
-      _showSnackBar(context, 'Error al preparar nueva balanza: $e',
-          isError: true);
+      _showSnackBar(context, 'Error al preparar nueva balanza: $e', isError: true);
     }
   }
 
@@ -842,7 +987,6 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     final cardOpacity = isDarkMode ? 0.4 : 0.2;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 70,
         title: Text(
@@ -867,12 +1011,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 30,
-          left: 16.0,
-          right: 16.0,
-          bottom: 16.0,
-        ),
+        padding: const EdgeInsets.all(16.0),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

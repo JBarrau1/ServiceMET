@@ -17,6 +17,10 @@ class BalanzaStep extends StatefulWidget {
     required this.balanzaControllers,
     required this.nRecaController,
     required this.stickerController,
+    required String secaValue,
+    required String sessionId,
+    required String selectedPlantaCodigo,
+    required String selectedCliente, required bool loadFromSharedPreferences,
   }) : super(key: key);
 
   @override

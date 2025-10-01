@@ -10,15 +10,15 @@ class LinealidadScreen extends StatefulWidget {
   final String secaValue;
   final String sessionId;
   final String codMetrica;
-  final VoidCallback? onNext; // ← Agregar este parámetro
+  final VoidCallback? onNext;
 
   const LinealidadScreen({
     super.key,
     required this.codMetrica,
     required this.secaValue,
     required this.sessionId,
-    this.onNext, // ← Hacerlo opcional
-    // REMOVER: required Null Function() onNext, ← Este parámetro no existe
+    this.onNext,
+    required void Function() onDataSaved,
   });
 
   @override
@@ -37,8 +37,6 @@ class _LinealidadScreenState extends State<LinealidadScreen> {
 
   Future<void> _initializeController() async {
     final calibrationProvider = Provider.of<CalibrationProvider>(context, listen: false);
-    final balanzaProvider = Provider.of<BalanzaProvider>(context, listen: false);
-    final d1 = balanzaProvider.selectedBalanza?.d1 ?? 0.1;
 
     _controller = LinealidadController(
       context: context,
@@ -46,7 +44,6 @@ class _LinealidadScreenState extends State<LinealidadScreen> {
       codMetrica: widget.codMetrica,
       secaValue: widget.secaValue,
       sessionId: widget.sessionId,
-      getD1Value: () => d1,
       onUpdate: () => setState(() {}),
     );
 
@@ -111,8 +108,6 @@ class _LinealidadScreenState extends State<LinealidadScreen> {
     if (!_isInitialized) {
       return const Center(child: CircularProgressIndicator());
     }
-    return Scaffold(
-      body: LinealidadForm(controller: _controller),
-    );
+    return LinealidadForm(controller: _controller);
   }
 }
