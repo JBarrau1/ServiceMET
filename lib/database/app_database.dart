@@ -221,6 +221,7 @@ class AppDatabase {
       await db.execute('''
       CREATE TABLE registros_calibracion (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        --INF CLIENTE Y PERSONAL
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
@@ -232,6 +233,32 @@ class AppDatabase {
         session_id TEXT DEFAULT '',
         n_reca TEXT DEFAULT '',
         sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
+        tipo_equipo TEXT DEFAULT '',
+        marca TEXT DEFAULT '',
+        modelo TEXT DEFAULT '',
+        serie TEXT DEFAULT '',
+        unidades TEXT DEFAULT '',
+        ubicacion TEXT DEFAULT '',
+        cap_max1 REAL DEFAULT '',
+        d1 REAL DEFAULT '',
+        e1 REAL DEFAULT '',
+        dec1 REAL DEFAULT '',
+        cap_max2 REAL DEFAULT '',
+        d2 REAL DEFAULT '',
+        e2 REAL DEFAULT '',
+        dec2 REAL DEFAULT '',
+        cap_max3 REAL DEFAULT '',
+        d3 REAL DEFAULT '',
+        e3 REAL DEFAULT '',
+        dec3 REAL DEFAULT '',
+        
+        --INF TERMOHIGROMETROS Y PESAS PATRON
         equipo1 TEXT DEFAULT '',
         certificado1 TEXT DEFAULT '',
         ente_calibrador1 TEXT DEFAULT '',
@@ -268,28 +295,7 @@ class AppDatabase {
         estado7 TEXT DEFAULT '',
         cantidad7 REAL DEFAULT '',
         
-        foto_balanza TEXT DEFAULT '',
-        categoria_balanza TEXT DEFAULT '',
-        cod_metrica TEXT DEFAULT '',
-        cod_int TEXT DEFAULT '',
-        tipo_equipo TEXT DEFAULT '',
-        marca TEXT DEFAULT '',
-        modelo TEXT DEFAULT '',
-        serie TEXT DEFAULT '',
-        unidades TEXT DEFAULT '',
-        ubicacion TEXT DEFAULT '',
-        cap_max1 REAL DEFAULT '',
-        d1 REAL DEFAULT '',
-        e1 REAL DEFAULT '',
-        dec1 REAL DEFAULT '',
-        cap_max2 REAL DEFAULT '',
-        d2 REAL DEFAULT '',
-        e2 REAL DEFAULT '',
-        dec2 REAL DEFAULT '',
-        cap_max3 REAL DEFAULT '',
-        d3 REAL DEFAULT '',
-        e3 REAL DEFAULT '',
-        dec3 REAL DEFAULT '',
+        --INF SERVICIO
         fecha_servicio TEXT DEFAULT '',
         hora_inicio TEXT DEFAULT '',
         tiempo_estab TEXT DEFAULT '',
@@ -629,7 +635,8 @@ class AppDatabase {
         lin60 REAL DEFAULT '',
         ind60 REAL DEFAULT '',
         retorno_lin60 REAL DEFAULT '',
-
+        
+        ---INF FINAL
         hora_fin TEXT DEFAULT '',
         hri_fin TEXT DEFAULT '',
         ti_fin TEXT DEFAULT '',
