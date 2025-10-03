@@ -159,6 +159,46 @@ class PrecargaController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addNewPlanta({
+    required String nombrePlanta,
+    required String direccion,
+    required String departamento,
+    required String codigo,
+  }) async {
+    try {
+      String path = join(await getDatabasesPath(), 'precarga_database.db');
+      final db = await openDatabase(path);
+
+      // Generar IDs únicos
+      final plantaId = DateTime.now().millisecondsSinceEpoch.toString();
+      final depId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      // Insertar nueva planta
+      await db.insert('plantas', {
+        'cliente_id': _selectedClienteId,
+        'planta_id': plantaId,
+        'dep_id': depId,
+        'planta': nombrePlanta,
+        'dir': direccion,
+        'dep': departamento,
+        'codigo_planta': codigo,
+      });
+
+      await db.close();
+
+      // Recargar plantas
+      await fetchPlantas(_selectedClienteId!);
+
+      // Seleccionar automáticamente la nueva planta
+      final uniqueKey = '${plantaId}_${depId}';
+      selectPlanta(uniqueKey);
+
+      notifyListeners();
+    } catch (e) {
+      throw Exception('Error al agregar planta: $e');
+    }
+  }
+
   // MÉTODOS DE CLIENTE
   Future<void> fetchClientes() async {
     try {
@@ -545,17 +585,28 @@ class PrecargaController extends ChangeNotifier {
         ...balanzaData,
       };
 
-      // Agregar equipos seleccionados
-      final allEquipos = getAllSelectedEquipos();
-      for (int i = 0; i < allEquipos.length && i < 10; i++) {
-        final equipo = allEquipos[i];
-        registro['equipo${i + 1}'] = equipo['cod_instrumento']?.toString() ?? '';
-        registro['certificado${i + 1}'] = equipo['cert_fecha']?.toString() ?? '';
-        registro['ente_calibrador${i + 1}'] = equipo['ente_calibrador']?.toString() ?? '';
-        registro['estado${i + 1}'] = equipo['estado']?.toString() ?? '';
-        registro['cantidad${i + 1}'] = equipo['cantidad']?.toString() ?? '1';
+      // GUARDAR SOLO LAS PESAS PATRÓN SELECCIONADAS (equipo1 a equipo5)
+      for (int i = 0; i < _selectedEquipos.length && i < 5; i++) {
+        final pesa = _selectedEquipos[i];
+        registro['equipo${i + 1}'] = pesa['cod_instrumento']?.toString() ?? '';
+        registro['certificado${i + 1}'] = pesa['cert_fecha']?.toString() ?? '';
+        registro['ente_calibrador${i + 1}'] = pesa['ente_calibrador']?.toString() ?? '';
+        registro['estado${i + 1}'] = pesa['estado']?.toString() ?? '';
+        registro['cantidad${i + 1}'] = pesa['cantidad']?.toString() ?? '1';
       }
 
+      // GUARDAR SOLO LOS TERMOHIGRÓMETROS SELECCIONADOS (equipo6 y equipo7)
+      for (int i = 0; i < _selectedTermohigrometros.length && i < 2; i++) {
+        final equipoNum = i + 6; // 6 y 7
+        final termo = _selectedTermohigrometros[i];
+        registro['equipo$equipoNum'] = termo['cod_instrumento']?.toString() ?? '';
+        registro['certificado$equipoNum'] = termo['cert_fecha']?.toString() ?? '';
+        registro['ente_calibrador$equipoNum'] = termo['ente_calibrador']?.toString() ?? '';
+        registro['estado$equipoNum'] = termo['estado']?.toString() ?? '';
+        registro['cantidad$equipoNum'] = termo['cantidad']?.toString() ?? '1';
+      }
+
+      // Guardar en la base de datos
       await dbHelper.upsertRegistroCalibracion(registro);
 
       _isDataSaved = true;

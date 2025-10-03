@@ -271,13 +271,29 @@ class _PlantaStepState extends State<PlantaStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'PLANTAS DISPONIBLES',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue[700],
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'PLANTAS DISPONIBLES',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue[700],
+              ),
+            ),
+            // NUEVO BOTÓN
+            ElevatedButton.icon(
+              onPressed: () => _showAddPlantaDialog(context, controller),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Nueva Planta'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3e7732),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
+          ],
         ).animate(delay: 300.ms).fadeIn().slideX(begin: -0.3),
 
         const SizedBox(height: 20),
@@ -482,6 +498,109 @@ class _PlantaStepState extends State<PlantaStep> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showAddPlantaDialog(BuildContext context, PrecargaController controller) {
+    final TextEditingController nombrePlantaController = TextEditingController();
+    final TextEditingController direccionController = TextEditingController();
+    final TextEditingController departamentoController = TextEditingController();
+    final TextEditingController codigoController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Agregar Nueva Planta',
+            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nombrePlantaController,
+                  decoration: InputDecoration(
+                    labelText: 'Nombre de la Planta *',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.factory),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: direccionController,
+                  decoration: InputDecoration(
+                    labelText: 'Dirección *',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.location_on),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: departamentoController,
+                  decoration: InputDecoration(
+                    labelText: 'Departamento *',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.map),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: codigoController,
+                  decoration: InputDecoration(
+                    labelText: 'Código de Planta *',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.code),
+                    helperText: 'Ej: 1234, ABCD',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3e7732)),
+              onPressed: () async {
+                if (nombrePlantaController.text.trim().isEmpty ||
+                    direccionController.text.trim().isEmpty ||
+                    departamentoController.text.trim().isEmpty ||
+                    codigoController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Complete todos los campos')),
+                  );
+                  return;
+                }
+
+                try {
+                  await controller.addNewPlanta(
+                    nombrePlanta: nombrePlantaController.text.trim(),
+                    direccion: direccionController.text.trim(),
+                    departamento: departamentoController.text.trim(),
+                    codigo: codigoController.text.trim(),
+                  );
+                  Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Planta agregada correctamente'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
     );
   }
 

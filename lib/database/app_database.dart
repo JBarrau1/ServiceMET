@@ -52,25 +52,39 @@ class AppDatabase {
     }
   }
 
+  // REEMPLAZAR ESTE MÉTODO COMPLETO
   Future<String> generateSessionId(String seca) async {
     try {
       final db = await database;
 
-      final result = await db.rawQuery(
-          'SELECT MAX(CAST(session_id AS INTEGER)) as max_id '
-              'FROM registros_calibracion '
-              'WHERE seca = ? AND session_id IS NOT NULL AND session_id != "" '
-              'AND session_id GLOB \"[0-9]*\"',
-          [seca]
-      );
+      // Buscar el último session_id para este SECA
+      final result = await db.rawQuery('''
+      SELECT session_id 
+      FROM registros_calibracion 
+      WHERE seca = ? 
+      ORDER BY session_id DESC 
+      LIMIT 1
+    ''', [seca]);
 
-      final maxId = result.first['max_id'] as int? ?? 0;
-      final nextId = maxId + 1;
+      if (result.isEmpty) {
+        // Primera sesión para este SECA
+        return '0001';
+      }
 
-      return nextId.toString().padLeft(4, '0');
+      // Extraer el número del último session_id
+      final lastSessionId = result.first['session_id'] as String;
+      final lastNumber = int.tryParse(lastSessionId) ?? 0;
+
+      // Generar el siguiente número
+      final nextNumber = lastNumber + 1;
+
+      // Formatear con ceros a la izquierda (0001, 0002, etc.)
+      return nextNumber.toString().padLeft(4, '0');
+
     } catch (e) {
       debugPrint('Error generando sessionId: $e');
-      return DateTime.now().millisecondsSinceEpoch.toString();
+      // En caso de error, generar uno basado en timestamp
+      return DateTime.now().millisecondsSinceEpoch.toString().substring(8);
     }
   }
 

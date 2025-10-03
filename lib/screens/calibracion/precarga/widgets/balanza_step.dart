@@ -204,7 +204,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['categoria_balanza']!,
             label: 'Categoría',
             prefixIcon: Icons.category,
-            readOnly: !controller.isNewBalanza, // AGREGAR ESTA LÍNEA
+            readOnly: false, // AGREGAR ESTA LÍNEA
           ),
 
           const SizedBox(height: 16),
@@ -214,7 +214,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['cod_int']!,
             label: 'Código Interno',
             prefixIcon: Icons.tag,
-            readOnly: !controller.isNewBalanza, // AGREGAR ESTA LÍNEA
+            readOnly: false, // AGREGAR ESTA LÍNEA
           ),
 
           const SizedBox(height: 16),
@@ -234,7 +234,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['modelo']!,
             label: 'Modelo',
             prefixIcon: Icons.precision_manufacturing,
-            readOnly: !controller.isNewBalanza, // AGREGAR ESTA LÍNEA
+            readOnly: false, // AGREGAR ESTA LÍNEA
           ),
 
           const SizedBox(height: 16),
@@ -244,7 +244,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['serie']!,
             label: 'Serie',
             prefixIcon: Icons.confirmation_number,
-            readOnly: !controller.isNewBalanza, // AGREGAR ESTA LÍNEA
+            readOnly: false, // AGREGAR ESTA LÍNEA
           ),
 
           const SizedBox(height: 16),
@@ -295,17 +295,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   Widget _buildTipoEquipoField(PrecargaController controller) {
-    // Si es balanza existente, mostrar campo de solo lectura
-    if (!controller.isNewBalanza) {
-      return _buildTextField(
-        controller: widget.balanzaControllers['tipo_equipo']!,
-        label: 'Tipo de Equipo',
-        readOnly: true,
-        prefixIcon: Icons.scale,
-      );
-    }
-
-    // Si es balanza nueva, mostrar dropdown
     return DropdownButtonFormField<String>(
       value: widget.balanzaControllers['tipo_equipo']!.text.isNotEmpty
           ? widget.balanzaControllers['tipo_equipo']!.text
