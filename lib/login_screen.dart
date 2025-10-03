@@ -526,7 +526,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20.0),
               Text(
-                'versión 9.1.1_4_12925',
+                'versión 10.1.1_2_031025',
                 style: GoogleFonts.inter(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white

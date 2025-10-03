@@ -154,7 +154,19 @@ class RepetibilidadController {
     try {
       _disposeControllers();
 
-      // Paso 1: Buscar en precarga_database.db
+      // PASO 1: Buscar en AppDatabase (datos históricos) - PRIMERO AHORA
+      final appDatabaseData = await _loadFromAppDatabase();
+
+      if (appDatabaseData.isNotEmpty && _hasRepetibilidadData(appDatabaseData)) {
+        // Si encuentra datos en AppDatabase, los usa
+        _createRowsFromAppDatabaseData(appDatabaseData);
+        _dataLoadedFromAppDatabase = true;
+        _showDataLoadedMessage('Datos de repetibilidad cargados desde registro existente');
+        debugPrint('Datos de repetibilidad cargados desde AppDatabase (históricos)');
+        return;
+      }
+
+      // PASO 2: Si no hay datos históricos, buscar en precarga_database.db
       final precargaData = await _loadFromPrecargaDatabase();
 
       if (precargaData.isNotEmpty) {
@@ -166,19 +178,7 @@ class RepetibilidadController {
         return;
       }
 
-      // Paso 2: Si no hay datos en precarga, buscar en AppDatabase
-      final appDatabaseData = await _loadFromAppDatabase();
-
-      if (appDatabaseData.isNotEmpty && _hasRepetibilidadData(appDatabaseData)) {
-        // Si encuentra datos en AppDatabase, los usa
-        _createRowsFromAppDatabaseData(appDatabaseData);
-        _dataLoadedFromAppDatabase = true;
-        _showDataLoadedMessage('Datos de repetibilidad cargados desde registro existente');
-        debugPrint('Datos de repetibilidad cargados desde AppDatabase');
-        return;
-      }
-
-      // Paso 3: Si no hay datos en ninguna base de datos
+      // PASO 3: Si no hay datos en ninguna base de datos
       _showNoDataMessage();
       _createDefaultEmptyRows();
 
@@ -268,10 +268,13 @@ class RepetibilidadController {
       if (cargaValue != null && cargaValue.isNotEmpty && cargaControllers.length >= i) {
         cargaControllers[i - 1].text = cargaValue;
 
-        // En precarga no hay indicaciones, así que las dejamos vacías
+        // ✅ MEJORADO: Replicar en TODAS las indicaciones y retornos
         for (int j = 0; j < selectedRowCount; j++) {
           if (indicacionControllers[i - 1].length > j) {
             indicacionControllers[i - 1][j].text = cargaValue; // Auto-completar con el valor de carga
+          }
+          if (retornoControllers[i - 1].length > j) {
+            retornoControllers[i - 1][j].text = '0'; // Valor por defecto para retorno
           }
         }
       }
@@ -290,19 +293,20 @@ class RepetibilidadController {
       if (cargaValue != null && cargaValue.isNotEmpty && cargaControllers.length >= i) {
         cargaControllers[i - 1].text = cargaValue;
 
-        // Cargar indicaciones y retornos desde AppDatabase
+        // ✅ MEJORADO: Cargar indicaciones y retornos desde AppDatabase
+        // Si no hay datos en AppDatabase, replicar el valor de carga
         for (int j = 1; j <= 10; j++) {
           final indicacionValue = data['indicacion${i}_$j']?.toString();
           final retornoValue = data['retorno${i}_$j']?.toString();
 
-          if (indicacionValue != null && indicacionValue.isNotEmpty &&
-              j <= selectedRowCount && indicacionControllers[i - 1].length >= j) {
-            indicacionControllers[i - 1][j - 1].text = indicacionValue;
+          if (j <= selectedRowCount && indicacionControllers[i - 1].length >= j) {
+            // Si hay dato en BD, usarlo; si no, replicar carga
+            indicacionControllers[i - 1][j - 1].text =
+                indicacionValue ?? cargaValue;
           }
 
-          if (retornoValue != null && retornoValue.isNotEmpty &&
-              j <= selectedRowCount && retornoControllers[i - 1].length >= j) {
-            retornoControllers[i - 1][j - 1].text = retornoValue;
+          if (j <= selectedRowCount && retornoControllers[i - 1].length >= j) {
+            retornoControllers[i - 1][j - 1].text = retornoValue ?? '0';
           }
         }
       }
@@ -357,7 +361,7 @@ class RepetibilidadController {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'La balanza no tiene registros previos, debe ingresar nuevos datos de repetibilidad',
+                  'No se encontraron registros previos de repetibilidad. Debe ingresar nuevos datos.',
                   style: TextStyle(color: Colors.white),
                 ),
               ),
@@ -388,20 +392,40 @@ class RepetibilidadController {
     }
   }
 
-  @override
   Future<void> initialize() async {
     try {
-      // Ya no necesitamos cargar valores D por separado
-      // Se cargan directamente cuando se necesitan
+      debugPrint('🔄 Iniciando initialize() de RepetibilidadController');
 
-      // Luego la búsqueda en cascada para datos de repetibilidad
-      await loadFromPrecargaOrDatabase();
+      // ✅ CRÍTICO: Primero inicializar los controladores con valores por defecto
+      _initializeControllers(false);
+      debugPrint('✅ Controladores inicializados: ${cargaControllers.length} cargas');
+
+      // Luego intentar cargar datos existentes de esta sesión
+      final dbHelper = AppDatabase();
+      final existingSessionData = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+
+      if (existingSessionData != null && _hasRepetibilidadData(existingSessionData)) {
+        // Cargar datos de esta sesión específica
+        debugPrint('📥 Cargando datos de sesión actual');
+        loadFromDatabase(existingSessionData);
+        _showDataLoadedMessage('Datos de repetibilidad cargados desde sesión actual');
+      } else {
+        // Si no hay datos de esta sesión, buscar en cascada
+        debugPrint('🔍 Buscando datos en cascada');
+        await loadFromPrecargaOrDatabase();
+      }
 
       // Cargar pmax1 desde la base de datos si existe
       await _loadPmax1FromDatabase();
 
+      debugPrint('✅ initialize() completado exitosamente');
+
     } catch (e) {
-      debugPrint('Error en initialize() de repetibilidad: $e');
+      debugPrint('❌ Error en initialize() de repetibilidad: $e');
+      // Asegurar que al menos los controladores estén inicializados
+      if (cargaControllers.isEmpty) {
+        _initializeControllers(false);
+      }
       _handleLoadError(e);
     }
   }
@@ -426,12 +450,17 @@ class RepetibilidadController {
   void loadFromDatabase(Map<String, dynamic> data) {
     for (int i = 1; i <= selectedRepetibilityCount; i++) {
       if (data['repetibilidad$i'] != null && cargaControllers.length >= i) {
-        cargaControllers[i - 1].text = data['repetibilidad$i'].toString();
+        final cargaValue = data['repetibilidad$i'].toString();
+        cargaControllers[i - 1].text = cargaValue;
+
         for (int j = 1; j <= selectedRowCount; j++) {
           if (indicacionControllers[i - 1].length >= j) {
-            indicacionControllers[i - 1][j - 1].text = data['indicacion${i}_$j'].toString();
-            retornoControllers[i - 1][j - 1].text =
-                data['retorno${i}_$j']?.toString() ?? '0';
+            // ✅ MEJORADO: Si no hay indicación en BD, usar valor de carga
+            final indicacionValue = data['indicacion${i}_$j']?.toString();
+            indicacionControllers[i - 1][j - 1].text = indicacionValue ?? cargaValue;
+
+            final retornoValue = data['retorno${i}_$j']?.toString();
+            retornoControllers[i - 1][j - 1].text = retornoValue ?? '0';
           }
         }
       }

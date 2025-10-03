@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:service_met/providers/calibration_provider.dart';
-import '../../../../database/app_database.dart';
 import 'excentricidad_controller.dart';
 import 'excentricidad_form.dart';
 
@@ -11,6 +8,7 @@ class ExcentricidadScreen extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final VoidCallback? onNext;
+  final VoidCallback? onDataSaved;
 
   const ExcentricidadScreen({
     super.key,
@@ -19,7 +17,7 @@ class ExcentricidadScreen extends StatefulWidget {
     required this.codMetrica,
     required this.secaValue,
     this.onNext,
-    required void Function() onDataSaved,
+    this.onDataSaved,
   });
 
   @override
@@ -29,33 +27,23 @@ class ExcentricidadScreen extends StatefulWidget {
 class _ExcentricidadScreenState extends State<ExcentricidadScreen> {
   late ExcentricidadController _controller;
 
-
   @override
   void initState() {
     super.initState();
-    final provider = Provider.of<CalibrationProvider>(context, listen: false);
+
     _controller = ExcentricidadController(
-      provider: provider,
       codMetrica: widget.codMetrica,
       secaValue: widget.secaValue,
       sessionId: widget.sessionId,
       onUpdate: () => setState(() {}),
     );
 
+    // Inicializar datos después de construir el widget
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _controller.initialize();
-
-      final dbHelper = AppDatabase();
-      final existingRecord = await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
-
-
-    });
-
-    _controller.masaController.addListener(() {
-      _controller.autoFillIndicationsFromMasa();
+      setState(() {});
     });
   }
-
 
   @override
   void dispose() {
@@ -65,7 +53,6 @@ class _ExcentricidadScreenState extends State<ExcentricidadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Elimina el Scaffold, solo devuelve el contenido
     return ExcentricidadForm(controller: _controller);
   }
 }

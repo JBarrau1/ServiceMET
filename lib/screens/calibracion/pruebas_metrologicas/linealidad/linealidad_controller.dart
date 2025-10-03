@@ -20,10 +20,10 @@ class LinealidadController {
     'Ascenso evaluando ceros',
     'Ascenso continúo por pasos'
   ];
-  final List<String> metodocargaOptions = ['Método 1', 'Método 2'];
+  final List<String> metodocargaOptions = ['Sin método de carga', 'Método 1', 'Método 2'];
+  String? selectedMetodoCarga = 'Sin método de carga'; // Valor por defecto
 
   String? selectedMetodo = 'Ascenso evaluando ceros';
-  String? selectedMetodoCarga = 'Método 1';
   final List<Map<String, TextEditingController>> rows = [];
   final TextEditingController notaController = TextEditingController();
   final TextEditingController comentarioController = TextEditingController();
@@ -144,36 +144,29 @@ class LinealidadController {
     try {
       _disposeRows();
 
-      // Paso 1: Buscar en precarga_database.db
+      // PASO 1: Buscar PRIMERO en precarga_database.db (como en el código antiguo)
       final precargaData = await _loadFromPrecargaDatabase();
 
       if (precargaData.isNotEmpty) {
-        // Si encuentra datos en precarga, los usa
         _createRowsFromPrecargaData(precargaData);
         debugPrint('Datos cargados desde precarga_database.db');
-
-        // Persistir y actualizar UI
         await _persistTempDataAndUpdate();
         return;
       }
 
-      // Paso 2: Si no hay datos en precarga, buscar en AppDatabase
+      // PASO 2: Si no hay datos en precarga, buscar en AppDatabase
       final appDatabaseData = await _loadFromAppDatabase();
 
       if (appDatabaseData.isNotEmpty) {
-        // Si encuentra datos en AppDatabase, los usa
         _createRowsFromAppDatabaseData(appDatabaseData);
-        debugPrint('Datos cargados desde AppDatabase');
-
-        // Persistir y actualizar UI
+        debugPrint('Datos cargados desde AppDatabase (históricos)');
         await _persistTempDataAndUpdate();
         return;
       }
 
-      // Paso 3: Si no hay datos en ninguna base de datos
+      // PASO 3: Si no hay datos en ninguna base de datos
       _showNoDataMessage();
       _createDefaultEmptyRows();
-
       await _persistTempDataAndUpdate();
 
     } catch (e) {
@@ -208,6 +201,8 @@ class LinealidadController {
     }
   }
 
+
+
   // Método para cargar desde AppDatabase
   Future<Map<String, dynamic>> _loadFromAppDatabase() async {
     try {
@@ -228,7 +223,7 @@ class LinealidadController {
   void _createRowsFromPrecargaData(Map<String, dynamic> data) {
     int valoresCargados = 0;
 
-    // Encontrar el último índice con dato
+    // Encontrar el último índice con dato (sin límite de 12)
     int lastIndexWithData = 0;
     for (int i = 1; i <= 60; i++) {
       final v = data['lin$i'];
@@ -237,15 +232,22 @@ class LinealidadController {
       }
     }
 
-    // Crear filas solo hasta el último índice con dato
+    // Crear filas hasta donde hay datos (sin límite)
     if (lastIndexWithData > 0) {
       for (int i = 1; i <= lastIndexWithData; i++) {
         final v = data['lin$i'];
-        addRow();
+        if (rows.length < i) addRow();
+
         if (v != null && v.toString().trim().isNotEmpty) {
           rows[i - 1]['lt']?.text = v.toString();
+          rows[i - 1]['indicacion']?.text = v.toString(); // ← LLENAR TAMBIÉN INDICACIÓN
           valoresCargados++;
         }
+      }
+    } else {
+      // Si no hay datos en precarga, crear 12 vacías
+      for (int i = 0; i < 12; i++) {
+        addRow();
       }
     }
 
@@ -258,10 +260,10 @@ class LinealidadController {
 
     // Cargar métodos seleccionados
     selectedMetodo = data['metodo'] ?? 'Ascenso evaluando ceros';
-    selectedMetodoCarga = data['metodo_carga'] ?? 'Método 1';
+    selectedMetodoCarga = data['metodo_carga'] ?? 'Sin método de carga';
     notaController.text = data['linealidad_comentario'] ?? '';
 
-    // Cargar datos de las filas
+    // Cargar TODAS las filas que tengan datos (sin límite de 12)
     for (int i = 1; i <= 60; i++) {
       final lt = data['lin$i'];
       final ind = data['ind$i'];
@@ -280,12 +282,19 @@ class LinealidadController {
       }
     }
 
+    // Si no se cargó ninguna fila, crear 12 vacías
+    if (valoresCargados == 0) {
+      for (int i = 0; i < 12; i++) {
+        addRow();
+      }
+    }
+
     debugPrint('Valores cargados desde AppDatabase: $valoresCargados');
   }
 
   // Crear filas vacías por defecto
   void _createDefaultEmptyRows() {
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 12; i++) { // Cambiado de 6 a 12
       addRow();
     }
   }
@@ -296,7 +305,7 @@ class LinealidadController {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'La balanza no tiene registros previos, debe ingresar nuevos',
+            'No se encontraron registros previos. Se han creado 12 campos vacíos para ingresar nuevos datos.',
             style: TextStyle(color: Colors.white),
           ),
           backgroundColor: Colors.orange,

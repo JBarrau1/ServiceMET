@@ -112,7 +112,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (await databaseExists(dbPath)) {
         final db = await openDatabase(dbPath);
-        final result = await db.rawQuery('SELECT COUNT(*) as total FROM registros_calibracion');
+        final result = await db.rawQuery(
+            'SELECT COUNT(*) as total FROM registros_calibracion WHERE estado_servicio_bal = ?',
+            ['Balanza Calibrada']
+        );
         await db.close();
         int count = result.isNotEmpty ? result.first['total'] as int : 0;
         setState(() {

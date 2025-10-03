@@ -76,12 +76,12 @@ class _LinealidadFormState extends State<LinealidadForm> {
     final controller = widget.controller;
 
     return SingleChildScrollView(
-      controller: _scrollController, // ← Usar el ScrollController
+      controller: _scrollController,
       padding: EdgeInsets.only(
-        top: kToolbarHeight + 20, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-        left: 16.0, // Tu padding horizontal original
-        right: 16.0, // Tu padding horizontal original
-        bottom: 16.0, // Tu padding inferior original
+        top: kToolbarHeight + 20,
+        left: 16.0,
+        right: 16.0,
+        bottom: 16.0,
       ),
       child: Form(
         key: _formKey,
@@ -98,6 +98,7 @@ class _LinealidadFormState extends State<LinealidadForm> {
             MethodSelector(controller: controller),
             const SizedBox(height: 20),
 
+            // SOLO MOSTRAR CAMPOS DE MÉTODO SI NO ES "Sin método de carga"
             if (controller.selectedMetodoCarga == 'Método 1') ...[
               _buildMethod1Fields(controller),
               const SizedBox(height: 20),
@@ -108,6 +109,19 @@ class _LinealidadFormState extends State<LinealidadForm> {
               const SizedBox(height: 20),
             ],
 
+            // Si es "Sin método de carga", no mostrar campos adicionales
+            if (controller.selectedMetodoCarga == 'Sin método de carga') ...[
+              const SizedBox(height: 10),
+              Text(
+                'Modo sin método de carga - Solo ingrese cargas e indicaciones',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+            ],
 
             _buildRowsSection(controller),
             _buildActionButtons(controller, context),

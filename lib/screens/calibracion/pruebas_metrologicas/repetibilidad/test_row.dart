@@ -20,34 +20,65 @@ class TestRow extends StatefulWidget {
 class _TestRowState extends State<TestRow> {
   double _dValue = 0.1;
   bool _isLoading = true;
+  String _lastCargaValue = '';
 
   @override
   void initState() {
     super.initState();
     _loadDValue();
+    // ✅ AÑADIDO: Listener para detectar cambios en la carga
+    widget.controller.cargaControllers[widget.cargaIndex].addListener(_onCargaChanged);
+  }
+
+  @override
+  void dispose() {
+    // ✅ AÑADIDO: Remover el listener
+    widget.controller.cargaControllers[widget.cargaIndex].removeListener(_onCargaChanged);
+    super.dispose();
+  }
+
+  // ✅ NUEVO: Método para manejar cambios en la carga
+  void _onCargaChanged() {
+    final currentCargaValue = widget.controller.cargaControllers[widget.cargaIndex].text;
+
+    // Solo recargar si el valor realmente cambió
+    if (currentCargaValue != _lastCargaValue) {
+      _lastCargaValue = currentCargaValue;
+      _loadDValue();
+    }
   }
 
   Future<void> _loadDValue() async {
     try {
       final dValue = await widget.controller.getDValueForCargaController(widget.cargaIndex);
-      setState(() {
-        _dValue = dValue;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _dValue = dValue;
+          _isLoading = false;
+        });
+        debugPrint('✅ D Value cargado para carga ${widget.cargaIndex}: $_dValue');
+      }
     } catch (e) {
-      setState(() {
-        _dValue = 0.1;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _dValue = 0.1;
+          _isLoading = false;
+        });
+      }
+      debugPrint('❌ Error al cargar D Value: $e');
     }
   }
 
   @override
   void didUpdateWidget(TestRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Recargar D value cuando cambie la carga
-    if (oldWidget.controller.cargaControllers[widget.cargaIndex].text !=
-        widget.controller.cargaControllers[widget.cargaIndex].text) {
+
+    // ✅ MEJORADO: Verificar si cambió el índice de carga
+    if (oldWidget.cargaIndex != widget.cargaIndex) {
+      // Remover listener del controlador anterior
+      oldWidget.controller.cargaControllers[oldWidget.cargaIndex].removeListener(_onCargaChanged);
+      // Añadir listener al nuevo controlador
+      widget.controller.cargaControllers[widget.cargaIndex].addListener(_onCargaChanged);
       _loadDValue();
     }
   }
@@ -55,7 +86,16 @@ class _TestRowState extends State<TestRow> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const CircularProgressIndicator();
+      return const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
     }
 
     return Column(
@@ -73,11 +113,13 @@ class _TestRowState extends State<TestRow> {
                       widget.controller.indicacionControllers[widget.cargaIndex][widget.testIndex].text = value;
                     },
                     itemBuilder: (context) {
-                      // CORREGIDO: Usar _dValue que ya está cargado
+                      // ✅ USAR _dValue que ya está actualizado
                       final dValue = _dValue;
 
-                      // CORREGIDO: Calcular decimales basado en el valor D
-                      int decimalPlaces = 1; // por defecto
+                      debugPrint('📊 Generando sugerencias con D=$dValue');
+
+                      // Calcular decimales basado en el valor D
+                      int decimalPlaces = 1;
                       if (dValue >= 1) {
                         decimalPlaces = 0;
                       } else if (dValue >= 0.1) {
@@ -88,7 +130,7 @@ class _TestRowState extends State<TestRow> {
                         decimalPlaces = 3;
                       }
 
-                      // ✅ CORREGIDO: Usar la carga como base si el campo está vacío
+                      // Usar la carga como base si el campo está vacío
                       final currentText = widget.controller.indicacionControllers[widget.cargaIndex][widget.testIndex].text.trim();
                       final baseValue = double.tryParse(
                           (currentText.isEmpty
@@ -96,12 +138,21 @@ class _TestRowState extends State<TestRow> {
                               : currentText).replaceAll(',', '.')
                       ) ?? 0.0;
 
-                      // ✅ CORREGIDO: Usar _dValue en lugar de d1
+                      debugPrint('📊 Valor base: $baseValue, Decimales: $decimalPlaces');
+
+                      // Generar 11 sugerencias (5 abajo, actual, 5 arriba)
                       return List.generate(11, (i) {
                         final value = baseValue + ((i - 5) * dValue);
+                        final formattedValue = value.toStringAsFixed(decimalPlaces);
+
                         return PopupMenuItem<String>(
-                          value: value.toStringAsFixed(decimalPlaces),
-                          child: Text(value.toStringAsFixed(decimalPlaces)),
+                          value: formattedValue,
+                          child: Text(
+                            formattedValue,
+                            style: i == 5
+                                ? const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)
+                                : null,
+                          ),
                         );
                       });
                     },

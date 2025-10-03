@@ -65,16 +65,12 @@ class MethodSelector extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadMethodDropdown(LinealidadController controller,
-      ThemeData theme) {
+  Widget _buildLoadMethodDropdown(LinealidadController controller, ThemeData theme) {
     return DropdownButtonFormField<String>(
-      value: controller.metodocargaOptions.contains(
-          controller.selectedMetodoCarga)
+      value: controller.metodocargaOptions.contains(controller.selectedMetodoCarga)
           ? controller.selectedMetodoCarga
-          : null,
-      decoration: buildInputDecoration(
-        'Método de Carga',
-      ),
+          : 'Sin método de carga', // Valor por defecto
+      decoration: buildInputDecoration('Método de Carga'),
       items: controller.metodocargaOptions.map((String metodo) {
         return DropdownMenuItem<String>(
           value: metodo,
@@ -105,8 +101,8 @@ class MethodSelector extends StatelessWidget {
         const SizedBox(width: 8),
         Flexible(
           child: Text(
-            'Puede seleccionar el método 1 o 2 según el criterio del Técnico responsable. '
-                'Si no selecciona un método y solo ingresa las cargas, podrá guardar los datos con normalidad.',
+            'Seleccione "Sin método de carga" para ingresar directamente las cargas. '
+                'Método 1 o 2 para cálculos automáticos con cargas sustitutivas.',
             style: TextStyle(
               fontSize: 12,
               color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade800,

@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
-import 'package:provider/provider.dart';
-import 'package:service_met/providers/calibration_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../database/app_database.dart';
-import '../../../../models/balanza_model.dart';
-import '../../../../provider/balanza_provider.dart';
 
 class ExcentricidadController {
   final TextEditingController pmax1Controller = TextEditingController();
   final TextEditingController oneThirdPmax1Controller = TextEditingController();
 
   DateTime? _lastPressedTime;
-  final CalibrationProvider provider;
   final String codMetrica;
   final String secaValue;
   final String sessionId;
@@ -81,12 +76,9 @@ class ExcentricidadController {
   List<TextEditingController> returnControllers = [];
   final TextEditingController cargaController = TextEditingController();
   final TextEditingController notaController = TextEditingController();
-  final TextEditingController masaController = TextEditingController();
-  final List<TextEditingController> _indicationControllers = [];
   final VoidCallback? onUpdate;
 
   ExcentricidadController({
-    required this.provider,
     required this.codMetrica,
     required this.secaValue,
     required this.sessionId,
@@ -95,49 +87,49 @@ class ExcentricidadController {
     _setupCargaListener();
   }
 
-  void loadFromDatabase(Map<String, dynamic> data) {
-    selectedPlatform = data['tipo_plataforma'];
-    selectedOption = data['puntos_ind'];
-    cargaController.text = data['carga']?.toString() ?? '';
-
-    updatePositionsFromOption();
-
-    for (int i = 0; i < positionControllers.length; i++) {
-      positionControllers[i].text = data['posicion${i + 1}']?.toString() ?? '';
-      indicationControllers[i].text = data['indicacion${i + 1}']?.toString() ?? '';
-      returnControllers[i].text = data['retorno${i + 1}']?.toString() ?? '0';
-    }
-
-    notaController.text = data['observaciones']?.toString() ?? '';
+  // Método para obtener la ruta de precarga_database
+  Future<String> _getPrecargaDatabasePath() async {
+    final dbPath = await getDatabasesPath();
+    return join(dbPath, 'precarga_database.db');
   }
 
-  void clearData() {
-    selectedPlatform = null;
-    selectedOption = null;
-    cargaController.clear();
-    notaController.clear();
-    positionControllers.clear();
-    indicationControllers.clear();
-    returnControllers.clear();
-  }
+  // Cargar valor de "Carga" desde precarga_database (columna exc)
+  Future<void> _loadCargaFromPrecarga() async {
+    try {
+      final dbPath = await _getPrecargaDatabasePath();
+      final db = await openDatabase(dbPath, readOnly: true);
 
-  void autoFillIndicationsFromMasa() {
-    final value = masaController.text;
-    for (final controller in _indicationControllers) {
-      controller.text = value;
+      final result = await db.query(
+        'servicios',
+        columns: ['exc'],
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+        orderBy: 'reg_fecha DESC',
+        limit: 1,
+      );
+
+      await db.close();
+
+      if (result.isNotEmpty) {
+        final excValue = result.first['exc'];
+        if (excValue != null && excValue.toString().trim().isNotEmpty) {
+          cargaController.text = excValue.toString();
+          debugPrint('Carga cargada desde precarga_database: $excValue');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al cargar carga desde precarga_database: $e');
     }
   }
 
   void _setupCargaListener() {
     cargaController.addListener(() {
       final value = cargaController.text;
-      final numValue = double.tryParse(value);
-
-      if (numValue != null) {
+      if (value.isNotEmpty) {
         for (final controller in indicationControllers) {
           controller.text = value;
         }
-        onUpdate?.call(); // fuerza la reconstrucción si es necesario
+        onUpdate?.call();
       }
     });
   }
@@ -145,6 +137,8 @@ class ExcentricidadController {
   Future<void> initialize() async {
     try {
       final dbHelper = AppDatabase();
+
+      // Cargar pmax1 y 1/3 pmax1
       final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
       if (existingRecord != null && existingRecord['cap_max1'] != null) {
@@ -153,13 +147,28 @@ class ExcentricidadController {
         pmax1Controller.text = pmax1.toStringAsFixed(2);
         oneThirdPmax1Controller.text = oneThirdPmax1.toStringAsFixed(2);
       }
+
+      // Intentar cargar datos existentes de AppDatabase primero
+      if (existingRecord != null && _hasExcentricidadData(existingRecord)) {
+        loadFromDatabase(existingRecord);
+        debugPrint('Datos de excentricidad cargados desde AppDatabase');
+      } else {
+        // Si no hay datos guardados, intentar cargar Carga desde precarga
+        await _loadCargaFromPrecarga();
+        debugPrint('No hay datos previos de excentricidad, Carga cargada desde precarga');
+      }
     } catch (e) {
-      debugPrint('Error al obtener pmax1: $e');
+      debugPrint('Error al inicializar excentricidad: $e');
     }
 
-    _loadInitialData();
-    _loadTempData();
-    _setupTempListeners();
+    onUpdate?.call();
+  }
+
+  // Verificar si existen datos de excentricidad guardados
+  bool _hasExcentricidadData(Map<String, dynamic> data) {
+    return (data['tipo_plataforma'] != null && data['tipo_plataforma'].toString().isNotEmpty) ||
+        (data['puntos_ind'] != null && data['puntos_ind'].toString().isNotEmpty) ||
+        (data['carga'] != null && data['carga'].toString().isNotEmpty);
   }
 
   Future<void> fetchPmax1FromDatabase() async {
@@ -190,66 +199,29 @@ class ExcentricidadController {
     return true;
   }
 
-  void _setupTempListeners() {
-    cargaController.addListener(_saveTempData);
-    for (final c in [...indicationControllers, ...returnControllers]) {
-      c.addListener(_saveTempData);
+  void loadFromDatabase(Map<String, dynamic> data) {
+    selectedPlatform = data['tipo_plataforma'];
+    selectedOption = data['puntos_ind'];
+    cargaController.text = data['carga']?.toString() ?? '';
+    notaController.text = data['observaciones']?.toString() ?? '';
+
+    updatePositionsFromOption();
+
+    for (int i = 0; i < positionControllers.length; i++) {
+      positionControllers[i].text = data['posicion${i + 1}']?.toString() ?? '';
+      indicationControllers[i].text = data['indicacion${i + 1}']?.toString() ?? '';
+      returnControllers[i].text = data['retorno${i + 1}']?.toString() ?? '0';
     }
   }
 
-  void _saveTempData() {
-    provider.updateTempDataForTest('excentricidad', {
-      'carga': cargaController.text,
-      'indicaciones': indicationControllers.map((c) => c.text).toList(),
-      'retornos': returnControllers.map((c) => c.text).toList(),
-    });
-  }
-
-  void _loadTempData() {
-    final saved = provider.getTempDataForTest('excentricidad');
-    if (saved != null) {
-      cargaController.text = saved['carga'] ?? '';
-      final indicaciones = List<String>.from(saved['indicaciones'] ?? []);
-      final retornos = List<String>.from(saved['retornos'] ?? []);
-
-      for (int i = 0; i < indicationControllers.length; i++) {
-        if (i < indicaciones.length) {
-          indicationControllers[i].text = indicaciones[i];
-        }
-      }
-
-      for (int i = 0; i < returnControllers.length; i++) {
-        if (i < retornos.length) {
-          returnControllers[i].text = retornos[i];
-        }
-      }
-    }
-  }
-
-  void _loadInitialData() {
-    if (provider.currentData != null) {
-      final data = provider.currentData!.balanzaData;
-      selectedPlatform = data['tipo_plataforma'];
-      updatePositionsFromOption();
-      selectedOption = data['puntos_ind'];
-      cargaController.text = data['carga']?.toString() ?? '';
-
-      // Cargar datos de posición si existen
-      for (int i = 1; i <= 6; i++) {
-        if (data['posicion$i'] != null) {
-          if (positionControllers.length < i) {
-            positionControllers.add(TextEditingController());
-            indicationControllers.add(TextEditingController());
-            returnControllers.add(TextEditingController(text: '0'));
-          }
-          positionControllers[i - 1].text =
-              data['posicion$i']?.toString() ?? '';
-          indicationControllers[i - 1].text =
-              data['indicacion$i']?.toString() ?? '';
-          returnControllers[i - 1].text = data['retorno$i']?.toString() ?? '0';
-        }
-      }
-    }
+  void clearData() {
+    selectedPlatform = null;
+    selectedOption = null;
+    cargaController.clear();
+    notaController.clear();
+    positionControllers.clear();
+    indicationControllers.clear();
+    returnControllers.clear();
   }
 
   Future<double> getDForCarga(double carga) async {
@@ -258,10 +230,9 @@ class ExcentricidadController {
       final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
       if (existingRecord == null) {
-        return 0.1; // Valor por defecto si no existe registro
+        return 0.1;
       }
 
-      // Obtener valores de la base de datos
       final pmax1 = double.tryParse(existingRecord['cap_max1']?.toString() ?? '0') ?? 0.0;
       final pmax2 = double.tryParse(existingRecord['cap_max2']?.toString() ?? '0') ?? 0.0;
       final pmax3 = double.tryParse(existingRecord['cap_max3']?.toString() ?? '0') ?? 0.0;
@@ -270,14 +241,13 @@ class ExcentricidadController {
       final d2 = double.tryParse(existingRecord['d2']?.toString() ?? '0.1') ?? 0.1;
       final d3 = double.tryParse(existingRecord['d3']?.toString() ?? '0.1') ?? 0.1;
 
-      // Lógica de selección según la carga
       if (carga <= pmax1) return d1;
       if (carga <= pmax2) return d2;
       if (carga <= pmax3) return d3;
-      return d3; // fallback
+      return d3;
     } catch (e) {
       debugPrint('Error al obtener D de la base de datos: $e');
-      return 0.1; // Valor por defecto en caso de error
+      return 0.1;
     }
   }
 
@@ -394,7 +364,6 @@ class ExcentricidadController {
       debugPrint('StackTrace: $stackTrace');
     }
   }
-
 
   void dispose() {
     pmax1Controller.dispose();
