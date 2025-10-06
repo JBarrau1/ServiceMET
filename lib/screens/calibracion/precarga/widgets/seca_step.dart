@@ -209,7 +209,7 @@ class SecaStep extends StatelessWidget {
             Text(
               controller.generatedSeca ?? 'Generando...',
               style: GoogleFonts.robotoMono(
-                fontSize: 28,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.green[800],
                 letterSpacing: 2,

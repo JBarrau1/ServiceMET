@@ -406,14 +406,23 @@ class PrecargaController extends ChangeNotifier {
           whereArgs: [codMetrica],
         );
 
+        // Verificar estado de calibración desde la base de datos interna
+        final estadoCalibacion = await _verificarEstadoCalibacion(codMetrica);
+
+        Map<String, dynamic> balanzaCompleta = {
+          ...balanza,
+          'estado_calibracion': estadoCalibacion['estado'],
+          'tiene_registro': estadoCalibacion['tiene_registro'],
+        };
+
         if (infDetails.isNotEmpty) {
-          processedBalanzas.add({
-            ...balanza,
+          balanzaCompleta = {
+            ...balanzaCompleta,
             ...infDetails.first,
-          });
-        } else {
-          processedBalanzas.add(balanza);
+          };
         }
+
+        processedBalanzas.add(balanzaCompleta);
       }
 
       _balanzas = processedBalanzas;
@@ -421,6 +430,36 @@ class PrecargaController extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       throw Exception('Error al cargar balanzas: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> _verificarEstadoCalibacion(String codMetrica) async {
+    try {
+      final dbHelper = AppDatabase();
+      final db = await dbHelper.database;
+
+      // Buscar en la tabla de registros de calibración
+      final List<Map<String, dynamic>> registros = await db.query(
+        'registros_calibracion',
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+        orderBy: 'fecha_servicio DESC',
+        limit: 1,
+      );
+
+      if (registros.isEmpty) {
+        return {'estado': 'sin_registro', 'tiene_registro': false};
+      }
+
+      final estadoServicio = registros.first['estado_servicio_bal']?.toString() ?? '';
+
+      if (estadoServicio == 'Balanza Calibrada') {
+        return {'estado': 'calibrada', 'tiene_registro': true};
+      } else {
+        return {'estado': 'no_calibrada', 'tiene_registro': true};
+      }
+    } catch (e) {
+      return {'estado': 'error', 'tiene_registro': false};
     }
   }
 

@@ -700,13 +700,24 @@ class _BalanzaStepState extends State<BalanzaStep> {
                         itemCount: filteredBalanzas.length,
                         itemBuilder: (context, index) {
                           final balanza = filteredBalanzas[index];
+                          final estadoCalibacion = balanza['estado_calibracion'] ?? 'sin_registro';
+                          final tieneRegistro = balanza['tiene_registro'] ?? false;
+
                           return Container(
                             margin: const EdgeInsets.symmetric(vertical: 4),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
+                              border: Border.all(
+                                color: estadoCalibacion == 'calibrada'
+                                    ? Colors.green[300]!
+                                    : estadoCalibacion == 'no_calibrada'
+                                    ? Colors.orange[300]!
+                                    : Colors.grey[300]!,
+                                width: 2,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: ListTile(
+                              leading: _buildEstadoIcon(estadoCalibacion),
                               title: Text(
                                 'CÓDIGO: ${balanza['cod_metrica']}',
                                 style: GoogleFonts.poppins(
@@ -721,13 +732,34 @@ class _BalanzaStepState extends State<BalanzaStep> {
                                   Text('Serie: ${balanza['serie'] ?? 'N/A'}'),
                                   Text('Marca: ${balanza['marca'] ?? 'N/A'}'),
                                   Text('Modelo: ${balanza['modelo'] ?? 'N/A'}'),
+                                  if (tieneRegistro)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        estadoCalibacion == 'calibrada'
+                                            ? '✓ Balanza Calibrada'
+                                            : '⚠ Requiere calibración',
+                                        style: TextStyle(
+                                          color: estadoCalibacion == 'calibrada'
+                                              ? Colors.green[700]
+                                              : Colors.orange[700],
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                               onTap: () {
-                                controller.selectBalanza(balanza);
-                                _fillBalanzaData(balanza);
-                                Navigator.pop(context);
+                                // Mostrar alerta si la balanza no está calibrada
+                                if (tieneRegistro && estadoCalibacion == 'no_calibrada') {
+                                  _showCalibrationWarningDialog(balanza, controller);
+                                } else {
+                                  controller.selectBalanza(balanza);
+                                  _fillBalanzaData(balanza);
+                                  Navigator.pop(context);
+                                }
                               },
                             ),
                           );
@@ -748,6 +780,110 @@ class _BalanzaStepState extends State<BalanzaStep> {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildEstadoIcon(String estado) {
+    switch (estado) {
+      case 'calibrada':
+        return Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.green[100],
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.check_circle,
+            color: Colors.green[700],
+            size: 24,
+          ),
+        );
+      case 'no_calibrada':
+        return Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.orange[100],
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.warning,
+            color: Colors.orange[700],
+            size: 24,
+          ),
+        );
+      default:
+        return Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.help_outline,
+            color: Colors.grey[700],
+            size: 24,
+          ),
+        );
+    }
+  }
+
+  void _showCalibrationWarningDialog(Map<String, dynamic> balanza, PrecargaController controller) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          icon: Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.orange[700],
+            size: 48,
+          ),
+          title: Text(
+            'ADVERTENCIA',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              color: Colors.orange[700],
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'La balanza ${balanza['cod_metrica']} tiene un registro pero NO está marcada como "Balanza Calibrada".',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '¿Desea continuar con esta balanza?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                controller.selectBalanza(balanza);
+                _fillBalanzaData(balanza);
+                Navigator.pop(context); // Cerrar alerta
+                Navigator.pop(context); // Cerrar diálogo de balanzas
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[700],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Continuar'),
+            ),
+          ],
         );
       },
     );
