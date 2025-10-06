@@ -119,20 +119,23 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     }
   }
 
-
   /// ---- NUEVO: Construye un JOIN con alias para evitar colisiones de columnas en SELECT *
   Future<Map<String, dynamic>> _buildAliasedJoin(Database db) async {
     try {
-      // Obtenemos información de las tablas
       final icbColsInfo = await db.rawQuery('PRAGMA table_info(inf_cliente_balanza)');
       final rddColsInfo = await db.rawQuery('PRAGMA table_info(relevamiento_de_datos)');
 
       final icbCols = icbColsInfo.map((c) => c['name'] as String).toList();
       final rddCols = rddColsInfo.map((c) => c['name'] as String).toList();
 
-      // CORREGIDO: Usamos alias internos solo para evitar colisiones, pero mapeamos a nombres originales
+      // ✅ NUEVO: Excluir columnas duplicadas de la segunda tabla
+      final columnasExcluir = {'id', 'cod_metrica'};
+      final rddColsFiltered = rddCols.where((c) => !columnasExcluir.contains(c)).toList();
+
+      // Seleccionar todas las columnas de icb
       final icbSelect = icbCols.map((c) => 'icb."$c" AS icb_$c').join(', ');
-      final rddSelect = rddCols.map((c) => 'rdd."$c" AS rdd_$c').join(', ');
+      // Solo columnas no duplicadas de rdd
+      final rddSelect = rddColsFiltered.map((c) => 'rdd."$c" AS rdd_$c').join(', ');
 
       final sql = '''
       SELECT $icbSelect, $rddSelect
@@ -146,11 +149,10 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       final rawRows = await db.rawQuery(sql, [widget.codMetrica]);
       debugPrint('Filas obtenidas: ${rawRows.length}');
 
-      // CORREGIDO: Convertimos los datos con alias internos a nombres originales
       final processedRows = rawRows.map((row) {
         final processedRow = <String, dynamic>{};
 
-        // Mapear columnas de inf_cliente_balanza (remover prefijo icb_)
+        // Mapear columnas de inf_cliente_balanza
         for (final col in icbCols) {
           final aliasedKey = 'icb_$col';
           if (row.containsKey(aliasedKey)) {
@@ -158,8 +160,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
           }
         }
 
-        // Mapear columnas de relevamiento_de_datos (remover prefijo rdd_)
-        for (final col in rddCols) {
+        // Mapear solo columnas no duplicadas de relevamiento_de_datos
+        for (final col in rddColsFiltered) {
           final aliasedKey = 'rdd_$col';
           if (row.containsKey(aliasedKey)) {
             processedRow[col] = row[aliasedKey];
@@ -171,7 +173,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       return {
         'icbCols': icbCols,
-        'rddCols': rddCols,
+        'rddCols': rddColsFiltered,  // ✅ Retornar solo las columnas filtradas
         'rows': processedRows,
       };
     } catch (e) {
