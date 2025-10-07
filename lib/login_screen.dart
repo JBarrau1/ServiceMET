@@ -16,7 +16,7 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _usuarioController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
 
@@ -32,12 +32,30 @@ class _LoginScreenState extends State<LoginScreen> {
   bool recordarCredenciales = false;
   bool showConfig = false;
   bool _loading = false;
+  bool _obscurePassword = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
   final connection = MssqlConnection.getInstance();
 
   @override
   void initState() {
     super.initState();
     _loadPrefs();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   String hashPassword(String password) {
@@ -46,27 +64,22 @@ class _LoginScreenState extends State<LoginScreen> {
     return digest.toString();
   }
 
-// Función para sanitizar entradas SQL
   String sanitizeInput(String input) {
-    // Remueve caracteres peligrosos para SQL
-    return input.replaceAll("'", "''")  // Escapa comillas simples
-        .replaceAll(";", "")     // Remueve punto y coma
-        .replaceAll("--", "")    // Remueve comentarios SQL
-        .replaceAll("/*", "")    // Remueve comentarios de bloque
+    return input.replaceAll("'", "''")
+        .replaceAll(";", "")
+        .replaceAll("--", "")
+        .replaceAll("/*", "")
         .replaceAll("*/", "")
-        .replaceAll("xp_", "")   // Remueve procedimientos peligrosos
+        .replaceAll("xp_", "")
         .replaceAll("sp_", "")
         .trim();
   }
 
-// Validación adicional de entrada
   bool isValidInput(String input) {
-    // No debe contener caracteres sospechosos
     final dangerousPatterns = [
       'drop', 'delete', 'insert', 'update', 'create', 'alter',
       'exec', 'execute', 'union', 'select', 'script'
     ];
-
     final lowerInput = input.toLowerCase();
     return !dangerousPatterns.any((pattern) => lowerInput.contains(pattern));
   }
@@ -92,15 +105,11 @@ class _LoginScreenState extends State<LoginScreen> {
     await prefs.setString('port', _portController.text);
     await prefs.setString('database', _dbController.text);
     await prefs.setString('dbuser', _dbUserController.text);
-
-    //HASHEAR CONTRASEÑA DE BD ANTES DE GUARDAR
     await prefs.setString('dbpass', hashPassword(_dbPassController.text));
-
     await prefs.setBool('recordar', recordarCredenciales);
 
     if (recordarCredenciales) {
       await prefs.setString('usuario', _usuarioController.text);
-      //HASHEAR CONTRASEÑA DE USUARIO ANTES DE GUARDAR
       await prefs.setString('contrasena', hashPassword(_passController.text));
     } else {
       await prefs.remove('usuario');
@@ -131,18 +140,68 @@ class _LoginScreenState extends State<LoginScreen> {
           });
 
       await db.delete('usuarios');
-
       final userDataConFecha = {
         ...userData,
         'fecha_guardado': DateTime.now().toIso8601String(),
       };
-
       await db.insert('usuarios', userDataConFecha);
-
     } catch (e) {
       print('Error guardando en SQLite: $e');
     } finally {
       await db?.close();
+    }
+  }
+
+  Future<void> _loginOffline(BuildContext context) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+
+    final usuario = _usuarioController.text.trim();
+    final pass = _passController.text.trim();
+
+    try {
+      // Verificar credenciales guardadas
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final usuarioGuardado = prefs.getString('usuario');
+      final contrasenaGuardada = prefs.getString('contrasena');
+
+      if (usuarioGuardado == null || contrasenaGuardada == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay credenciales guardadas. Debe iniciar sesión en línea al menos una vez.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        setState(() => _loading = false);
+        return;
+      }
+
+      // Validar usuario y contraseña
+      final passHasheada = hashPassword(pass);
+
+      if (usuario == usuarioGuardado && passHasheada == contrasenaGuardada) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Inicio de sesión exitoso (modo offline)'),
+            backgroundColor: Color(0xFF0E8833),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Usuario o contraseña incorrecta'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _loading = false);
     }
   }
 
@@ -160,7 +219,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final pass = _passController.text.trim();
 
     try {
-      // 🔒 VALIDACIÓN DE SEGURIDAD
       if (!isValidInput(usuario) || !isValidInput(pass)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Caracteres no válidos detectados')),
@@ -168,14 +226,10 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // 🔒 SANITIZAR ENTRADAS
       final usuarioSeguro = sanitizeInput(usuario);
       final passSeguro = sanitizeInput(pass);
-
-      // Configurar timeout de 15 segundos
       final timeoutDuration = const Duration(seconds: 15);
 
-      // Conexión con timeout
       final connected = await connection
           .connect(
         ip: ip,
@@ -196,14 +250,12 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // 🔒 QUERY SQL MÁS SEGURA (aunque no sea completamente parametrizada)
       final query = '''
       SELECT nombre1, apellido1, pass, usuario, titulo_abr, estado 
       FROM data_users 
       WHERE usuario = '$usuarioSeguro' AND pass = '$passSeguro'
     ''';
 
-      // Usamos getData() con timeout
       final resultJson = await connection
           .getData(query)
           .timeout(timeoutDuration, onTimeout: () {
@@ -215,18 +267,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (result.isNotEmpty) {
         final userData = Map<String, dynamic>.from(result.first);
-
-        // 🔒 HASHEAR LA CONTRASEÑA ANTES DE GUARDAR LOCALMENTE
         final userDataSeguro = {
           ...userData,
-          'pass': hashPassword(userData['pass']), // Hashear contraseña
+          'pass': hashPassword(userData['pass']),
         };
 
         await _saveUserToSQLite(userDataSeguro);
         await _savePrefs();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inicio de sesión exitoso')),
+          const SnackBar(
+            content: Text('✓ Inicio de sesión exitoso'),
+            backgroundColor: Color(0xFF0E8833),
+          ),
         );
         Navigator.pushReplacementNamed(context, '/home');
       } else {
@@ -250,315 +303,471 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        toolbarHeight: 100,
-        title: const Text(
-          'INICIO DE SESIÓN',
-          style: TextStyle(
-            fontSize: 25.0,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.transparent
-            : Colors.white,
-        elevation: 0,
-        flexibleSpace: Theme.of(context).brightness == Brightness.dark
-            ? ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                  child: Container(
-                    color: Colors.black.withOpacity(0.4),
-                  ),
-                ),
-              )
-            : null,
-        iconTheme: IconThemeData(color: Theme.of(context).iconTheme.color),
-        titleTextStyle: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white
-              : Colors.black,
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          top: kToolbarHeight +
-              MediaQuery.of(context).padding.top +
-              40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-          left: 16.0, // Tu padding horizontal original
-          right: 16.0, // Tu padding horizontal original
-          bottom: 16.0, // Tu padding inferior original
-        ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Transform.translate(
-                offset: const Offset(0, 40),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'images/logo_met.png',
-                      height: 80,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 80.0),
-              Text(
-                'BIENVENIDO',
-                style: GoogleFonts.inter(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.black,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 20.0,
-                ),
-              ),
-              const SizedBox(height: 10.0),
-              Center(
-                child: Text(
-                  'Ingrese el usuario y contraseña asignado por el área de sistemas, deben ser los mismos que se utilizan en el DataMET.',
-                  style: GoogleFonts.inter(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
-                    fontWeight: FontWeight.w300,
-                    fontSize: 13.0,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 20.0),
-              TextFormField(
-                controller: _usuarioController,
-                decoration: const InputDecoration(
-                  labelText: 'Usuario',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingrese su usuario';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20.0),
-              TextFormField(
-                controller: _passController,
-                decoration: const InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock_outline_rounded),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingrese su contraseña';
-                  }
-                  if (value.length < 4) {
-                    return 'La contraseña debe tener al menos 4 caracteres';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20.0),
-              CheckboxListTile(
-                value: recordarCredenciales,
-                onChanged: (bool? value) {
-                  setState(() {
-                    recordarCredenciales = value ?? false;
-                  });
-                },
-                title: const Text('Recordar usuario y contraseña'),
-                controlAffinity: ListTileControlAffinity.leading,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0E8833),
-                ),
-                onPressed: _loading ? null : () => _login(context),
-                child: _loading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text('Iniciar sesión'),
-              ),
-              const SizedBox(height: 20.0),
-              if (showConfig)
-                Form(
-                  key: _configFormKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _ipController,
-                        decoration: const InputDecoration(labelText: 'IP'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Ingrese la dirección IP';
-                          }
-                          // Validación básica de formato IP
-                          final ipRegex =
-                              RegExp(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$');
-                          if (!ipRegex.hasMatch(value)) {
-                            return 'Ingrese una dirección IP válida';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20.0),
-                      TextFormField(
-                        controller: _portController,
-                        decoration: const InputDecoration(labelText: 'Puerto'),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Ingrese el puerto';
-                          }
-                          final port = int.tryParse(value);
-                          if (port == null || port <= 0 || port > 65535) {
-                            return 'Puerto inválido (1-65535)';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20.0),
-                      TextFormField(
-                        controller: _dbController,
-                        decoration:
-                            const InputDecoration(labelText: 'Base de datos'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Ingrese el nombre de la base de datos';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20.0),
-                      TextFormField(
-                        controller: _dbUserController,
-                        decoration:
-                            const InputDecoration(labelText: 'Usuario BD'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Ingrese el usuario de BD';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20.0),
-                      TextFormField(
-                        controller: _dbPassController,
-                        decoration:
-                            const InputDecoration(labelText: 'Contraseña BD'),
-                        obscureText: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Ingrese la contraseña de BD';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 20.0),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(width: 10.0),
-                  Expanded(
-                    flex: 1,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 20.0),
-                      child: Text(
-                        'Al iniciar sesión sin conexión, se utilizarán los datos de usuario y contraseña almacenados en el dispositivo. Si no ha iniciado sesión previamente, debe iniciar sesión en línea al menos una vez para que se guarden los datos.',
-                        style: GoogleFonts.inter(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white70
-                              : Colors.black54,
-                          fontWeight: FontWeight.w400,
-                          fontSize: 11.0,
-                        ),
-                        textAlign: TextAlign.left,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF9E2B2E),
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pushReplacementNamed('/home');
-                          },
-                          child: const Text('Iniciar sesión sin conexión'),
-                        ),
-                        const SizedBox(height: 10),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2E756F),
-                          ),
-                          onPressed: () {
-                            setState(() => showConfig = !showConfig);
-                          },
-                          child: const Text('Configuración de conexión'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20.0),
-              Text(
-                'versión 10.1.1_3_061025',
-                style: GoogleFonts.inter(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.black,
-                  fontWeight: FontWeight.w400,
-                  fontSize: 9.0,
-                ),
-              ),
-              Text(
-                'DESARROLLADO POR: J.FARFAN',
-                style: GoogleFonts.inter(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.black,
-                  fontWeight: FontWeight.w400,
-                  fontSize: 9.0,
-                ),
-              ),
-              Text(
-                '© 2025 METRICA LTDA',
-                style: GoogleFonts.inter(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.black,
-                  fontWeight: FontWeight.w400,
-                  fontSize: 9.0,
-                ),
-              ),
+      body: Container(
+        height: size.height,
+        width: size.width,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+              const Color(0xFF1a1a1a),
+              const Color(0xFF2d2d2d),
+            ]
+                : [
+              const Color(0xFFF5F7FA),
+              const Color(0xFFE8EDF2),
             ],
           ),
         ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Column(
+                children: [
+                  const SizedBox(height: 40),
+                  // Logo
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'images/logo_met.png',
+                      height: 80,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Card principal
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2d2d2d) : Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                          blurRadius: 30,
+                          offset: const Offset(0, 15),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bienvenido.',
+                            style: GoogleFonts.inter(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Ingresa tus credenciales para continuar',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: isDark ? Colors.white60 : Colors.black54,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          // Campo Usuario
+                          Text(
+                            'Usuario',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _usuarioController,
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Ingresa tu usuario',
+                              hintStyle: GoogleFonts.inter(
+                                color: isDark ? Colors.white30 : Colors.black26,
+                              ),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF1a1a1a) : const Color(0xFFF5F7FA),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 18,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.person_outline_rounded,
+                                color: isDark ? Colors.white70 : Colors.black38,
+                                size: 22,
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingrese su usuario';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Campo Contraseña
+                          Text(
+                            'Contraseña',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _passController,
+                            obscureText: _obscurePassword,
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Ingresa tu contraseña',
+                              hintStyle: GoogleFonts.inter(
+                                color: isDark ? Colors.white30 : Colors.black26,
+                              ),
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF1a1a1a) : const Color(0xFFF5F7FA),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 18,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.lock_outline_rounded,
+                                color: isDark ? Colors.white70 : Colors.black38,
+                                size: 22,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  color: isDark ? Colors.white70 : Colors.black38,
+                                  size: 22,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingrese su contraseña';
+                              }
+                              if (value.length < 4) {
+                                return 'La contraseña debe tener al menos 4 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Recordar credenciales
+                          Row(
+                            children: [
+                              SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: Checkbox(
+                                  value: recordarCredenciales,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      recordarCredenciales = value ?? false;
+                                    });
+                                  },
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  activeColor: const Color(0xFF0E8833),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Recordar mis credenciales',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: isDark ? Colors.white60 : Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 28),
+
+                          // Botón Iniciar sesión
+                          SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0E8833),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                shadowColor: const Color(0xFF0E8833).withOpacity(0.3),
+                              ),
+                              onPressed: _loading ? null : () => _login(context),
+                              child: _loading
+                                  ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                                  : Text(
+                                'Iniciar sesión',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Botón offline
+                          SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF9E2B2E),
+                                side: BorderSide(
+                                  color: isDark ? const Color(0xFF9E2B2E).withOpacity(0.3) : const Color(0xFF9E2B2E).withOpacity(0.5),
+                                  width: 1.5,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: _loading ? null : () => _loginOffline(context),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.cloud_off_outlined,
+                                    size: 20,
+                                    color: isDark ? const Color(0xFF9E2B2E).withOpacity(0.8) : const Color(0xFF9E2B2E),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Iniciar sin conexión',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Botón configuración
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() => showConfig = !showConfig);
+                    },
+                    icon: Icon(
+                      showConfig ? Icons.keyboard_arrow_up : Icons.settings_outlined,
+                      size: 20,
+                      color: isDark ? Colors.white70 : Colors.black54,
+                    ),
+                    label: Text(
+                      showConfig ? 'Ocultar configuración' : 'Configuración de conexión',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                  ),
+
+                  // Panel de configuración
+                  if (showConfig) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF2d2d2d) : Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Form(
+                        key: _configFormKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Configuración del servidor',
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            _buildConfigField('IP del servidor', _ipController, Icons.dns_outlined, isDark),
+                            const SizedBox(height: 16),
+                            _buildConfigField('Puerto', _portController, Icons.cable_outlined, isDark, isNumber: true),
+                            const SizedBox(height: 16),
+                            _buildConfigField('Base de datos', _dbController, Icons.storage_outlined, isDark),
+                            const SizedBox(height: 16),
+                            _buildConfigField('Usuario BD', _dbUserController, Icons.admin_panel_settings_outlined, isDark),
+                            const SizedBox(height: 16),
+                            _buildConfigField('Contraseña BD', _dbPassController, Icons.vpn_key_outlined, isDark, isPassword: true),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 32),
+
+                  // Footer
+                  Column(
+                    children: [
+                      Text(
+                        'versión 10.1.1_4_071025',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'DESARROLLADO POR: J.FARFAN',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: isDark ? Colors.white30 : Colors.black26,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '© 2025 METRICA LTDA',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: isDark ? Colors.white30 : Colors.black26,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildConfigField(String label, TextEditingController controller, IconData icon, bool isDark, {bool isPassword = false, bool isNumber = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword,
+          keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Ingresa $label',
+            hintStyle: GoogleFonts.inter(
+              color: isDark ? Colors.white30 : Colors.black26,
+              fontSize: 13,
+            ),
+            filled: true,
+            fillColor: isDark ? const Color(0xFF1a1a1a) : const Color(0xFFF5F7FA),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: isDark ? Colors.white70 : Colors.black38,
+              size: 20,
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Campo requerido';
+            }
+            return null;
+          },
+        ),
+      ],
     );
   }
 }

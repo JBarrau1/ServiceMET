@@ -526,7 +526,7 @@ class DatabaseHelperSop {
         excentricidad_final_punto3_ida_indicacion TEXT DEFAULT '',
         excentricidad_final_punto3_ida_retorno TEXT DEFAULT '',
 
-        excentricidad_final_punto4_ida_numero '',
+        excentricidad_final_punto4_ida_numero TEXT DEFAULT'',
         excentricidad_final_punto4_ida_indicacion TEXT DEFAULT '',
         excentricidad_final_punto4_ida_retorno TEXT DEFAULT '',
 
@@ -719,7 +719,6 @@ class DatabaseHelperSop {
         
         --DATOS SERVICIO 
         --Comentarios
-        tipo_servicio TEXT DEFAULT '',
         comentario_1 TEXT DEFAULT '',
         comentario_2 TEXT DEFAULT '',
         comentario_3 TEXT DEFAULT '',
