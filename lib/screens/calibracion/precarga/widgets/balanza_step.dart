@@ -505,6 +505,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
   Widget _buildPhotoSection(PrecargaController controller) {
     final photos = controller.balanzaPhotos['identificacion'] ?? <File>[];
+    final fotoPathSeleccionada = controller.baseFotoPath != null;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -539,24 +540,150 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
           const SizedBox(height: 20),
 
-          // Botón para tomar foto
+          // Mostrar estado de la ubicación seleccionada
+          if (fotoPathSeleccionada)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ubicación seleccionada:',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          controller.baseFotoPath!,
+                          style: GoogleFonts.robotoMono(
+                            fontSize: 10,
+                            color: Colors.green[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange[600], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Selecciona una ubicación antes de tomar fotos',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.orange[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 16),
+
+          // Botón para seleccionar carpeta
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                try {
+                  final codMetrica = controller.selectedBalanza?['cod_metrica']?.toString() ?? 'balanza';
+                  final seca = controller.generatedSeca ?? 'seca';
+
+                  final selected = await controller.selectFotoDirectory(
+                    codMetrica,
+                    seca,
+                  );
+
+                  if (selected) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Carpeta creada: ${controller.baseFotoPath}'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.folder_open),
+              label: const Text('Seleccionar Carpeta'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF326677),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Botón para tomar foto (deshabilitado si no hay carpeta seleccionada)
           ElevatedButton.icon(
-            onPressed: photos.length < 5 ? () async {
+            onPressed: fotoPathSeleccionada && photos.length < 5
+                ? () async {
               try {
                 await controller.takePhoto();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Foto guardada (${photos.length}/5)'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error al tomar foto: $e')),
+                  SnackBar(
+                    content: Text('Error al tomar foto: $e'),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
-            } : null,
+            }
+                : null,
             icon: const Icon(Icons.camera_alt),
             label: const Text('Tomar Foto'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFc0101a),
               foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.grey[400],
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
@@ -600,7 +727,15 @@ class _BalanzaStepState extends State<BalanzaStep> {
                         top: 4,
                         right: 4,
                         child: GestureDetector(
-                          onTap: () => controller.removePhoto(photo),
+                          onTap: () {
+                            controller.removePhoto(photo);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Foto eliminada'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          },
                           child: Container(
                             decoration: const BoxDecoration(
                               color: Colors.red,
@@ -610,6 +745,28 @@ class _BalanzaStepState extends State<BalanzaStep> {
                               Icons.close,
                               color: Colors.white,
                               size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${index + 1}/5',
+                            style: GoogleFonts.robotoMono(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),

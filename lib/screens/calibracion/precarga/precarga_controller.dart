@@ -1,5 +1,6 @@
 // precarga_controller.dart
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -7,6 +8,10 @@ import 'package:image_picker/image_picker.dart';
 import '../../../database/app_database.dart';
 
 class PrecargaController extends ChangeNotifier {
+
+  String? _baseFotoPath;
+  String? get baseFotoPath => _baseFotoPath;
+
   // Estados del flujo
   int _currentStep = 0;
   bool _isDataSaved = false;
@@ -553,25 +558,162 @@ class PrecargaController extends ChangeNotifier {
     return [..._selectedEquipos, ..._selectedTermohigrometros];
   }
 
+  Future<bool> selectFotoDirectory(String codMetrica, String seca) async {
+    try {
+      // Abrir file picker para que el usuario seleccione la carpeta
+      final String? result = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Seleccionar ubicación para guardar fotos',
+      );
+
+      if (result != null) {
+        // Crear la subcarpeta con el nombre especificado
+        final folderName = '${codMetrica}_${seca}_FotosIniciales';
+        _baseFotoPath = join(result, folderName);
+
+        // Crear la carpeta si no existe
+        final folder = Directory(_baseFotoPath!);
+        if (!await folder.exists()) {
+          await folder.create(recursive: true);
+        }
+
+        notifyListeners();
+        return true;
+      }
+      return false; // Usuario canceló la selección
+    } catch (e) {
+      throw Exception('Error al seleccionar directorio: $e');
+    }
+  }
+
   // MÉTODOS DE FOTOS
   Future<void> takePhoto() async {
+    if (_baseFotoPath == null) {
+      throw Exception('No se ha seleccionado ubicación para las fotos');
+    }
+
     final photo = await _imagePicker.pickImage(source: ImageSource.camera);
     if (photo != null) {
       _balanzaPhotos['identificacion'] ??= [];
+
       if (_balanzaPhotos['identificacion']!.length < 5) {
-        _balanzaPhotos['identificacion']!.add(File(photo.path));
-        _fotosTomadas = true;
-        notifyListeners();
+        try {
+          // Obtener el número de fotos actuales (01-05)
+          final photoCount = _balanzaPhotos['identificacion']!.length + 1;
+          final photoNumber = photoCount.toString().padLeft(2, '0');
+
+          // Extraer el cod_metrica de la ruta base
+          final folderName = _baseFotoPath!.split('/').last;
+          final codMetrica = folderName.split('_').first;
+
+          // Nombre del archivo: cod_metrica_01, cod_metrica_02, etc.
+          final fileName = '${codMetrica}_$photoNumber.jpg';
+          final filePath = join(_baseFotoPath!, fileName);
+
+          // Copiar la foto desde la cámara a la ubicación permanente
+          final savedPhoto = await File(photo.path).copy(filePath);
+
+          _balanzaPhotos['identificacion']!.add(savedPhoto);
+          _fotosTomadas = true;
+          notifyListeners();
+        } catch (e) {
+          throw Exception('Error al guardar foto: $e');
+        }
       }
     }
   }
 
   void removePhoto(File photo) {
-    _balanzaPhotos['identificacion']?.remove(photo);
-    if (_balanzaPhotos['identificacion']?.isEmpty ?? true) {
-      _fotosTomadas = false;
+    try {
+      // Eliminar el archivo del sistema de archivos
+      if (photo.existsSync()) {
+        photo.deleteSync();
+      }
+
+      _balanzaPhotos['identificacion']?.remove(photo);
+
+      if (_balanzaPhotos['identificacion']?.isEmpty ?? true) {
+        _fotosTomadas = false;
+      }
+
+      // Renombrar las fotos restantes para mantener secuencia
+      _renameRemainingPhotos();
+
+      notifyListeners();
+    } catch (e) {
+      throw Exception('Error al eliminar foto: $e');
     }
-    notifyListeners();
+  }
+
+  Future<void> _renameRemainingPhotos() async {
+    try {
+      final photos = _balanzaPhotos['identificacion'] ?? [];
+
+      for (int i = 0; i < photos.length; i++) {
+        final currentFile = photos[i];
+        final photoNumber = (i + 1).toString().padLeft(2, '0');
+
+        // Extraer cod_metrica
+        final folderName = _baseFotoPath!.split('/').last;
+        final codMetrica = folderName.split('_').first;
+
+        final newFileName = '${codMetrica}_$photoNumber.jpg';
+        final newFilePath = join(_baseFotoPath!, newFileName);
+
+        // Si el nombre es diferente, renombrar
+        if (currentFile.path != newFilePath) {
+          try {
+            final renamedFile = await currentFile.rename(newFilePath);
+            photos[i] = renamedFile;
+          } catch (e) {
+            // Si rename falla, intentar copiar y eliminar
+            final newFile = await currentFile.copy(newFilePath);
+            await currentFile.delete();
+            photos[i] = newFile;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al renombrar fotos: $e');
+    }
+  }
+
+  Future<List<File>> getGuardedasPhotos() async {
+    try {
+      if (_baseFotoPath == null) return [];
+
+      final folder = Directory(_baseFotoPath!);
+      if (!await folder.exists()) return [];
+
+      final files = folder.listSync();
+      return files
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.jpg'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
+    } catch (e) {
+      throw Exception('Error al listar fotos: $e');
+    }
+  }
+
+  String? getFotoDirectoryPath() {
+    return _baseFotoPath;
+  }
+
+  Future<void> deleteAllPhotos() async {
+    try {
+      if (_baseFotoPath == null) return;
+
+      final folder = Directory(_baseFotoPath!);
+      if (await folder.exists()) {
+        await folder.delete(recursive: true);
+      }
+
+      _balanzaPhotos['identificacion']?.clear();
+      _fotosTomadas = false;
+      notifyListeners();
+    } catch (e) {
+      throw Exception('Error al eliminar carpeta de fotos: $e');
+    }
   }
 
   // MÉTODOS DE VALIDACIÓN
@@ -690,6 +832,7 @@ class PrecargaController extends ChangeNotifier {
 
     _balanzaPhotos.clear();
     _fotosTomadas = false;
+    _baseFotoPath = null;
 
     notifyListeners();
   }

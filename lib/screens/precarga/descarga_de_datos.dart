@@ -26,6 +26,7 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
   String? errorMessage;
   String? lastUpdate;
   Timer? _autoDeleteTimer;
+  bool _isUpdating = false;
 
   @override
   void initState() {
@@ -84,8 +85,8 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
         content: const Text('Los datos han expirado. Por favor, realice una nueva precarga.'),
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
-          label: 'PRECARGAR',
-          onPressed: () => _downloadAndStoreData(context),
+          label: 'ACTUALIZAR',
+          onPressed: () => _updateDataWithExistingConnection(),
         ),
       ),
     );
@@ -320,6 +321,39 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
       return;
     }
 
+    await _performDataSync(connectionData);
+  }
+
+  Future<void> _updateDataWithExistingConnection() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ip = prefs.getString('ip');
+    final port = prefs.getString('port');
+    final databaseName = prefs.getString('databaseName');
+    final username = prefs.getString('username');
+    final password = prefs.getString('password');
+
+    if (ip == null || port == null || databaseName == null || username == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se encontraron datos de conexión guardados. Por favor, configure la conexión nuevamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final connectionData = {
+      'ip': ip,
+      'port': port,
+      'databaseName': databaseName,
+      'username': username,
+      'password': password ?? '',
+    };
+
+    await _performDataSync(connectionData);
+  }
+
+  Future<void> _performDataSync(Map<String, String> connectionData) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -395,7 +429,6 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
         await txn.delete('equipamientos');
         await txn.delete('servicios');
 
-        // CORRECCIÓN: Usar results[index] en lugar de variables no definidas
         for (var cliente in results[0]) {
           await txn.insert('clientes', {
             'codigo_cliente': cliente['codigo_cliente'],
@@ -411,7 +444,6 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
           }
         }
 
-        // CORRECCIÓN: results[1] para plantas
         for (var planta in results[1]) {
           await txn.insert('plantas', {
             'planta': planta['planta'],
@@ -431,7 +463,6 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
           }
         }
 
-        // CORRECCIÓN: results[2] para balanzas
         for (var balanza in results[2]) {
           await txn.insert('balanzas', {
             'cod_metrica': balanza['cod_metrica'],
@@ -459,7 +490,6 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
           }
         }
 
-        // CORRECCIÓN: results[3] para inf
         for (var infItem in results[3]) {
           await txn.insert('inf', {
             'cod_interno': infItem['cod_interno'],
@@ -480,7 +510,6 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
           }
         }
 
-        // CORRECCIÓN: results[4] para equipamientos
         for (var equipamiento in results[4]) {
           await txn.insert('equipamientos', {
             'cod_instrumento': equipamiento['cod_instrumento'],
@@ -496,7 +525,6 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
           }
         }
 
-        // CORRECCIÓN: results[5] para servicios
         for (var servicio in results[5]) {
           await txn.insert('servicios', {
             'cod_metrica': servicio['cod_metrica'],
@@ -601,7 +629,7 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
             _progressNotifier.value = progress;
           }
         }
-      }); // CORRECCIÓN: Esta llave cierra la transacción
+      });
 
       final prefs = await SharedPreferences.getInstance();
       final now = DateTime.now().toString();
@@ -609,6 +637,7 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
 
       setState(() {
         lastUpdate = now;
+        _isUpdating = false;
       });
 
       Navigator.of(context, rootNavigator: true).pop();
@@ -750,12 +779,10 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header de bienvenida
               _buildWelcomeHeader(context),
 
               const SizedBox(height: 30),
 
-              // Título principal
               Text(
                 'Gestión de Datos',
                 style: GoogleFonts.poppins(
@@ -767,20 +794,20 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
 
               const SizedBox(height: 20),
 
-              // Card principal de descarga
-              _buildDownloadCard(context),
+              if (lastUpdate == null)
+                _buildDownloadCard(context)
+              else
+                _buildUpdateCard(context),
 
               const SizedBox(height: 20),
 
-              // Estado de la precarga
               if (lastUpdate != null) _buildStatusCard(context),
 
               const SizedBox(height: 30),
 
-              // Información adicional
               _buildInfoSection(context),
 
-              const SizedBox(height: 80), // Espacio para el bottom navigation
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -993,6 +1020,129 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
     ).animate(delay: 400.ms).fadeIn().slideX(begin: 0.3);
   }
 
+  Widget _buildUpdateCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF2C3E50) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _updateDataWithExistingConnection(),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.green.withOpacity(0.8),
+                              Colors.green
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          FontAwesomeIcons.arrowRotateRight,
+                          size: 28,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Actualizar Datos',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Actualiza los datos sin solicitar la configuración',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _updateDataWithExistingConnection(),
+                          icon: const Icon(FontAwesomeIcons.arrowRotateRight, size: 16),
+                          label: const Text('Actualizar Datos'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => _downloadAndStoreData(context),
+                        icon: const Icon(FontAwesomeIcons.gears, size: 16),
+                        label: const Text('Reconfigurar'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                          side: BorderSide(
+                            color: isDarkMode ? Colors.white70 : Colors.grey[400]!,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ).animate(delay: 400.ms).fadeIn().slideX(begin: 0.3);
+  }
+
   Widget _buildStatusCard(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -1143,7 +1293,7 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Tenga en cuenta que para tener la información, debe realizar la precarga periodicamente.',
+                    'Tenga en cuenta que para tener la información actualizada, debe realizar la actualización periódicamente.',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

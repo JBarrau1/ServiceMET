@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -38,6 +39,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
+  bool _modoDemo = false;
   // Variables para el Home
   String userName = "Cargando...";
   String? photoUrl;
@@ -53,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initializeDateFormatting();
+    _checkModoDemo(); // Verificar modo DEMO
     _fetchUserData();
     _loadDashboardData();
   }
@@ -61,6 +65,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkModoDemo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _modoDemo = prefs.getBool('modoDemo') ?? false;
+    });
   }
 
   Future<void> _initializeDateFormatting() async {
@@ -781,7 +792,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 NavigationDestination(
                   icon: Icon(
                     FontAwesomeIcons.home,
-                    color: _currentIndex == 0
+                    color: _modoDemo
+                        ? (isDarkMode ? Colors.white24 : Colors.black26)
+                        : _currentIndex == 0
                         ? const Color(0xFFE8CB0C)
                         : (isDarkMode ? Colors.white70 : Colors.black54),
                     size: 20,
@@ -801,7 +814,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 NavigationDestination(
                   icon: Icon(
                     FontAwesomeIcons.solidFolder,
-                    color: _currentIndex == 2
+                    color: _modoDemo
+                        ? (isDarkMode ? Colors.white24 : Colors.black26)
+                        : _currentIndex == 2
                         ? const Color(0xFFE8CB0C)
                         : (isDarkMode ? Colors.white70 : Colors.black54),
                     size: 20,
@@ -811,7 +826,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 NavigationDestination(
                   icon: Icon(
                     FontAwesomeIcons.cog,
-                    color: _currentIndex == 3
+                    color: _modoDemo
+                        ? (isDarkMode ? Colors.white24 : Colors.black26)
+                        : _currentIndex == 3
                         ? const Color(0xFFE8CB0C)
                         : (isDarkMode ? Colors.white70 : Colors.black54),
                     size: 20,
@@ -821,6 +838,33 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
               selectedIndex: _currentIndex,
               onDestinationSelected: (index) {
+                // En modo DEMO solo permitir acceso a Servicios (index 1)
+                if (_modoDemo && index != 1) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.lock_outline, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'En modo DEMO solo puedes acceder a Servicios',
+                              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFFFF9800),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+                    ),
+                  );
+                  return;
+                }
+
                 setState(() {
                   _currentIndex = index;
                 });
@@ -837,6 +881,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -851,20 +896,128 @@ class _HomeScreenState extends State<HomeScreen> {
             filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
             child: AppBar(
               toolbarHeight: 70,
-              title: Text(
-                _getAppBarTitle(),
-                style: GoogleFonts.poppins(
-                  color: isDarkMode ? Colors.white : Colors.black,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16.0,
-                ),
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _getAppBarTitle(),
+                    style: GoogleFonts.poppins(
+                      color: isDarkMode ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16.0,
+                    ),
+                  ),
+                  if (_modoDemo) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF9800).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFFF9800),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.science,
+                            size: 12,
+                            color: const Color(0xFFFF9800),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'DEMO',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFFF9800),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
               backgroundColor: isDarkMode
                   ? Colors.black.withOpacity(0.1)
                   : Colors.white.withOpacity(0.7),
               elevation: 0,
               centerTitle: true,
-              // Agregar borde sutil como en NavigationBar
+              actions: [
+                // Botón para salir del modo DEMO
+                if (_modoDemo)
+                  IconButton(
+                    icon: Icon(
+                      Icons.exit_to_app,
+                      color: isDarkMode ? Colors.white70 : Colors.black54,
+                    ),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          title: Row(
+                            children: [
+                              Icon(
+                                Icons.logout,
+                                color: const Color(0xFFFF9800),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Salir del modo DEMO',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          content: Text(
+                            '¿Deseas salir del modo DEMO y volver al login?',
+                            style: GoogleFonts.inter(),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: Text(
+                                'Cancelar',
+                                style: GoogleFonts.inter(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF9800),
+                              ),
+                              child: Text(
+                                'Salir',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('modoDemo', false);
+                        Navigator.pushReplacementNamed(context, '/login');
+                      }
+                    },
+                    tooltip: 'Salir del modo DEMO',
+                  ),
+              ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(0.5),
                 child: Container(
