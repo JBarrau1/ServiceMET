@@ -99,9 +99,6 @@ class _ClienteStepState extends State<ClienteStep> {
                   : Colors.grey[400],
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
             ),
           ),
         ),
@@ -124,9 +121,6 @@ class _ClienteStepState extends State<ClienteStep> {
                   : Colors.grey[400],
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
             ),
           ),
         ),
@@ -323,9 +317,6 @@ class _ClienteStepState extends State<ClienteStep> {
                 backgroundColor: const Color(0xFF337743),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
               ),
             ),
           ),
@@ -366,7 +357,7 @@ class _ClienteStepState extends State<ClienteStep> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Termohigrómetros Seleccionados',
+                'Termohigrómetros\nSeleccionados',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -407,12 +398,10 @@ class _ClienteStepState extends State<ClienteStep> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
                   Text(
                     '${termo['instrumento']}',
                     style: GoogleFonts.inter(fontSize: 13),
                   ),
-                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),

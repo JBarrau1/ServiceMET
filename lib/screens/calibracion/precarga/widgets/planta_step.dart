@@ -50,7 +50,7 @@ class _PlantaStepState extends State<PlantaStep> {
 
             const SizedBox(height: 30),
 
-            // Selección de planta según el tipo de clientea
+            // Selección de planta según el tipo de cliente
             if (controller.isNewClient)
               _buildNewPlantaSection(controller)
             else
@@ -282,7 +282,6 @@ class _PlantaStepState extends State<PlantaStep> {
                 color: Colors.blue[700],
               ),
             ),
-            // NUEVO BOTÓN
             ElevatedButton.icon(
               onPressed: () => _showAddPlantaDialog(context, controller),
               icon: const Icon(Icons.add, size: 16),
@@ -560,7 +559,13 @@ class _PlantaStepState extends State<PlantaStep> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
+              onPressed: () {
+                nombrePlantaController.dispose();
+                direccionController.dispose();
+                departamentoController.dispose();
+                codigoController.dispose();
+                Navigator.of(dialogContext).pop();
+              },
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
@@ -583,6 +588,12 @@ class _PlantaStepState extends State<PlantaStep> {
                     departamento: departamentoController.text.trim(),
                     codigo: codigoController.text.trim(),
                   );
+
+                  nombrePlantaController.dispose();
+                  direccionController.dispose();
+                  departamentoController.dispose();
+                  codigoController.dispose();
+
                   Navigator.of(dialogContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

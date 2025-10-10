@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../precarga_controller.dart';
@@ -200,12 +201,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
           const SizedBox(height: 16),
 
           // Categoría
-          _buildTextField(
-            controller: widget.balanzaControllers['categoria_balanza']!,
-            label: 'Categoría',
-            prefixIcon: Icons.category,
-            readOnly: false, // AGREGAR ESTA LÍNEA
-          ),
+          _buildCategoriaField(),
 
           const SizedBox(height: 16),
 
@@ -295,32 +291,44 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   Widget _buildTipoEquipoField(PrecargaController controller) {
-    return DropdownButtonFormField<String>(
-      value: widget.balanzaControllers['tipo_equipo']!.text.isNotEmpty
-          ? widget.balanzaControllers['tipo_equipo']!.text
-          : null,
-      decoration: InputDecoration(
-        labelText: 'Tipo de Equipo',
-        prefixIcon: const Icon(Icons.scale),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      items: controller.tiposEquipo.toSet().map((String tipo) {
-        return DropdownMenuItem<String>(
-          value: tipo,
-          child: Text(
-            tipo,
-            style: const TextStyle(fontSize: 12),
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      }).toList(),
-      onChanged: (String? newValue) {
-        setState(() {
-          widget.balanzaControllers['tipo_equipo']!.text = newValue ?? '';
-        });
+    return TypeAheadField<String>(
+      // Opcional: usa tu propio controller (el mismo que ya tienes)
+      controller: widget.balanzaControllers['tipo_equipo']!,
+      suggestionsCallback: (pattern) async {
+        if (pattern.isEmpty) return controller.tiposEquipo;
+        return controller.tiposEquipo
+            .where((t) => t.toLowerCase().contains(pattern.toLowerCase()))
+            .toList();
       },
+      // NUEVO en v5: construyes el TextField con el builder
+      builder: (context, textController, focusNode) {
+        return TextField(
+          controller: textController, // ¡usar SIEMPRE el que te pasan!
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            labelText: 'Tipo de Equipo',
+            prefixIcon: const Icon(Icons.scale),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onChanged: (value) => setState(() {}),
+        );
+      },
+      itemBuilder: (context, suggestion) {
+        return Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(suggestion),
+        );
+      },
+      // NUEVO nombre (antes onSuggestionSelected)
+      onSelected: (suggestion) {
+        widget.balanzaControllers['tipo_equipo']!.text = suggestion;
+        setState(() {});
+      },
+      hideOnEmpty: true,
+      hideOnLoading: true,
+      debounceDuration: const Duration(milliseconds: 300),
     );
   }
 
@@ -335,29 +343,42 @@ class _BalanzaStepState extends State<BalanzaStep> {
       );
     }
 
-    // Si es balanza nueva, mostrar dropdown
-    return DropdownButtonFormField<String>(
-      value: widget.balanzaControllers['marca']!.text.isNotEmpty
-          ? widget.balanzaControllers['marca']!.text
-          : null,
-      decoration: InputDecoration(
-        labelText: 'Marca',
-        prefixIcon: const Icon(Icons.business),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      items: controller.marcasBalanzas.map((String marca) {
-        return DropdownMenuItem<String>(
-          value: marca,
-          child: Text(marca),
-        );
-      }).toList(),
-      onChanged: (String? newValue) {
-        setState(() {
-          widget.balanzaControllers['marca']!.text = newValue ?? '';
-        });
+    // Si es balanza nueva, mostrar TypeAheadField
+    return TypeAheadField<String>(
+      controller: widget.balanzaControllers['marca']!,
+      suggestionsCallback: (pattern) async {
+        if (pattern.isEmpty) return controller.marcasBalanzas;
+        return controller.marcasBalanzas
+            .where((m) => m.toLowerCase().contains(pattern.toLowerCase()))
+            .toList();
       },
+      builder: (context, textController, focusNode) {
+        return TextField(
+          controller: textController,
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            labelText: 'Marca',
+            prefixIcon: const Icon(Icons.business),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onChanged: (value) => setState(() {}),
+        );
+      },
+      itemBuilder: (context, suggestion) {
+        return Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(suggestion),
+        );
+      },
+      onSelected: (suggestion) {
+        widget.balanzaControllers['marca']!.text = suggestion;
+        setState(() {});
+      },
+      hideOnEmpty: true,
+      hideOnLoading: true,
+      debounceDuration: const Duration(milliseconds: 300),
     );
   }
 
@@ -435,6 +456,36 @@ class _BalanzaStepState extends State<BalanzaStep> {
           ['e3', 'dec3'],
         ], Colors.green),
       ],
+    );
+  }
+
+  Widget _buildCategoriaField() {
+    return DropdownButtonFormField<String>(
+      value: widget.balanzaControllers['categoria_balanza']!.text.isNotEmpty
+          ? widget.balanzaControllers['categoria_balanza']!.text
+          : null,
+      decoration: InputDecoration(
+        labelText: 'Categoría',
+        prefixIcon: const Icon(Icons.category),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      items: const [
+        DropdownMenuItem<String>(
+          value: 'STAC',
+          child: Text('STAC'),
+        ),
+        DropdownMenuItem<String>(
+          value: 'STIL',
+          child: Text('STIL'),
+        ),
+      ],
+      onChanged: (String? newValue) {
+        setState(() {
+          widget.balanzaControllers['categoria_balanza']!.text = newValue ?? '';
+        });
+      },
     );
   }
 
@@ -579,91 +630,55 @@ class _BalanzaStepState extends State<BalanzaStep> {
                   ),
                 ],
               ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange[200]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.orange[600], size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Selecciona una ubicación antes de tomar fotos',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: Colors.orange[700],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
-
-          const SizedBox(height: 16),
-
-          // Botón para seleccionar carpeta
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                try {
-                  final codMetrica = controller.selectedBalanza?['cod_metrica']?.toString() ?? 'balanza';
-                  final seca = controller.generatedSeca ?? 'seca';
-
-                  final selected = await controller.selectFotoDirectory(
-                    codMetrica,
-                    seca,
-                  );
-
-                  if (selected) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Carpeta creada: ${controller.baseFotoPath}'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.folder_open),
-              label: const Text('Seleccionar Carpeta'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF326677),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ),
 
           const SizedBox(height: 16),
 
           // Botón para tomar foto (deshabilitado si no hay carpeta seleccionada)
           ElevatedButton.icon(
-            onPressed: fotoPathSeleccionada && photos.length < 5
+            onPressed: photos.length < 5
                 ? () async {
               try {
                 await controller.takePhoto();
+
+                final currentCount = controller.balanzaPhotos['identificacion']?.length ?? 0;
+                final savedPath = controller.baseFotoPath;
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Foto guardada (${photos.length}/5)'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Foto guardada ($currentCount/5)',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (savedPath != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '📁 $savedPath',
+                            style: GoogleFonts.robotoMono(fontSize: 10),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
                     backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               } catch (e) {
@@ -682,9 +697,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
               backgroundColor: const Color(0xFFc0101a),
               foregroundColor: Colors.white,
               disabledBackgroundColor: Colors.grey[400],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
             ),
           ),
 
@@ -895,7 +907,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
                                       child: Text(
                                         estadoCalibacion == 'calibrada'
                                             ? '✓ Balanza Calibrada'
-                                            : '⚠ Requiere calibración',
+                                            : '⚠ Requiere Concluir',
                                         style: TextStyle(
                                           color: estadoCalibacion == 'calibrada'
                                               ? Colors.green[700]

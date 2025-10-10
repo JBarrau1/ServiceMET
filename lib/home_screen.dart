@@ -673,7 +673,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Servicios por SECA',
+                  'Servicios por\nSECA u OTST',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -785,9 +785,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: NavigationBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
-              height: 70,
+              height: 80,
               indicatorColor: const Color(0xFFE8CB0C).withOpacity(0.15),
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               destinations: [
                 NavigationDestination(
                   icon: Icon(
@@ -848,7 +848,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'En modo DEMO solo puedes acceder a Servicios',
+                              'En modo DESCONECTADO solo puedes acceder a Servicios',
                               style: GoogleFonts.inter(fontWeight: FontWeight.w500),
                             ),
                           ),
@@ -970,7 +970,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Salir del modo DEMO',
+                                'Salir del modo DESCONECTADO',
                                 style: GoogleFonts.poppins(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -979,7 +979,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           content: Text(
-                            '¿Deseas salir del modo DEMO y volver al login?',
+                            '¿Deseas salir del modo DESCONECTADO y volver al login?',
                             style: GoogleFonts.inter(),
                           ),
                           actions: [
@@ -1015,7 +1015,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.pushReplacementNamed(context, '/login');
                       }
                     },
-                    tooltip: 'Salir del modo DEMO',
+                    tooltip: 'Salir del modo DESCONECTADO',
                   ),
               ],
               bottom: PreferredSize(

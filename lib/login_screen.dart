@@ -626,7 +626,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Modo DEMO',
+                          'Modo DESCONECTADO',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -736,7 +736,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   Column(
                     children: [
                       Text(
-                        'versión 10.1.2_0_081025',
+                        'versión 10.1.1_5s_101025',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           color: isDark ? Colors.white38 : Colors.black38,

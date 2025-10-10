@@ -105,7 +105,7 @@ class StepIndicator extends StatelessWidget {
                         ),
 
                         // Indicador de validación
-                        if (controller.validateStep(index) && !isCurrent)
+                        if (!isCurrent && controller.validateStep(index) == true)
                           Container(
                             margin: const EdgeInsets.only(top: 2),
                             width: 4,

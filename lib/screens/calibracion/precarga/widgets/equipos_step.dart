@@ -79,9 +79,7 @@ class _EquiposStepState extends State<EquiposStep> {
               backgroundColor: const Color(0xFF773243),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+
             ),
           ),
         ).animate(delay: 200.ms).fadeIn().slideX(begin: -0.3),

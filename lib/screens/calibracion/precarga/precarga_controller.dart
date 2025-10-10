@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:archive/archive_io.dart';
 import '../../../database/app_database.dart';
 
 class PrecargaController extends ChangeNotifier {
@@ -18,6 +19,10 @@ class PrecargaController extends ChangeNotifier {
   String? _generatedSessionId;
   String? _generatedSeca;
   bool _secaConfirmed = false;
+
+  // Validación por paso
+  Map<int, String?> _stepErrors = {0: null, 1: null, 2: null, 3: null, 4: null};
+  Map<int, String?> get stepErrors => _stepErrors;
 
   // Getters
   int get currentStep => _currentStep;
@@ -106,15 +111,85 @@ class PrecargaController extends ChangeNotifier {
     'BALANZA', 'BALANZA ANALIZADORA DE HUMEDAD', 'BALANZA ANALÍTICA',
     'BALANZA MECÁNICA', 'BALANZA ELECTROMECÁNICA',
     'BALANZA ELECTRÓNICA DE DOBLE RANGO', 'BALANZA ELECTRÓNICA DE TRIPLE RANGO',
-    'BALANZA ELECTRÓNICA DE DOBLE INTÉRVALO', 'BALANZA ELECTRÓNICA DE TRIPLE INTÉRVALO',
+    'BALANZA ELECTRÓNICA DE DOBLE INTERVALO', 'BALANZA ELECTRÓNICA DE TRIPLE INTERVALO',
     'BALANZA SEMIMICROANALÍTICA', 'BALANZA MICROANALÍTICA',
     'BALANZA SEMIMICROANALÍTICA DE DOBLE RANGO', 'BALANZA SEMIMICROANALÍTICA DE TRIPLE RANGO', 'BALANZA ELECTRONICA',
   ];
+
+  // MÉTODOS DE VALIDACIÓN
+  String? validateStep(int step) {
+    switch (step) {
+      case 0: // Cliente
+        if (_selectedClienteName == null || _selectedClienteName!.isEmpty) {
+          return 'Debe seleccionar un cliente';
+        }
+        return null;
+
+      case 1: // Planta
+        if (_selectedPlantaCodigo == null || _selectedPlantaCodigo!.isEmpty) {
+          return 'Debe seleccionar una planta';
+        }
+        if (_selectedPlantaDir == null || _selectedPlantaDir!.isEmpty) {
+          return 'La dirección de planta es requerida';
+        }
+        if (_selectedPlantaDep == null || _selectedPlantaDep!.isEmpty) {
+          return 'El departamento es requerido';
+        }
+        return null;
+
+      case 2: // SECA
+        if (!_secaConfirmed) {
+          return 'Debe confirmar el SECA';
+        }
+        return null;
+
+      case 3: // Balanza
+        if (_selectedBalanza == null) {
+          return 'Debe seleccionar una balanza';
+        }
+        return null;
+
+      case 4: // Equipos
+        if (_selectedEquipos.isEmpty && _selectedTermohigrometros.isEmpty) {
+          return 'Debe seleccionar al menos un equipo';
+        }
+        // Validar que todos los equipos tengan cantidad
+        for (var equipo in _selectedEquipos) {
+          final cantidad = equipo['cantidad']?.toString() ?? '';
+          if (cantidad.isEmpty) {
+            return 'Todos los equipos deben tener cantidad especificada';
+          }
+        }
+        for (var termo in _selectedTermohigrometros) {
+          final cantidad = termo['cantidad']?.toString() ?? '';
+          if (cantidad.isEmpty) {
+            return 'Todos los termohigrometros deben tener cantidad especificada';
+          }
+        }
+        return null;
+
+      default:
+        return null;
+    }
+  }
+
+  void updateStepErrors() {
+    for (int i = 0; i <= _currentStep && i <= 4; i++) {
+      _stepErrors[i] = validateStep(i);
+    }
+    notifyListeners();
+  }
+
+  bool canProceedToStep(int step) {
+    final error = validateStep(step);
+    return error == null;
+  }
 
   // MÉTODOS DE NAVEGACIÓN
   void nextStep() {
     if (_currentStep < 4) {
       _currentStep++;
+      updateStepErrors();
       notifyListeners();
     }
   }
@@ -122,18 +197,21 @@ class PrecargaController extends ChangeNotifier {
   void previousStep() {
     if (_currentStep > 0) {
       _currentStep--;
+      updateStepErrors();
       notifyListeners();
     }
   }
 
   void goToStep(int step) {
     _currentStep = step;
+    updateStepErrors();
     notifyListeners();
   }
 
   void setCurrentStep(int step) {
-    if (step >= 0 && step <= 4) { // Hay 5 pasos (0-4)
+    if (step >= 0 && step <= 4) {
       _currentStep = step;
+      updateStepErrors();
       notifyListeners();
     }
   }
@@ -157,10 +235,10 @@ class PrecargaController extends ChangeNotifier {
     if (plantaDep != null) _selectedPlantaDep = plantaDep;
     if (plantaCodigo != null) {
       _selectedPlantaCodigo = plantaCodigo;
-      // Cargar balanzas para esta planta
       fetchBalanzas(plantaCodigo);
     }
 
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -174,11 +252,9 @@ class PrecargaController extends ChangeNotifier {
       String path = join(await getDatabasesPath(), 'precarga_database.db');
       final db = await openDatabase(path);
 
-      // Generar IDs únicos
       final plantaId = DateTime.now().millisecondsSinceEpoch.toString();
       final depId = DateTime.now().millisecondsSinceEpoch.toString();
 
-      // Insertar nueva planta
       await db.insert('plantas', {
         'cliente_id': _selectedClienteId,
         'planta_id': plantaId,
@@ -191,10 +267,8 @@ class PrecargaController extends ChangeNotifier {
 
       await db.close();
 
-      // Recargar plantas
       await fetchPlantas(_selectedClienteId!);
 
-      // Seleccionar automáticamente la nueva planta
       final uniqueKey = '${plantaId}_${depId}';
       selectPlanta(uniqueKey);
 
@@ -234,11 +308,11 @@ class PrecargaController extends ChangeNotifier {
     _selectedClienteId = cliente['cliente_id']?.toString() ?? '';
     _selectedClienteName = cliente['cliente']?.toString() ?? '';
     _selectedClienteRazonSocial = cliente['razonsocial']?.toString() ?? '';
+    updateStepErrors();
     notifyListeners();
 
     fetchPlantas(_selectedClienteId!);
-    // AGREGAR ESTA LÍNEA:
-    fetchEquipos(); // Cargar equipos inmediatamente para selección temprana
+    fetchEquipos();
   }
 
   void selectNewClient(String nombreComercial, String razonSocial) {
@@ -247,6 +321,7 @@ class PrecargaController extends ChangeNotifier {
     _selectedClienteRazonSocial = razonSocial;
     _selectedClienteId = null;
     _plantas = null;
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -257,6 +332,7 @@ class PrecargaController extends ChangeNotifier {
     _isNewClient = false;
     _plantas = null;
     _selectedPlantaKey = null;
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -299,6 +375,7 @@ class PrecargaController extends ChangeNotifier {
     _selectedPlantaCodigo = selectedPlanta['codigo_planta']?.toString() ?? '';
 
     generateSugestedSeca();
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -308,6 +385,7 @@ class PrecargaController extends ChangeNotifier {
     _selectedPlantaCodigo = codigo;
 
     generateSugestedSeca();
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -316,26 +394,40 @@ class PrecargaController extends ChangeNotifier {
     if (_selectedPlantaCodigo != null && _selectedPlantaCodigo!.isNotEmpty) {
       final now = DateTime.now();
       final year = now.year.toString().substring(2);
-      _generatedSeca = '$year-$_selectedPlantaCodigo-C01';
-      notifyListeners();
+
+      // Solo generar si NO existe un SECA o si NO está confirmado
+      if (_generatedSeca == null || !_secaConfirmed) {
+        _generatedSeca = '$year-$_selectedPlantaCodigo-C01';
+        notifyListeners();
+      }
     }
   }
 
   void updateNumeroCotizacion(String nuevoNumero) {
-    if (_generatedSeca != null && nuevoNumero.isNotEmpty) {
-      // Validar formato C + número (01-99)
-      final regex = RegExp(r'^C\d{2}$');
-      if (!regex.hasMatch(nuevoNumero)) {
-        throw Exception('Formato inválido. Use C01 a C99');
+    if (nuevoNumero.isEmpty) {
+      return; // No hacer nada si está vacío
+    }
+
+    final regex = RegExp(r'^C\d{2}$');
+    if (!regex.hasMatch(nuevoNumero)) {
+      throw Exception('Formato inválido. Use C01 a C99');
+    }
+
+    if (_generatedSeca != null) {
+      final partes = _generatedSeca!.split('-');
+
+      // Si tiene 3 partes (año-planta-C01), reemplazar la última
+      if (partes.length == 3) {
+        partes[2] = nuevoNumero;
+        _generatedSeca = partes.join('-');
+      }
+      // Si tiene 4 partes (año-planta-algo-C01), reemplazar la última
+      else if (partes.length == 4) {
+        partes[3] = nuevoNumero;
+        _generatedSeca = partes.join('-');
       }
 
-      // Mantener las partes fijas y cambiar solo el número de cotización
-      final partes = _generatedSeca!.split('-');
-      if (partes.length == 4) {
-        partes[3] = nuevoNumero; // Reemplazar la última parte (C01)
-        _generatedSeca = partes.join('-');
-        notifyListeners();
-      }
+      notifyListeners();
     }
   }
 
@@ -345,7 +437,6 @@ class PrecargaController extends ChangeNotifier {
     try {
       final dbHelper = AppDatabase();
 
-      // Verificar si el SECA ya existe
       final secaExiste = await dbHelper.secaExists(_generatedSeca!);
 
       if (secaExiste) {
@@ -378,9 +469,9 @@ class PrecargaController extends ChangeNotifier {
       });
 
       _secaConfirmed = true;
+      updateStepErrors();
       notifyListeners();
 
-      // Cargar balanzas después de confirmar SECA
       await fetchBalanzas(_selectedPlantaCodigo!);
     } catch (e) {
       throw Exception('Error al crear sesión: $e');
@@ -404,14 +495,12 @@ class PrecargaController extends ChangeNotifier {
       for (var balanza in balanzasList) {
         final codMetrica = balanza['cod_metrica'].toString();
 
-        // Consultar la tabla 'inf' para obtener detalles adicionales
         final List<Map<String, dynamic>> infDetails = await db.query(
           'inf',
           where: 'cod_metrica = ?',
           whereArgs: [codMetrica],
         );
 
-        // Verificar estado de calibración desde la base de datos interna
         final estadoCalibacion = await _verificarEstadoCalibacion(codMetrica);
 
         Map<String, dynamic> balanzaCompleta = {
@@ -443,7 +532,6 @@ class PrecargaController extends ChangeNotifier {
       final dbHelper = AppDatabase();
       final db = await dbHelper.database;
 
-      // Buscar en la tabla de registros de calibración
       final List<Map<String, dynamic>> registros = await db.query(
         'registros_calibracion',
         where: 'cod_metrica = ?',
@@ -471,6 +559,7 @@ class PrecargaController extends ChangeNotifier {
   void selectBalanza(Map<String, dynamic> balanza) {
     _selectedBalanza = balanza;
     _isNewBalanza = false;
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -524,6 +613,7 @@ class PrecargaController extends ChangeNotifier {
       }
     }
 
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -536,6 +626,7 @@ class PrecargaController extends ChangeNotifier {
       e['cod_instrumento'] == codInstrumento && e['tipo'] == tipo);
     }
 
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -551,6 +642,7 @@ class PrecargaController extends ChangeNotifier {
       }
     }
 
+    updateStepErrors();
     notifyListeners();
   }
 
@@ -558,65 +650,19 @@ class PrecargaController extends ChangeNotifier {
     return [..._selectedEquipos, ..._selectedTermohigrometros];
   }
 
-  Future<bool> selectFotoDirectory(String codMetrica, String seca) async {
-    try {
-      // Abrir file picker para que el usuario seleccione la carpeta
-      final String? result = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Seleccionar ubicación para guardar fotos',
-      );
-
-      if (result != null) {
-        // Crear la subcarpeta con el nombre especificado
-        final folderName = '${codMetrica}_${seca}_FotosIniciales';
-        _baseFotoPath = join(result, folderName);
-
-        // Crear la carpeta si no existe
-        final folder = Directory(_baseFotoPath!);
-        if (!await folder.exists()) {
-          await folder.create(recursive: true);
-        }
-
-        notifyListeners();
-        return true;
-      }
-      return false; // Usuario canceló la selección
-    } catch (e) {
-      throw Exception('Error al seleccionar directorio: $e');
-    }
-  }
-
-  // MÉTODOS DE FOTOS
   Future<void> takePhoto() async {
-    if (_baseFotoPath == null) {
-      throw Exception('No se ha seleccionado ubicación para las fotos');
-    }
-
     final photo = await _imagePicker.pickImage(source: ImageSource.camera);
     if (photo != null) {
       _balanzaPhotos['identificacion'] ??= [];
 
       if (_balanzaPhotos['identificacion']!.length < 5) {
         try {
-          // Obtener el número de fotos actuales (01-05)
-          final photoCount = _balanzaPhotos['identificacion']!.length + 1;
-          final photoNumber = photoCount.toString().padLeft(2, '0');
-
-          // Extraer el cod_metrica de la ruta base
-          final folderName = _baseFotoPath!.split('/').last;
-          final codMetrica = folderName.split('_').first;
-
-          // Nombre del archivo: cod_metrica_01, cod_metrica_02, etc.
-          final fileName = '${codMetrica}_$photoNumber.jpg';
-          final filePath = join(_baseFotoPath!, fileName);
-
-          // Copiar la foto desde la cámara a la ubicación permanente
-          final savedPhoto = await File(photo.path).copy(filePath);
-
-          _balanzaPhotos['identificacion']!.add(savedPhoto);
+          // Guardar directamente en memoria, sin carpeta previa
+          _balanzaPhotos['identificacion']!.add(File(photo.path));
           _fotosTomadas = true;
           notifyListeners();
         } catch (e) {
-          throw Exception('Error al guardar foto: $e');
+          throw Exception('Error al procesar foto: $e');
         }
       }
     }
@@ -624,19 +670,11 @@ class PrecargaController extends ChangeNotifier {
 
   void removePhoto(File photo) {
     try {
-      // Eliminar el archivo del sistema de archivos
-      if (photo.existsSync()) {
-        photo.deleteSync();
-      }
-
       _balanzaPhotos['identificacion']?.remove(photo);
 
       if (_balanzaPhotos['identificacion']?.isEmpty ?? true) {
         _fotosTomadas = false;
       }
-
-      // Renombrar las fotos restantes para mantener secuencia
-      _renameRemainingPhotos();
 
       notifyListeners();
     } catch (e) {
@@ -652,20 +690,17 @@ class PrecargaController extends ChangeNotifier {
         final currentFile = photos[i];
         final photoNumber = (i + 1).toString().padLeft(2, '0');
 
-        // Extraer cod_metrica
         final folderName = _baseFotoPath!.split('/').last;
         final codMetrica = folderName.split('_').first;
 
         final newFileName = '${codMetrica}_$photoNumber.jpg';
         final newFilePath = join(_baseFotoPath!, newFileName);
 
-        // Si el nombre es diferente, renombrar
         if (currentFile.path != newFilePath) {
           try {
             final renamedFile = await currentFile.rename(newFilePath);
             photos[i] = renamedFile;
           } catch (e) {
-            // Si rename falla, intentar copiar y eliminar
             final newFile = await currentFile.copy(newFilePath);
             await currentFile.delete();
             photos[i] = newFile;
@@ -699,43 +734,42 @@ class PrecargaController extends ChangeNotifier {
     return _baseFotoPath;
   }
 
-  Future<void> deleteAllPhotos() async {
+  Future<String?> createPhotosZip() async {
     try {
-      if (_baseFotoPath == null) return;
-
-      final folder = Directory(_baseFotoPath!);
-      if (await folder.exists()) {
-        await folder.delete(recursive: true);
+      final photos = _balanzaPhotos['identificacion'] ?? [];
+      if (photos.isEmpty) {
+        throw Exception('No hay fotos para comprimir');
       }
 
-      _balanzaPhotos['identificacion']?.clear();
-      _fotosTomadas = false;
-      notifyListeners();
+      // Permitir al usuario seleccionar ubicación para el ZIP
+      final String? zipPath = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Seleccionar ubicación para guardar ZIP de fotos',
+      );
+
+      if (zipPath == null) {
+        return null; // Usuario canceló
+      }
+
+      // Crear nombre del ZIP
+      final zipFileName =
+          '${_selectedBalanza?['cod_metrica']}_fotos_${DateTime.now().millisecondsSinceEpoch}.zip';
+      final zipFilePath = join(zipPath, zipFileName);
+
+      // Crear archivo ZIP
+      final encoder = ZipFileEncoder();
+      encoder.create(zipFilePath);
+
+      // Agregar fotos al ZIP
+      for (var photo in photos) {
+        await encoder.addFile(photo);
+      }
+
+      encoder.close();
+
+      return zipFilePath;
     } catch (e) {
-      throw Exception('Error al eliminar carpeta de fotos: $e');
+      throw Exception('Error al crear ZIP: $e');
     }
-  }
-
-  // MÉTODOS DE VALIDACIÓN
-  bool validateStep(int step) {
-    switch (step) {
-      case 0: // Cliente
-        return _selectedClienteName != null;
-      case 1: // Planta
-        return _selectedPlantaCodigo != null;
-      case 2: // SECA
-        return _secaConfirmed;
-      case 3: // Balanza
-        return _selectedBalanza != null;
-      case 4: // Equipos
-        return _selectedEquipos.isNotEmpty || _selectedTermohigrometros.isNotEmpty;
-      default:
-        return false;
-    }
-  }
-
-  bool canProceedToNextStep() {
-    return validateStep(_currentStep);
   }
 
   // GUARDADO FINAL
@@ -778,7 +812,7 @@ class PrecargaController extends ChangeNotifier {
 
       // GUARDAR SOLO LOS TERMOHIGRÓMETROS SELECCIONADOS (equipo6 y equipo7)
       for (int i = 0; i < _selectedTermohigrometros.length && i < 2; i++) {
-        final equipoNum = i + 6; // 6 y 7
+        final equipoNum = i + 6;
         final termo = _selectedTermohigrometros[i];
         registro['equipo$equipoNum'] = termo['cod_instrumento']?.toString() ?? '';
         registro['certificado$equipoNum'] = termo['cert_fecha']?.toString() ?? '';
@@ -832,7 +866,8 @@ class PrecargaController extends ChangeNotifier {
 
     _balanzaPhotos.clear();
     _fotosTomadas = false;
-    _baseFotoPath = null;
+
+    _stepErrors = {0: null, 1: null, 2: null, 3: null, 4: null};
 
     notifyListeners();
   }

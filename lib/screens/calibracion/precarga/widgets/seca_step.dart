@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../precarga_controller.dart';
 
-class SecaStep extends StatelessWidget {
+class SecaStep extends StatefulWidget {
   final String userName;
   final String fechaServicio;
 
@@ -15,6 +15,51 @@ class SecaStep extends StatelessWidget {
     required this.userName,
     required this.fechaServicio,
   }) : super(key: key);
+
+  @override
+  State<SecaStep> createState() => _SecaStepState();
+}
+
+class _SecaStepState extends State<SecaStep> {
+  late TextEditingController _cotizacionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _cotizacionController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeCotizacion();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cotizacionController.dispose();
+    super.dispose();
+  }
+
+  void _initializeCotizacion() {
+    final controller = Provider.of<PrecargaController>(context, listen: false);
+    _cotizacionController.text = _getCotizacionPart(controller);
+  }
+
+  String _getFixedSecaPart(PrecargaController controller) {
+    final seca = controller.generatedSeca ?? '';
+    final parts = seca.split('-');
+    if (parts.length >= 3) {
+      return '${parts[0]}-${parts[1]}-${parts[2]}-';
+    }
+    return '';
+  }
+
+  String _getCotizacionPart(PrecargaController controller) {
+    final seca = controller.generatedSeca ?? '';
+    final parts = seca.split('-');
+    if (parts.length >= 4) {
+      return parts[3];
+    }
+    return 'C01';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +99,8 @@ class SecaStep extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoSummary(PrecargaController controller, BuildContext context) {
+  Widget _buildInfoSummary(
+      PrecargaController controller, BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -85,11 +131,12 @@ class SecaStep extends StatelessWidget {
           const SizedBox(height: 16),
           _buildSummaryRow('Cliente', controller.selectedClienteName ?? 'N/A'),
           const SizedBox(height: 8),
-          _buildSummaryRow('Código Planta', controller.selectedPlantaCodigo ?? 'N/A'),
+          _buildSummaryRow(
+              'Código Planta', controller.selectedPlantaCodigo ?? 'N/A'),
           const SizedBox(height: 8),
-          _buildSummaryRow('Técnico', userName),
+          _buildSummaryRow('Técnico', widget.userName),
           const SizedBox(height: 8),
-          _buildSummaryRow('Fecha', fechaServicio),
+          _buildSummaryRow('Fecha', widget.fechaServicio),
         ],
       ),
     ).animate(delay: 200.ms).fadeIn().slideY(begin: -0.3);
@@ -120,26 +167,6 @@ class SecaStep extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  // Obtiene la parte fija del SECA (año-código_planta-)
-  String _getFixedSecaPart(PrecargaController controller) {
-    final seca = controller.generatedSeca ?? '';
-    final parts = seca.split('-');
-    if (parts.length >= 3) {
-      return '${parts[0]}-${parts[1]}-${parts[2]}-';
-    }
-    return '';
-  }
-
-// Obtiene solo la parte de cotización (C01, C02, etc.)
-  String _getCotizacionPart(PrecargaController controller) {
-    final seca = controller.generatedSeca ?? '';
-    final parts = seca.split('-');
-    if (parts.length >= 4) {
-      return parts[3];
-    }
-    return 'C01';
   }
 
   Widget _buildSecaCard(PrecargaController controller, BuildContext context) {
@@ -185,111 +212,145 @@ class SecaStep extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Código SECA - ÚNICO CAMPO (editable o fijo según estado)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: controller.secaConfirmed
-                    ? Colors.green[200]!
-                    : Colors.blue[200]!,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: controller.secaConfirmed
-                ? // Si está confirmado, mostrar texto completo fijo
-            Text(
-              controller.generatedSeca ?? 'Generando...',
-              style: GoogleFonts.robotoMono(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[800],
-                letterSpacing: 2,
-              ),
-              textAlign: TextAlign.center,
-            )
-                : // Si no está confirmado, mostrar partes fijas + campo editable
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Parte fija del SECA (año-código_planta-)
-                Text(
-                  _getFixedSecaPart(controller),
-                  style: GoogleFonts.robotoMono(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue[800],
-                    letterSpacing: 2,
+          // Código SECA - Confirmado (solo lectura)
+          if (controller.secaConfirmed)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green[200]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
+                ],
+              ),
+              child: Text(
+                controller.generatedSeca ?? 'Generando...',
+                style: GoogleFonts.robotoMono(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[800],
+                  letterSpacing: 2,
                 ),
-                // Campo editable para el número de cotización (C01, C02, etc.)
-                Container(
-                  width: 90,
-                  child: TextField(
-                    controller: TextEditingController(
-                      text: _getCotizacionPart(controller),
-                    ),
+                textAlign: TextAlign.center,
+              ),
+            ).animate(delay: 300.ms).fadeIn()
+          else
+          // Código SECA - No confirmado (editable)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue[200]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Parte fija
+                  Text(
+                    _getFixedSecaPart(controller),
                     style: GoogleFonts.robotoMono(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue[800],
                       letterSpacing: 2,
                     ),
-                    decoration: InputDecoration(
-                      border: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.blue[300]!,
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.blue[600]!,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                      hintText: 'C01',
-                      hintStyle: GoogleFonts.robotoMono(
+                  ),
+                  // Campo editable
+                  SizedBox(
+                    width: 85,
+                    child: TextField(
+                      controller: _cotizacionController,
+                      style: GoogleFonts.robotoMono(
                         fontSize: 20,
-                        color: Colors.blue[300],
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[800],
                         letterSpacing: 2,
                       ),
+                      decoration: InputDecoration(
+                        border: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors.blue[300]!,
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors.blue[600]!,
+                            width: 2,
+                          ),
+                        ),
+                        contentPadding:
+                        const EdgeInsets.symmetric(vertical: 8),
+                        hintText: 'C01',
+                        hintStyle: GoogleFonts.robotoMono(
+                          fontSize: 20,
+                          color: Colors.blue[300],
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLength: 3,
+                      buildCounter: (context,
+                          {required currentLength,
+                            required isFocused,
+                            maxLength}) =>
+                      null,
+                      onChanged: (value) {
+                        // Validar formato mientras escribe
+                        if (value.isEmpty) {
+                          return; // Permitir campo vacío temporalmente
+                        }
+
+                        // Solo permitir C seguido de hasta 2 dígitos
+                        if (!RegExp(r'^C\d{0,2}$').hasMatch(value)) {
+                          // Revertir al valor anterior
+                          final previousText = _cotizacionController.text;
+                          if (previousText.length > 0) {
+                            _cotizacionController.text = previousText.substring(0, previousText.length - 1);
+                            _cotizacionController.selection = TextSelection.fromPosition(
+                              TextPosition(offset: _cotizacionController.text.length),
+                            );
+                          }
+                          return;
+                        }
+
+                        // Si tiene el formato completo C## (por ejemplo C05)
+                        if (RegExp(r'^C\d{2}$').hasMatch(value)) {
+                          try {
+                            final ctrl = Provider.of<PrecargaController>(
+                              context,
+                              listen: false,
+                            );
+                            // Actualizar el SECA con el nuevo número
+                            ctrl.updateNumeroCotizacion(value);
+                            debugPrint('SECA actualizado a: ${ctrl.generatedSeca}');
+                          } catch (e) {
+                            debugPrint('Error al actualizar cotización: $e');
+                          }
+                        }
+                      },
                     ),
-                    textAlign: TextAlign.center,
-                    maxLength: 3,
-                    buildCounter: (context,
-                        {required currentLength,
-                          required isFocused,
-                          maxLength}) =>
-                    null,
-                    onChanged: (value) {
-                      // Validar formato C + número
-                      if (value.isNotEmpty &&
-                          !RegExp(r'^C\d{0,2}$').hasMatch(value)) {
-                        return; // No permitir caracteres inválidos
-                      }
-                      controller.updateNumeroCotizacion(
-                          value.isEmpty ? 'C01' : value);
-                    },
                   ),
-                ),
-              ],
-            ),
-          ).animate(delay: 400.ms).fadeIn().slideX(begin: 0.3),
+                ],
+              ),
+            ).animate(delay: 300.ms).fadeIn(),
 
           const SizedBox(height: 24),
 
-          // Estado
+          // Estado de confirmación
           if (controller.secaConfirmed)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -316,12 +377,13 @@ class SecaStep extends StatelessWidget {
                   ),
                 ],
               ),
-            ).animate(delay: 500.ms).fadeIn().scale(
+            ).animate(delay: 400.ms).fadeIn().scale(
               begin: const Offset(0.8, 0.8),
             ),
 
-          // Información de la sesión
-          if (controller.secaConfirmed && controller.generatedSessionId != null) ...[
+          // ID Sesión
+          if (controller.secaConfirmed &&
+              controller.generatedSessionId != null) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -338,27 +400,31 @@ class SecaStep extends StatelessWidget {
                     size: 16,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'ID Sesión: ${controller.generatedSessionId}',
-                    style: GoogleFonts.robotoMono(
-                      fontSize: 12,
-                      color: Colors.green[700],
-                      fontWeight: FontWeight.w500,
+                  Flexible(
+                    child: Text(
+                      'ID Sesión: ${controller.generatedSessionId}',
+                      style: GoogleFonts.robotoMono(
+                        fontSize: 12,
+                        color: Colors.green[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-            ),
+            ).animate(delay: 500.ms).fadeIn(),
           ],
         ],
       ),
     ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.3);
   }
 
-  Widget _buildAdditionalInfo(PrecargaController controller, BuildContext context) {
+  Widget _buildAdditionalInfo(
+      PrecargaController controller, BuildContext context) {
     return Column(
       children: [
-        // Información sobre el formato SECA
+        // Información sobre formato SECA
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -406,7 +472,7 @@ class SecaStep extends StatelessWidget {
 
         const SizedBox(height: 20),
 
-        // Proceso siguiente
+        // Siguiente paso
         if (controller.secaConfirmed)
           Container(
             padding: const EdgeInsets.all(16),
@@ -450,7 +516,7 @@ class SecaStep extends StatelessWidget {
             ),
           ).animate(delay: 600.ms).fadeIn().slideY(begin: 0.3),
 
-        // Advertencia sobre datos guardados
+        // Datos guardados
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(16),

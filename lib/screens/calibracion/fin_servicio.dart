@@ -6,16 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/screens/calibracion/precarga/precarga_screen.dart';
-import 'package:service_met/screens/calibracion/precarga/widgets/balanza_step.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:archive/archive.dart'; // Añadir esta dependencia
 import 'package:service_met/bdb/calibracion_bd.dart';
 import '../../database/app_database.dart';
 import '../../home_screen.dart';
-import 'iden_balanza_screen.dart';
 
 class FinServicioScreen extends StatefulWidget {
   final String sessionId;
@@ -25,7 +20,6 @@ class FinServicioScreen extends StatefulWidget {
     super.key,
     required this.secaValue,
     required this.sessionId,
-
   });
 
   @override
@@ -183,7 +177,6 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     );
   }
 
-  /// CONFIRMAR Y EXPORTAR (muestra diálogo antes de exportar)
   Future<void> _confirmarYExportar(BuildContext context) async {
     try {
       final dbHelper = AppDatabase();
@@ -232,44 +225,26 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         whereArgs: [widget.secaValue, 'Balanza Calibrada'],
       );
 
-      // 4. Mostrar confirmación de exportación
-      final confirmado = await showDialog<bool>(
-        context: context,
-        builder: (ctx) {
-          return AlertDialog(
-            title: Text(
-              'Confirmar exportación'.toUpperCase(),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-            ),
-            content: Text(
-              'Se exportará el SECA "${widget.secaValue}" con $cantidad registros.\n\n¿Desea continuar?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF46824B),
-                ),
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Sí, exportar'),
-              )
-            ],
-          );
-        },
-      );
-
-      if (confirmado != true) return;
-
-      await _exportToZip(context, updatedRows);
-
+      // 4. Mostrar pantalla de resumen
       if (!mounted) return;
-      Navigator.pushReplacement(
+      final resultado = await Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(
+          builder: (context) => _ResumenExportacionScreen(
+            cantidad: cantidad,
+            seca: widget.secaValue,
+            registros: updatedRows,
+            onExport: (registros) => _exportToCSV(context, registros),
+          ),
+        ),
       );
+
+      if (resultado == true && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
     } catch (e) {
       _showSnackBar(context, 'Error en exportación: $e', isError: true);
     }
@@ -291,7 +266,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       if (!registrosUnicos.containsKey(claveUnica) ||
           (registrosUnicos[claveUnica]?['hora_fin']?.toString() ?? '')
-                  .compareTo(horaFinActual) <
+              .compareTo(horaFinActual) <
               0) {
         registrosUnicos[claveUnica] = registro;
       }
@@ -300,8 +275,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     return registrosUnicos.values.toList();
   }
 
-  /// EXPORTAR TODO EN UN ARCHIVO ZIP
-  Future<void> _exportToZip(
+  Future<void> _exportToCSV(
       BuildContext context, List<Map<String, dynamic>> registros) async {
     if (_isExporting) return;
     _isExporting = true;
@@ -310,63 +284,40 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       // 1. Depurar los datos
       final registrosDepurados = await _depurarDatos(registros);
 
-      // 2. Crear el nombre base para los archivos
-      final baseFileName =
-          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}';
-
-      // 3. Crear el archivo ZIP
-      final archive = Archive();
-
-      // 4. Generar y añadir CSV al ZIP
+      // 2. Generar CSV
       final csvBytes = await _generateCSVBytes(registrosDepurados);
-      archive
-          .addFile(ArchiveFile('$baseFileName.csv', csvBytes.length, csvBytes));
 
-      // 5. Generar y añadir TXT al ZIP
-      final txtBytes = await _generateTXTBytes(registrosDepurados);
-      archive
-          .addFile(ArchiveFile('$baseFileName.txt', txtBytes.length, txtBytes));
+      // 3. Crear nombre del archivo
+      final fileName =
+          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}.csv';
 
-      // 6. Generar y añadir SMET (DB) al ZIP
-      final smetBytes = await _generateSMETBytes(registrosDepurados);
-      archive.addFile(
-          ArchiveFile('$baseFileName.met', smetBytes.length, smetBytes));
-
-      // 7. Comprimir el archivo
-      final zipBytes = ZipEncoder().encode(archive);
-      if (zipBytes == null) {
-        throw Exception('Error al comprimir los archivos');
-      }
-
-      // 8. Guardar archivo ZIP internamente
+      // 4. Guardar internamente
       final internalDir = await getApplicationDocumentsDirectory();
       final exportDir = Directory('${internalDir.path}/export_servicios');
       if (!await exportDir.exists()) await exportDir.create(recursive: true);
 
-      final zipFileName = '$baseFileName.zip';
-      final internalZipFile = File('${exportDir.path}/$zipFileName');
-      await internalZipFile.writeAsBytes(zipBytes);
+      final internalFile = File('${exportDir.path}/$fileName');
+      await internalFile.writeAsBytes(csvBytes);
 
-      // 9. Preguntar carpeta destino UNA SOLA VEZ
+      // 5. Preguntar ubicación de destino
       final directoryPath = await FilePicker.platform.getDirectoryPath(
         dialogTitle: 'Selecciona carpeta de destino para exportación',
       );
 
       if (directoryPath != null) {
-        final userZipFile = File('$directoryPath/$zipFileName');
-        await userZipFile.writeAsBytes(zipBytes, mode: FileMode.write);
-        _showSnackBar(context, 'Archivo ZIP exportado a: ${userZipFile.path}');
+        final userFile = File('$directoryPath/$fileName');
+        await userFile.writeAsBytes(csvBytes, mode: FileMode.write);
+        _showSnackBar(context, 'Archivo CSV exportado exitosamente a: ${userFile.path}');
       } else {
         _showSnackBar(context, 'Exportación cancelada.', isError: true);
       }
     } catch (e) {
-      _showSnackBar(context, 'Error al exportar ZIP: $e', isError: true);
+      _showSnackBar(context, 'Error al exportar CSV: $e', isError: true);
     } finally {
       _isExporting = false;
     }
   }
 
-  /// GENERAR BYTES DEL CSV
   Future<List<int>> _generateCSVBytes(
       List<Map<String, dynamic>> registros) async {
     final headers = registros.first.keys.toList();
@@ -390,496 +341,6 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     ).convert(rows);
 
     return utf8.encode(csv);
-  }
-
-  /// GENERAR BYTES DEL TXT (ahora con ; y "")
-  Future<List<int>> _generateTXTBytes(
-      List<Map<String, dynamic>> registros) async {
-    final headers = registros.first.keys.toList();
-
-    // Crear líneas con formato CSV pero para TXT
-    final lines = <String>[];
-
-    // Encabezado con comillas y punto y coma
-    final headerLine = headers.map((h) => '"$h"').join(';');
-    lines.add(headerLine);
-
-    // Datos con comillas y punto y coma
-    for (final row in registros) {
-      final values = headers.map((h) {
-        final value = row[h]?.toString() ?? '';
-        return '"$value"'; // Envolver cada valor en comillas
-      }).toList();
-      lines.add(values.join(';'));
-    }
-
-    final txtContent = lines.join('\n');
-    return utf8.encode(txtContent);
-  }
-
-  /// GENERAR BYTES DEL SMET (BASE DE DATOS)
-  Future<List<int>> _generateSMETBytes(
-      List<Map<String, dynamic>> registros) async {
-    // Crear una base de datos temporal
-    final internalDir = await getApplicationDocumentsDirectory();
-    final tempDbPath = '${internalDir.path}/temp_export.db';
-
-    // Eliminar archivo temporal si existe
-    final tempDbFile = File(tempDbPath);
-    if (await tempDbFile.exists()) {
-      await tempDbFile.delete();
-    }
-
-    // Crear nueva base de datos
-    final tempDb = await openDatabase(
-      tempDbPath,
-      version: 1,
-      onCreate: (db, version) async {
-        // Crear la tabla con la misma estructura
-        await db.execute('''
-          CREATE TABLE registros_calibracion (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cliente TEXT DEFAULT '',
-            razon_social TEXT DEFAULT '',
-            planta TEXT DEFAULT '',
-            dir_planta TEXT DEFAULT '',
-            dep_planta TEXT DEFAULT '',
-            cod_planta TEXT DEFAULT '',
-            personal TEXT DEFAULT '',
-            seca TEXT DEFAULT '',
-            session_id TEXT DEFAULT '',
-            n_reca TEXT DEFAULT '',
-            sticker TEXT DEFAULT '',
-            equipo1 TEXT DEFAULT '',
-            certificado1 TEXT DEFAULT '',
-            ente_calibrador1 TEXT DEFAULT '',
-            estado1 TEXT DEFAULT '',
-            cantidad1 REAL DEFAULT '',
-            equipo2 TEXT DEFAULT '',
-            certificado2 TEXT DEFAULT '',
-            ente_calibrador2 TEXT DEFAULT '',
-            estado2 TEXT DEFAULT '',
-            cantidad2 REAL DEFAULT '',
-            equipo3 TEXT DEFAULT '',
-            certificado3 TEXT DEFAULT '',
-            ente_calibrador3 TEXT DEFAULT '',
-            estado3 TEXT DEFAULT '',
-            cantidad3 REAL DEFAULT '',
-            equipo4 TEXT DEFAULT '',
-            certificado4 TEXT DEFAULT '',
-            ente_calibrador4 TEXT DEFAULT '',
-            estado4 TEXT DEFAULT '',
-            cantidad4 REAL DEFAULT '',
-            equipo5 TEXT DEFAULT '',
-            certificado5 TEXT DEFAULT '',
-            ente_calibrador5 TEXT DEFAULT '',
-            estado5 TEXT DEFAULT '',
-            cantidad5 REAL DEFAULT '',
-            equipo6 TEXT DEFAULT '',
-            certificado6 TEXT DEFAULT '',
-            ente_calibrador6 TEXT DEFAULT '',
-            estado6 TEXT DEFAULT '',
-            cantidad6 REAL DEFAULT '',
-            equipo7 TEXT DEFAULT '',
-            certificado7 TEXT DEFAULT '',
-            ente_calibrador7 TEXT DEFAULT '',
-            estado7 TEXT DEFAULT '',
-            cantidad7 REAL DEFAULT '',
-            
-            foto_balanza TEXT DEFAULT '',
-            categoria_balanza TEXT DEFAULT '',
-            cod_metrica TEXT DEFAULT '',
-            cod_int TEXT DEFAULT '',
-            tipo_equipo TEXT DEFAULT '',
-            marca TEXT DEFAULT '',
-            modelo TEXT DEFAULT '',
-            serie TEXT DEFAULT '',
-            unidades TEXT DEFAULT '',
-            ubicacion TEXT DEFAULT '',
-            cap_max1 REAL DEFAULT '',
-            d1 REAL DEFAULT '',
-            e1 REAL DEFAULT '',
-            dec1 REAL DEFAULT '',
-            cap_max2 REAL DEFAULT '',
-            d2 REAL DEFAULT '',
-            e2 REAL DEFAULT '',
-            dec2 REAL DEFAULT '',
-            cap_max3 REAL DEFAULT '',
-            d3 REAL DEFAULT '',
-            e3 REAL DEFAULT '',
-            dec3 REAL DEFAULT '',
-            fecha_servicio TEXT DEFAULT '',
-            hora_inicio TEXT DEFAULT '',
-            tiempo_estab TEXT DEFAULT '',
-            t_ope_balanza TEXT DEFAULT '',
-            vibracion TEXT DEFAULT '',
-            vibracion_foto TEXT DEFAULT '',
-            vibracion_comentario TEXT DEFAULT '',
-            polvo TEXT DEFAULT '',
-            polvo_foto TEXT DEFAULT '',
-            polvo_comentario TEXT DEFAULT '',
-            temp TEXT DEFAULT '',
-            temp_foto TEXT DEFAULT '',
-            temp_comentario TEXT DEFAULT '',
-            humedad TEXT DEFAULT '',
-            humedad_foto TEXT DEFAULT '',
-            humedad_comentario TEXT DEFAULT '',
-            mesada TEXT DEFAULT '',
-            mesada_foto TEXT DEFAULT '',
-            mesada_comentario TEXT DEFAULT '',
-            iluminacion TEXT DEFAULT '',
-            iluminacion_foto TEXT DEFAULT '',
-            iluminacion_comentario TEXT DEFAULT '',
-            limp_foza TEXT DEFAULT '',
-            limp_foza_foto TEXT DEFAULT '',
-            limp_foza_comentario TEXT DEFAULT '',
-            estado_drenaje TEXT DEFAULT '',
-            estado_drenaje_foto TEXT DEFAULT '',
-            estado_drenaje_comentario TEXT DEFAULT '',
-            limp_general TEXT DEFAULT '',
-            limp_general_foto TEXT DEFAULT '',
-            limp_general_comentario TEXT DEFAULT '',
-            golpes_terminal TEXT DEFAULT '',
-            golpes_terminal_foto TEXT DEFAULT '',
-            golpes_terminal_comentario TEXT DEFAULT '',
-            nivelacion TEXT DEFAULT '',
-            nivelacion_foto TEXT DEFAULT '',
-            nivelacion_comentario TEXT DEFAULT '',
-            limp_recepto TEXT DEFAULT '',
-            limp_recepto_foto TEXT DEFAULT '',
-            limp_recepto_comentario TEXT DEFAULT '',
-            golpes_receptor TEXT DEFAULT '',
-            golpes_receptor_foto TEXT DEFAULT '',
-            golpes_receptor_comentario TEXT DEFAULT '',
-            encendido TEXT DEFAULT '',
-            encendido_foto TEXT DEFAULT '',
-            encendido_comentario TEXT DEFAULT '',
-            precarga1 REAL DEFAULT '',
-            p_indicador1 REAL DEFAULT '',
-            precarga2 REAL DEFAULT '',
-            p_indicador2 REAL DEFAULT '',
-            precarga3 REAL DEFAULT '',
-            p_indicador3 REAL DEFAULT '',
-            precarga4 REAL DEFAULT '',
-            p_indicador4 REAL DEFAULT '',
-            precarga5 REAL DEFAULT '',
-            p_indicador5 REAL DEFAULT '',
-            precarga6 REAL DEFAULT '',
-            p_indicador6 REAL DEFAULT '',
-            ajuste TEXT DEFAULT '',
-            tipo TEXT DEFAULT '',
-            cargas_pesas TEXT DEFAULT '',
-            hora TEXT DEFAULT '',
-            hri TEXT DEFAULT '',
-            ti TEXT DEFAULT '',
-            patmi TEXT DEFAULT '',
-            
-            excentricidad_comentario TEXT DEFAULT '',
-            tipo_plataforma TEXT DEFAULT '',
-            puntos_ind TEXT DEFAULT '',
-            carga TEXT DEFAULT '',
-            posicion1 REAL DEFAULT '',
-            indicacion1 REAL DEFAULT '',
-            retorno1 REAL DEFAULT '',
-            posicion2 REAL DEFAULT '',
-            indicacion2 REAL DEFAULT '',
-            retorno2 REAL DEFAULT '',
-            posicion3 REAL DEFAULT '',
-            indicacion3 REAL DEFAULT '',
-            retorno3 REAL DEFAULT '',
-            posicion4 REAL DEFAULT '',
-            indicacion4 REAL DEFAULT '',
-            retorno4 REAL DEFAULT '',
-            posicion5 REAL DEFAULT '',
-            indicacion5 REAL DEFAULT '',
-            retorno5 REAL DEFAULT '',
-            posicion6 REAL DEFAULT '',
-            indicacion6 REAL DEFAULT '',
-            retorno6 REAL DEFAULT '',
-            
-            repetibilidad_comentario TEXT DEFAULT '',
-            repetibilidad1 REAL DEFAULT '',
-            indicacion1_1 REAL DEFAULT '',
-            retorno1_1 REAL DEFAULT '',      
-            indicacion1_2 REAL DEFAULT '',
-            retorno1_2 REAL DEFAULT '',
-            indicacion1_3 REAL DEFAULT '',
-            retorno1_3 REAL DEFAULT '',
-            indicacion1_4 REAL DEFAULT '',
-            retorno1_4 REAL DEFAULT '',
-            indicacion1_5 REAL DEFAULT '',
-            retorno1_5 REAL DEFAULT '',
-            indicacion1_6 REAL DEFAULT '',
-            retorno1_6 REAL DEFAULT '',
-            indicacion1_7 REAL DEFAULT '',
-            retorno1_7 REAL DEFAULT '',
-            indicacion1_8 REAL DEFAULT '',
-            retorno1_8 REAL DEFAULT '',
-            indicacion1_9 REAL DEFAULT '',
-            retorno1_9 REAL DEFAULT '',
-            indicacion1_10 REAL DEFAULT '',
-            retorno1_10 REAL DEFAULT '',
-           
-            repetibilidad2 REAL DEFAULT '',
-            indicacion2_1 REAL DEFAULT '',
-            retorno2_1 REAL DEFAULT '',
-            indicacion2_2 REAL DEFAULT '',
-            retorno2_2 REAL DEFAULT '',
-            indicacion2_3 REAL DEFAULT '',
-            retorno2_3 REAL DEFAULT '',
-            indicacion2_4 REAL DEFAULT '',
-            retorno2_4 REAL DEFAULT '',
-            indicacion2_5 REAL DEFAULT '',
-            retorno2_5 REAL DEFAULT '',
-            indicacion2_6 REAL DEFAULT '',
-            retorno2_6 REAL DEFAULT '',
-            indicacion2_7 REAL DEFAULT '',
-            retorno2_7 REAL DEFAULT '',
-            indicacion2_8 REAL DEFAULT '',
-            retorno2_8 REAL DEFAULT '',
-            indicacion2_9 REAL DEFAULT '',
-            retorno2_9 REAL DEFAULT '',
-            indicacion2_10 REAL DEFAULT '',
-            retorno2_10 REAL DEFAULT '',
-            
-            repetibilidad3 REAL DEFAULT '',
-            indicacion3_1 REAL DEFAULT '',
-            retorno3_1 REAL DEFAULT '',
-            indicacion3_2 REAL DEFAULT '',
-            retorno3_2 REAL DEFAULT '',
-            indicacion3_3 REAL DEFAULT '',
-            retorno3_3 REAL DEFAULT '',
-            indicacion3_4 REAL DEFAULT '',
-            retorno3_4 REAL DEFAULT '',
-            indicacion3_5 REAL DEFAULT '',
-            retorno3_5 REAL DEFAULT '',
-            indicacion3_6 REAL DEFAULT '',
-            retorno3_6 REAL DEFAULT '',
-            indicacion3_7 REAL DEFAULT '',
-            retorno3_7 REAL DEFAULT '',
-            indicacion3_8 REAL DEFAULT '',
-            retorno3_8 REAL DEFAULT '',
-            indicacion3_9 REAL DEFAULT '',
-            retorno3_9 REAL DEFAULT '',
-            indicacion3_10 REAL DEFAULT '',
-            retorno3_10 REAL DEFAULT '',
-            
-            linealidad_comentario TEXT DEFAULT '',
-            metodo TEXT DEFAULT '',
-            metodo_carga TEXT DEFAULT '',
-            lin1 REAL DEFAULT '',
-            ind1 REAL DEFAULT '',
-            retorno_lin1 REAL DEFAULT '',
-            lin2 REAL DEFAULT '',
-            ind2 REAL DEFAULT '',
-            retorno_lin2 REAL DEFAULT '',
-            lin3 REAL DEFAULT '',
-            ind3 REAL DEFAULT '',
-            retorno_lin3 REAL DEFAULT '',
-            lin4 REAL DEFAULT '',
-            ind4 REAL DEFAULT '',
-            retorno_lin4 REAL DEFAULT '',
-            lin5 REAL DEFAULT '',
-            ind5 REAL DEFAULT '',
-            retorno_lin5 REAL DEFAULT '',
-            lin6 REAL DEFAULT '',
-            ind6 REAL DEFAULT '',
-            retorno_lin6 REAL DEFAULT '',
-            lin7 REAL DEFAULT '',
-            ind7 REAL DEFAULT '',
-            retorno_lin7 REAL DEFAULT '',
-            lin8 REAL DEFAULT '',
-            ind8 REAL DEFAULT '',
-            retorno_lin8 REAL DEFAULT '',
-            lin9 REAL DEFAULT '',
-            ind9 REAL DEFAULT '',
-            retorno_lin9 REAL DEFAULT '',
-            lin10 REAL DEFAULT '',
-            ind10 REAL DEFAULT '',
-            retorno_lin10 REAL DEFAULT '',
-            lin11 REAL DEFAULT '',
-            ind11 REAL DEFAULT '',
-            retorno_lin11 REAL DEFAULT '',
-            lin12 REAL DEFAULT '',
-            ind12 REAL DEFAULT '',
-            retorno_lin12 REAL DEFAULT '',
-            lin13 REAL DEFAULT '',
-            ind13 REAL DEFAULT '',
-            retorno_lin13 REAL DEFAULT '',
-            lin14 REAL DEFAULT '',
-            ind14 REAL DEFAULT '',
-            retorno_lin14 REAL DEFAULT '',
-            lin15 REAL DEFAULT '',
-            ind15 REAL DEFAULT '',
-            retorno_lin15 REAL DEFAULT '',
-            lin16 REAL DEFAULT '',
-            ind16 REAL DEFAULT '',
-            retorno_lin16 REAL DEFAULT '',
-            lin17 REAL DEFAULT '',
-            ind17 REAL DEFAULT '',
-            retorno_lin17 REAL DEFAULT '',
-            lin18 REAL DEFAULT '',
-            ind18 REAL DEFAULT '',
-            retorno_lin18 REAL DEFAULT '',
-            lin19 REAL DEFAULT '',
-            ind19 REAL DEFAULT '',
-            retorno_lin19 REAL DEFAULT '',
-            lin20 REAL DEFAULT '',
-            ind20 REAL DEFAULT '',
-            retorno_lin20 REAL DEFAULT '',
-            lin21 REAL DEFAULT '',
-            ind21 REAL DEFAULT '',
-            retorno_lin21 REAL DEFAULT '',
-            lin22 REAL DEFAULT '',
-            ind22 REAL DEFAULT '',
-            retorno_lin22 REAL DEFAULT '',
-            lin23 REAL DEFAULT '',
-            ind23 REAL DEFAULT '',
-            retorno_lin23 REAL DEFAULT '',
-            lin24 REAL DEFAULT '',
-            ind24 REAL DEFAULT '',
-            retorno_lin24 REAL DEFAULT '',
-            lin25 REAL DEFAULT '',
-            ind25 REAL DEFAULT '',
-            retorno_lin25 REAL DEFAULT '',
-            lin26 REAL DEFAULT '',
-            ind26 REAL DEFAULT '',
-            retorno_lin26 REAL DEFAULT '',
-            lin27 REAL DEFAULT '',
-            ind27 REAL DEFAULT '',
-            retorno_lin27 REAL DEFAULT '',
-            lin28 REAL DEFAULT '',
-            ind28 REAL DEFAULT '',
-            retorno_lin28 REAL DEFAULT '',
-            lin29 REAL DEFAULT '',
-            ind29 REAL DEFAULT '',
-            retorno_lin29 REAL DEFAULT '',
-            lin30 REAL DEFAULT '',
-            ind30 REAL DEFAULT '',
-            retorno_lin30 REAL DEFAULT '',
-            lin31 REAL DEFAULT '',
-            ind31 REAL DEFAULT '',
-            retorno_lin31 REAL DEFAULT '',
-            lin32 REAL DEFAULT '',
-            ind32 REAL DEFAULT '',
-            retorno_lin32 REAL DEFAULT '',
-            lin33 REAL DEFAULT '',
-            ind33 REAL DEFAULT '',
-            retorno_lin33 REAL DEFAULT '',
-            lin34 REAL DEFAULT '',
-            ind34 REAL DEFAULT '',
-            retorno_lin34 REAL DEFAULT '',
-            lin35 REAL DEFAULT '',
-            ind35 REAL DEFAULT '',
-            retorno_lin35 REAL DEFAULT '',
-            lin36 REAL DEFAULT '',
-            ind36 REAL DEFAULT '',
-            retorno_lin36 REAL DEFAULT '',
-            lin37 REAL DEFAULT '',
-            ind37 REAL DEFAULT '',
-            retorno_lin37 REAL DEFAULT '',
-            lin38 REAL DEFAULT '',
-            ind38 REAL DEFAULT '',
-            retorno_lin38 REAL DEFAULT '',
-            lin39 REAL DEFAULT '',
-            ind39 REAL DEFAULT '',
-            retorno_lin39 REAL DEFAULT '',
-            lin40 REAL DEFAULT '',
-            ind40 REAL DEFAULT '',
-            retorno_lin40 REAL DEFAULT '',
-            lin41 REAL DEFAULT '',
-            ind41 REAL DEFAULT '',
-            retorno_lin41 REAL DEFAULT '',
-            lin42 REAL DEFAULT '',
-            ind42 REAL DEFAULT '',
-            retorno_lin42 REAL DEFAULT '',
-            lin43 REAL DEFAULT '',
-            ind43 REAL DEFAULT '',
-            retorno_lin43 REAL DEFAULT '',
-            lin44 REAL DEFAULT '',
-            ind44 REAL DEFAULT '',
-            retorno_lin44 REAL DEFAULT '',
-            lin45 REAL DEFAULT '',
-            ind45 REAL DEFAULT '',
-            retorno_lin45 REAL DEFAULT '',
-            lin46 REAL DEFAULT '',
-            ind46 REAL DEFAULT '',
-            retorno_lin46 REAL DEFAULT '',
-            lin47 REAL DEFAULT '',
-            ind47 REAL DEFAULT '',
-            retorno_lin47 REAL DEFAULT '',
-            lin48 REAL DEFAULT '',
-            ind48 REAL DEFAULT '',
-            retorno_lin48 REAL DEFAULT '',
-            lin49 REAL DEFAULT '',
-            ind49 REAL DEFAULT '',
-            retorno_lin49 REAL DEFAULT '',
-            lin50 REAL DEFAULT '',
-            ind50 REAL DEFAULT '',
-            retorno_lin50 REAL DEFAULT '',
-            lin51 REAL DEFAULT '',
-            ind51 REAL DEFAULT '',
-            retorno_lin51 REAL DEFAULT '',
-            lin52 REAL DEFAULT '',
-            ind52 REAL DEFAULT '',
-            retorno_lin52 REAL DEFAULT '',
-            lin53 REAL DEFAULT '',
-            ind53 REAL DEFAULT '',
-            retorno_lin53 REAL DEFAULT '',
-            lin54 REAL DEFAULT '',
-            ind54 REAL DEFAULT '',
-            retorno_lin54 REAL DEFAULT '',
-            lin55 REAL DEFAULT '',
-            ind55 REAL DEFAULT '',
-            retorno_lin55 REAL DEFAULT '',
-            lin56 REAL DEFAULT '',
-            ind56 REAL DEFAULT '',
-            retorno_lin56 REAL DEFAULT '',
-            lin57 REAL DEFAULT '',
-            ind57 REAL DEFAULT '',
-            retorno_lin57 REAL DEFAULT '',
-            lin58 REAL DEFAULT '',
-            ind58 REAL DEFAULT '',
-            retorno_lin58 REAL DEFAULT '',
-            lin59 REAL DEFAULT '',
-            ind59 REAL DEFAULT '',
-            retorno_lin59 REAL DEFAULT '',
-            lin60 REAL DEFAULT '',
-            ind60 REAL DEFAULT '',
-            retorno_lin60 REAL DEFAULT '',
-    
-            hora_fin TEXT DEFAULT '',
-            hri_fin TEXT DEFAULT '',
-            ti_fin TEXT DEFAULT '',
-            patmi_fin TEXT DEFAULT '',
-            mant_soporte TEXT DEFAULT '',
-            venta_pesas TEXT DEFAULT '',
-            reemplazo TEXT DEFAULT '',
-            observaciones TEXT DEFAULT '',
-            emp TEXT DEFAULT '',
-            indicar TEXT DEFAULT '',
-            factor TEXT DEFAULT '',
-            regla_aceptacion TEXT DEFAULT '',
-            estado_servicio_bal TEXT DEFAULT ''
-          )
-        ''');
-      },
-    );
-
-    // Insertar los datos depurados
-    for (final registro in registros) {
-      await tempDb.insert('registros_calibracion', registro);
-    }
-
-    await tempDb.close();
-
-    // Leer el archivo de base de datos como bytes
-    final dbBytes = await tempDbFile.readAsBytes();
-
-    // Eliminar archivo temporal
-    await tempDbFile.delete();
-
-    return dbBytes;
   }
 
   Future<void> _confirmarSeleccionOtraBalanza(BuildContext context) async {
@@ -969,7 +430,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         MaterialPageRoute(
           builder: (context) => PrecargaScreen(
             userName: userName,
-            initialStep: 3, // Paso de Balanza
+            initialStep: 3,
             sessionId: nuevoSessionId,
             secaValue: widget.secaValue,
           ),
@@ -1001,11 +462,11 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                  child: Container(color: Colors.black.withOpacity(0.4)),
-                ),
-              )
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(color: Colors.black.withOpacity(0.4)),
+          ),
+        )
             : null,
         iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
@@ -1019,13 +480,13 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
               const SizedBox(height: 30.0),
               _buildInfoSection(
                 'FINALIZAR SERVICIO',
-                'Al dar clic se finalizará el servicio de calibración y se exportarán los datos en un archivo ZIP con formatos CSV, TXT y SMET.',
+                'Al dar clic se finalizará el servicio de calibración y se exportarán los datos en un archivo CSV.',
                 textColor,
               ),
               _buildActionCard(
                 'images/tarjetas/t4.png',
                 'FINALIZAR SERVICIO\nY EXPORTAR DATOS',
-                () => _confirmarYExportar(context),
+                    () => _confirmarYExportar(context),
                 textColor,
                 cardOpacity,
               ),
@@ -1038,7 +499,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
               _buildActionCard(
                 'images/tarjetas/t7.png',
                 'SELECCIONAR\nOTRA BALANZA',
-                () => _confirmarSeleccionOtraBalanza(context),
+                    () => _confirmarSeleccionOtraBalanza(context),
                 textColor,
                 cardOpacity,
               ),
@@ -1085,12 +546,12 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   }
 
   Widget _buildActionCard(
-    String imagePath,
-    String title,
-    VoidCallback onTap,
-    Color textColor,
-    double opacity,
-  ) {
+      String imagePath,
+      String title,
+      VoidCallback onTap,
+      Color textColor,
+      double opacity,
+      ) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       child: InkWell(
@@ -1142,6 +603,340 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Pantalla de resumen antes de exportar
+class _ResumenExportacionScreen extends StatefulWidget {
+  final int cantidad;
+  final String seca;
+  final List<Map<String, dynamic>> registros;
+  final Future<void> Function(List<Map<String, dynamic>>) onExport;
+
+  const _ResumenExportacionScreen({
+    required this.cantidad,
+    required this.seca,
+    required this.registros,
+    required this.onExport,
+  });
+
+  @override
+  _ResumenExportacionScreenState createState() =>
+      _ResumenExportacionScreenState();
+}
+
+class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
+  late Future<Map<String, dynamic>> _resumenFuture;
+  bool _isExporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resumenFuture = _generarResumen();
+  }
+
+  Future<Map<String, dynamic>> _generarResumen() async {
+    // Contar balanzas únicas por cod_metrica
+    final balanzasUnicas = <String, Map<String, dynamic>>{};
+    int totalRegistros = widget.registros.length;
+
+    for (final registro in widget.registros) {
+      final codMetrica = registro['cod_metrica']?.toString() ?? 'N/A';
+      final marca = registro['marca']?.toString() ?? 'N/A';
+      final modelo = registro['modelo']?.toString() ?? 'N/A';
+
+      if (!balanzasUnicas.containsKey(codMetrica)) {
+        balanzasUnicas[codMetrica] = {
+          'cod_metrica': codMetrica,
+          'marca': marca,
+          'modelo': modelo,
+          'cantidad': 0,
+        };
+      }
+      balanzasUnicas[codMetrica]?['cantidad'] =
+          (balanzasUnicas[codMetrica]?['cantidad'] ?? 0) + 1;
+    }
+
+    return {
+      'totalBalanzas': balanzasUnicas.length,
+      'totalRegistros': totalRegistros,
+      'balanzas': balanzasUnicas.values.toList(),
+      'fecha': DateFormat('dd-MM-yyyy HH:mm').format(DateTime.now()),
+      'seca': widget.seca,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 70,
+        title: Text(
+          'RESUMEN DE EXPORTACIÓN',
+          style: TextStyle(
+            color: textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        backgroundColor: isDarkMode ? Colors.transparent : Colors.white,
+        elevation: 0,
+        flexibleSpace: isDarkMode
+            ? ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(color: Colors.black.withOpacity(0.4)),
+          ),
+        )
+            : null,
+        iconTheme: IconThemeData(color: textColor),
+        centerTitle: true,
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _resumenFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final resumen = snapshot.data!;
+          final balanzas =
+          resumen['balanzas'] as List<Map<String, dynamic>>;
+          final totalBalanzas = resumen['totalBalanzas'] as int;
+          final totalRegistros = resumen['totalRegistros'] as int;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Tarjeta de resumen general
+                Card(
+                  elevation: 4,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF46824B),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'RESUMEN GENERAL',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildResumenItem(
+                          'SECA:',
+                          resumen['seca'],
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Fecha/Hora:',
+                          resumen['fecha'],
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Balanzas calibradas:',
+                          totalBalanzas.toString(),
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Total de registros:',
+                          totalRegistros.toString(),
+                          Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'DETALLE DE BALANZAS',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: balanzas.length,
+                  itemBuilder: (context, index) {
+                    final balanza = balanzas[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Balanza ${index + 1}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildDetailItem(
+                              'Código métrica:',
+                              balanza['cod_metrica'],
+                            ),
+                            _buildDetailItem(
+                              'Marca:',
+                              balanza['marca'],
+                            ),
+                            _buildDetailItem(
+                              'Modelo:',
+                              balanza['modelo'],
+                            ),
+                            _buildDetailItem(
+                              'Registros:',
+                              balanza['cantidad'].toString(),
+                              highlight: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF46824B),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: _isExporting ? null : () async {
+                      setState(() => _isExporting = true);
+
+                      try {
+                        await widget.onExport(widget.registros);
+
+                        if (mounted) {
+                          Navigator.pop(context, true);
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error al exportar: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isExporting = false);
+                        }
+                      }
+                    },
+                    child: _isExporting
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                        : const Text(
+                      'PROCEDER CON LA EXPORTACIÓN',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text(
+                      'CANCELAR',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildResumenItem(String label, String value, Color textColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value,
+      {bool highlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
+              color: highlight ? const Color(0xFF46824B) : Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
