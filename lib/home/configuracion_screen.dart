@@ -54,7 +54,13 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('CERRAR SESIÓN'),
+          title: const Text(
+            'CERRAR SESIÓN',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
           actions: <Widget>[
             TextButton(

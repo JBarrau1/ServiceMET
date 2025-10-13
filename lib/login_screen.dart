@@ -84,69 +84,33 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return !dangerousPatterns.any((pattern) => lowerInput.contains(pattern));
   }
 
-  // NUEVO: Verificar si existe usuario en SQLite
-  Future<Map<String, dynamic>?> _verificarUsuarioEnSQLite(String usuario, String pass) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'usuarios.db');
-
-    try {
-      final db = await openDatabase(path);
-      final List<Map<String, dynamic>> results = await db.query(
-        'usuarios',
-        where: 'usuario = ? AND pass = ?',
-        whereArgs: [usuario, hashPassword(pass)],
-      );
-      await db.close();
-
-      if (results.isNotEmpty) {
-        return results.first;
-      }
-    } catch (e) {
-      print('Error consultando SQLite: $e');
-    }
-    return null;
-  }
-
   Future<void> _loadPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Cargar configuración de conexión
     _ipController.text = prefs.getString('ip') ?? '';
     _portController.text = prefs.getString('port') ?? '1433';
     _dbController.text = prefs.getString('database') ?? '';
     _dbUserController.text = prefs.getString('dbuser') ?? '';
+    _dbPassController.text = '';
 
-    // Cargar credenciales de usuario SI recordar está activado
+    _usuarioController.text = prefs.getString('usuario') ?? '';
+    _passController.text = '';
+
     recordarCredenciales = prefs.getBool('recordar') ?? false;
-    if (recordarCredenciales) {
-      _usuarioController.text = prefs.getString('usuario') ?? '';
-      // La contraseña se carga desde SecureStorage en un caso real
-      // Por ahora la dejamos vacía por seguridad
-    }
-
     setState(() {});
   }
 
-  // NUEVO: Guardar contraseñas de forma segura
   Future<void> _savePrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    // Guardar configuración de conexión
     await prefs.setString('ip', _ipController.text);
     await prefs.setString('port', _portController.text);
     await prefs.setString('database', _dbController.text);
     await prefs.setString('dbuser', _dbUserController.text);
-
-    // Guardar contraseña de BD SI se ingresó una nueva
-    if (_dbPassController.text.isNotEmpty) {
-      await prefs.setString('dbpass', _dbPassController.text);
-    }
-
-    // Guardar credenciales de usuario SI recordar está activado
+    await prefs.setString('dbpass', hashPassword(_dbPassController.text));
     await prefs.setBool('recordar', recordarCredenciales);
+
     if (recordarCredenciales) {
       await prefs.setString('usuario', _usuarioController.text);
-      await prefs.setString('contrasena', _passController.text); // Guardar contraseña REAL
+      await prefs.setString('contrasena', hashPassword(_passController.text));
     } else {
       await prefs.remove('usuario');
       await prefs.remove('contrasena');
@@ -179,7 +143,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final userDataConFecha = {
         ...userData,
         'fecha_guardado': DateTime.now().toIso8601String(),
-        'pass': hashPassword(userData['pass']), // Hashear para SQLite
       };
       await db.insert('usuarios', userDataConFecha);
     } catch (e) {
@@ -189,8 +152,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
-  // NUEVO: Método de login modificado - Offline First
-  Future<void> _loginUnificado(BuildContext context) async {
+  Future<void> _loginOffline(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
@@ -199,117 +161,41 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     final pass = _passController.text.trim();
 
     try {
-      // Validar entrada
-      if (!isValidInput(usuario) || !isValidInput(pass)) {
+      // Verificar credenciales guardadas
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final usuarioGuardado = prefs.getString('usuario');
+      final contrasenaGuardada = prefs.getString('contrasena');
+
+      if (usuarioGuardado == null || contrasenaGuardada == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Caracteres no válidos detectados')),
+          const SnackBar(
+            content: Text('No hay credenciales guardadas. Debe iniciar sesión en línea al menos una vez.'),
+            backgroundColor: Colors.orange,
+          ),
         );
         setState(() => _loading = false);
         return;
       }
 
-      // PRIMERO: Intentar login offline (SQLite)
-      final usuarioSQLite = await _verificarUsuarioEnSQLite(usuario, pass);
-      if (usuarioSQLite != null) {
-        await _savePrefs(); // Actualizar preferencias
+      // Validar usuario y contraseña
+      final passHasheada = hashPassword(pass);
 
+      if (usuario == usuarioGuardado && passHasheada == contrasenaGuardada) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ Inicio de sesión exitoso (Offline)'),
+            content: Text('✓ Inicio de sesión exitoso (modo offline)'),
             backgroundColor: Color(0xFF0E8833),
           ),
         );
-
-        // Limpiar flag de modo demo
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('modoDemo', false);
-
         Navigator.pushReplacementNamed(context, '/home');
-        setState(() => _loading = false);
-        return;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Usuario o contraseña incorrecta'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-
-      // SEGUNDO: Si no hay datos offline, intentar online
-      final ip = _ipController.text.trim();
-      final port = _portController.text.trim();
-      final dbName = _dbController.text.trim();
-      final dbUser = _dbUserController.text.trim();
-      final dbPass = _dbPassController.text.trim().isNotEmpty
-          ? _dbPassController.text.trim()
-          : (await SharedPreferences.getInstance()).getString('dbpass');
-
-      if (ip.isNotEmpty && port.isNotEmpty && dbName.isNotEmpty &&
-          dbUser.isNotEmpty && dbPass != null && dbPass.isNotEmpty) {
-
-        try {
-          final usuarioSeguro = sanitizeInput(usuario);
-          final passSeguro = sanitizeInput(pass);
-          final timeoutDuration = const Duration(seconds: 10);
-
-          final connected = await connection
-              .connect(
-            ip: ip,
-            port: port,
-            databaseName: dbName,
-            username: dbUser,
-            password: dbPass,
-          )
-              .timeout(timeoutDuration, onTimeout: () => false);
-
-          if (connected) {
-            final query = '''
-              SELECT nombre1, apellido1, pass, usuario, titulo_abr, estado 
-              FROM data_users 
-              WHERE usuario = '$usuarioSeguro' AND pass = '$passSeguro'
-            ''';
-
-            final resultJson = await connection
-                .getData(query)
-                .timeout(timeoutDuration, onTimeout: () => '[]');
-
-            final List<dynamic> result = jsonDecode(resultJson);
-
-            if (result.isNotEmpty) {
-              final userData = Map<String, dynamic>.from(result.first);
-
-              // GUARDAR EN SQLite PARA PRÓXIMOS LOGINS OFFLINE
-              await _saveUserToSQLite(userData);
-              await _savePrefs();
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✓ Inicio de sesión exitoso (Online) - Datos guardados'),
-                  backgroundColor: Color(0xFF0E8833),
-                ),
-              );
-
-              await connection.disconnect();
-
-              // Limpiar flag de modo demo
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.setBool('modoDemo', false);
-
-              Navigator.pushReplacementNamed(context, '/home');
-              setState(() => _loading = false);
-              return;
-            }
-          }
-
-          await connection.disconnect();
-        } catch (e) {
-          await connection.disconnect();
-          print('Error en login online: $e');
-        }
-      }
-
-      // Si ambos métodos fallan
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Usuario o contraseña incorrectos'),
-          backgroundColor: Colors.red,
-        ),
-      );
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
@@ -319,26 +205,100 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
-  // Método para modo demo
-  Future<void> _loginDemo(BuildContext context) async {
+  Future<void> _login(BuildContext context) async {
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() => _loading = true);
 
-    // Simular pequeña espera
-    await Future.delayed(const Duration(milliseconds: 800));
+    final ip = _ipController.text.trim();
+    final port = _portController.text.trim();
+    final dbName = _dbController.text.trim();
+    final dbUser = _dbUserController.text.trim();
+    final dbPass = _dbPassController.text.trim();
+    final usuario = _usuarioController.text.trim();
+    final pass = _passController.text.trim();
 
-    // Guardar flag de modo demo
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('modoDemo', true);
+    try {
+      if (!isValidInput(usuario) || !isValidInput(pass)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Caracteres no válidos detectados')),
+        );
+        return;
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✓ Ingresando en Modo DEMO'),
-        backgroundColor: Color(0xFFFF9800),
-      ),
-    );
+      final usuarioSeguro = sanitizeInput(usuario);
+      final passSeguro = sanitizeInput(pass);
+      final timeoutDuration = const Duration(seconds: 15);
 
-    setState(() => _loading = false);
-    Navigator.pushReplacementNamed(context, '/home');
+      final connected = await connection
+          .connect(
+        ip: ip,
+        port: port,
+        databaseName: dbName,
+        username: dbUser,
+        password: dbPass,
+      )
+          .timeout(timeoutDuration, onTimeout: () {
+        throw TimeoutException(
+            'La conexión tardó demasiado. Verifique su conexión a internet.');
+      });
+
+      if (!connected) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al conectar con el servidor')),
+        );
+        return;
+      }
+
+      final query = '''
+      SELECT nombre1, apellido1, pass, usuario, titulo_abr, estado 
+      FROM data_users 
+      WHERE usuario = '$usuarioSeguro' AND pass = '$passSeguro'
+    ''';
+
+      final resultJson = await connection
+          .getData(query)
+          .timeout(timeoutDuration, onTimeout: () {
+        throw TimeoutException(
+            'La consulta tardó demasiado. El servidor puede estar lento.');
+      });
+
+      final List<dynamic> result = jsonDecode(resultJson);
+
+      if (result.isNotEmpty) {
+        final userData = Map<String, dynamic>.from(result.first);
+        final userDataSeguro = {
+          ...userData,
+          'pass': hashPassword(userData['pass']),
+        };
+
+        await _saveUserToSQLite(userDataSeguro);
+        await _savePrefs();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Inicio de sesión exitoso'),
+            backgroundColor: Color(0xFF0E8833),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Usuario o contraseña incorrecta')),
+        );
+      }
+    } on TimeoutException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Tiempo de espera agotado')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      await connection.disconnect();
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -374,23 +334,28 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 children: [
                   const SizedBox(height: 40),
                   // Logo
-                  Container(
-                    padding: const EdgeInsets.all(16),
+                  DecoratedBox(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                          blurRadius: 12,
+                          offset: Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: Image.asset(
-                      'images/logo_met.png',
-                      height: 80,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'images/logo_met.png',
+                        height: 75,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
+
                   const SizedBox(height: 40),
 
                   // Card principal
@@ -570,7 +535,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           ),
                           const SizedBox(height: 28),
 
-                          // Botón Iniciar sesión UNIFICADO
+                          // Botón Iniciar sesión
                           SizedBox(
                             width: double.infinity,
                             height: 54,
@@ -584,7 +549,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 ),
                                 shadowColor: const Color(0xFF0E8833).withOpacity(0.3),
                               ),
-                              onPressed: _loading ? null : () => _loginUnificado(context),
+                              onPressed: _loading ? null : () => _login(context),
                               child: _loading
                                   ? const SizedBox(
                                 width: 24,
@@ -603,41 +568,50 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               ),
                             ),
                           ),
+                          const SizedBox(height: 16),
+
+                          // Botón offline
+                          SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF9E2B2E),
+                                side: BorderSide(
+                                  color: isDark ? const Color(0xFF9E2B2E).withOpacity(0.3) : const Color(0xFF9E2B2E).withOpacity(0.5),
+                                  width: 1.5,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: _loading ? null : () => _loginOffline(context),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.cloud_off_outlined,
+                                    size: 20,
+                                    color: isDark ? const Color(0xFF9E2B2E).withOpacity(0.8) : const Color(0xFF9E2B2E),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Iniciar sin conexión',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Botón Modo DEMO (discreto)
-                  TextButton(
-                    onPressed: _loading ? null : () => _loginDemo(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.science_outlined,
-                          size: 16,
-                          color: isDark ? Colors.white38 : Colors.black38,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Modo DESCONECTADO',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white38 : Colors.black38,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 24),
 
                   // Botón configuración
                   TextButton.icon(
@@ -698,32 +672,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             _buildConfigField('Usuario BD', _dbUserController, Icons.admin_panel_settings_outlined, isDark),
                             const SizedBox(height: 16),
                             _buildConfigField('Contraseña BD', _dbPassController, Icons.vpn_key_outlined, isDark, isPassword: true),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () async {
-                                  await _savePrefs();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('✓ Configuración guardada'),
-                                      backgroundColor: Color(0xFF0E8833),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.save_outlined, size: 20),
-                                label: const Text('Guardar configuración'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF0E8833),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -736,7 +684,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   Column(
                     children: [
                       Text(
-                        'versión 10.1.1_5s_101025',
+                        'versión 10.1.1_3_061025',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           color: isDark ? Colors.white38 : Colors.black38,
