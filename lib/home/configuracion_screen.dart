@@ -12,7 +12,7 @@ class ConfiguracionScreen extends StatefulWidget {
 
 class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   bool isDarkMode = false;
-  String appVersion = '10.1.1_5_101025';
+  String appVersion = '10.1.1_6_141025';
   String appName = 'METRICA LTDA';
 
   @override

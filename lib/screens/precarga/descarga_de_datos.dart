@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -8,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/bdb/precarga_bd.dart';
 import 'package:mssql_connection/mssql_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 
 class DescargaDeDatosScreen extends StatefulWidget {
   final String userName;
@@ -23,10 +25,14 @@ class DescargaDeDatosScreen extends StatefulWidget {
 class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
   final dbHelper = DatabaseHelperPrecarga();
   final ValueNotifier<int> _progressNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<String> _currentTableNotifier = ValueNotifier<String>('');
+  final ValueNotifier<String> _currentOperationNotifier = ValueNotifier<String>('');
   String? errorMessage;
   String? lastUpdate;
   Timer? _autoDeleteTimer;
   bool _isUpdating = false;
+  bool _isCancelled = false;
+  MssqlConnection? _currentConnection;
 
   @override
   void initState() {
@@ -38,8 +44,17 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
 
   @override
   void dispose() {
+    _cancelOperation();
     _autoDeleteTimer?.cancel();
+    _progressNotifier.dispose();
+    _currentTableNotifier.dispose();
+    _currentOperationNotifier.dispose();
     super.dispose();
+  }
+
+  void _cancelOperation() {
+    _isCancelled = true;
+    _currentConnection?.disconnect();
   }
 
   Future<void> _startAutoDeleteTimer() async {
@@ -49,6 +64,8 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
   }
 
   Future<void> _checkIfDataExpired() async {
+    if (!mounted) return;
+
     final prefs = await SharedPreferences.getInstance();
     final lastUpdate = prefs.getString('lastUpdate');
 
@@ -74,12 +91,16 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
 
       if (difference.inDays >= 15) {
         await _deleteDatabase(silent: true);
-        _showDataExpiredNotification();
+        if (mounted) {
+          _showDataExpiredNotification();
+        }
       }
     }
   }
 
   void _showDataExpiredNotification() {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Los datos han expirado. Por favor, realice una nueva precarga.'),
@@ -93,6 +114,8 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
   }
 
   Future<void> _loadLastUpdate() async {
+    if (!mounted) return;
+
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       lastUpdate = prefs.getString('lastUpdate');
@@ -280,7 +303,8 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
                 await prefs.setString('port', portController.text);
                 await prefs.setString('databaseName', dbNameController.text);
                 await prefs.setString('username', usernameController.text);
-                await prefs.setString('password', passwordController.text);
+                // No guardar la contraseña por seguridad
+                // await prefs.setString('password', passwordController.text);
 
                 Navigator.of(context).pop(connectionData);
               },
@@ -333,6 +357,7 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
     final password = prefs.getString('password');
 
     if (ip == null || port == null || databaseName == null || username == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No se encontraron datos de conexión guardados. Por favor, configure la conexión nuevamente.'),
@@ -354,17 +379,130 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
   }
 
   Future<void> _performDataSync(Map<String, String> connectionData) async {
-    showDialog(
+    _isCancelled = false;
+
+    // Verificar si las tablas existen antes de proceder
+    final db = await dbHelper.database;
+    final tables = ['clientes', 'plantas', 'balanzas', 'inf', 'equipamientos', 'servicios'];
+
+    bool shouldDeleteTables = true;
+
+    // Verificar si todas las tablas existen
+    for (var table in tables) {
+      try {
+        await db.rawQuery('SELECT COUNT(*) FROM $table LIMIT 1');
+      } catch (e) {
+        // Si alguna tabla no existe, no podemos hacer backup
+        shouldDeleteTables = false;
+        break;
+      }
+    }
+
+    // Mostrar diálogo de confirmación si hay datos existentes
+    if (shouldDeleteTables) {
+      final confirm = await _showConfirmDialog(context);
+      if (!confirm) return;
+    }
+
+    // Mostrar diálogo de progreso con opción de cancelar
+    final progressDialog = _showProgressDialog(context);
+
+    try {
+      await _performDataSyncInternal(connectionData, db, shouldDeleteTables);
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Cerrar progress dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PRECARGA REALIZADA EXITOSAMENTE')),
+      );
+
+    } on TimeoutException catch (e) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error de timeout: ${e.message}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+
+      // Mostrar error genérico sin detalles técnicos
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error durante la sincronización. Por favor, verifique la conexión e intente nuevamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+
+      // Log del error real (en producción usar un logger)
+      debugPrint('Error en sincronización: $e');
+    } finally {
+      await _currentConnection?.disconnect();
+      _currentConnection = null;
+    }
+  }
+
+  Future<bool> _showConfirmDialog(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Confirmar Sincronización',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+            '¿Está seguro de realizar una nueva sincronización? Esto reemplazará los datos existentes.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.black,
+            ),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF264024),
+            ),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  Future _showProgressDialog(BuildContext context) {
+    return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
+          title: Text('Sincronizando Datos', style: GoogleFonts.poppins()),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 20),
-              const Text('Descargando datos del servidor...'),
+              ValueListenableBuilder<String>(
+                valueListenable: _currentOperationNotifier,
+                builder: (context, operation, _) {
+                  return Text(operation);
+                },
+              ),
+              const SizedBox(height: 10),
+              ValueListenableBuilder<String>(
+                valueListenable: _currentTableNotifier,
+                builder: (context, table, _) {
+                  return Text('Tabla: $table');
+                },
+              ),
               const SizedBox(height: 10),
               ValueListenableBuilder<int>(
                 valueListenable: _progressNotifier,
@@ -374,289 +512,285 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
               ),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _cancelOperation();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+          ],
         );
       },
     );
+  }
 
-    MssqlConnection? connection;
-    try {
-      connection = MssqlConnection.getInstance();
+  Future<void> _performDataSyncInternal(
+      Map<String, String> connectionData,
+      Database db,
+      bool shouldDeleteTables
+      ) async {
+    _currentConnection = MssqlConnection.getInstance();
 
-      final connectionFuture = connection.connect(
-        ip: connectionData['ip']!,
-        port: connectionData['port']!,
-        databaseName: connectionData['databaseName']!,
-        username: connectionData['username']!,
-        password: connectionData['password']!,
-      );
+    _currentOperationNotifier.value = 'Conectando con el servidor...';
 
-      final isConnected = await connectionFuture.timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw TimeoutException('La conexión tardó demasiado tiempo. Verifique los datos de conexión.');
-        },
-      );
+    final connectionFuture = _currentConnection!.connect(
+      ip: connectionData['ip']!,
+      port: connectionData['port']!,
+      databaseName: connectionData['databaseName']!,
+      username: connectionData['username']!,
+      password: connectionData['password']!,
+    );
 
-      if (!isConnected) {
-        throw Exception('No se pudo conectar a la base de datos');
-      }
+    final isConnected = await connectionFuture.timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        throw TimeoutException('La conexión tardó demasiado tiempo. Verifique los datos de conexión.');
+      },
+    );
 
-      final queries = [
-        'SELECT codigo_cliente, cliente, cliente_id, razonsocial FROM DATA_CLIENTES',
-        'SELECT cliente_id, codigo_planta, planta_id, dep, dep_id, planta, dir FROM DATA_PLANTAS',
-        'SELECT * FROM DATA_EQUIPOS_BALANZAS',
-        'SELECT * FROM DATA_EQUIPOS',
-        'SELECT * FROM DATA_EQUIPOS_CAL',
-        'SELECT * FROM DATA_SERVICIOS_LEC'
-      ];
+    if (!isConnected) {
+      throw Exception('No se pudo conectar a la base de datos');
+    }
 
-      final results = await Future.wait([
-        for (var query in queries)
-          _executeQueryWithTimeout(connection, query, const Duration(seconds: 60))
-      ]);
+    // Verificar permisos de tablas
+    _currentOperationNotifier.value = 'Verificando permisos...';
+    await _verifyTablePermissions(_currentConnection!);
 
-      final dbHelper = DatabaseHelperPrecarga();
-      final db = await dbHelper.database;
+    final queries = [
+      'SELECT codigo_cliente, cliente, cliente_id, razonsocial FROM DATA_CLIENTES',
+      'SELECT cliente_id, codigo_planta, planta_id, dep, dep_id, planta, dir FROM DATA_PLANTAS',
+      'SELECT * FROM DATA_EQUIPOS_BALANZAS',
+      'SELECT * FROM DATA_EQUIPOS',
+      'SELECT * FROM DATA_EQUIPOS_CAL',
+      'SELECT * FROM DATA_SERVICIOS_LEC'
+    ];
 
-      int totalItems = results.fold(0, (sum, result) => sum + result.length);
-      int itemsProcesados = 0;
+    _currentOperationNotifier.value = 'Descargando datos...';
+    final results = await Future.wait([
+      for (var i = 0; i < queries.length; i++)
+        _executeQueryWithTimeout(_currentConnection!, queries[i], const Duration(seconds: 60))
+    ]);
 
-      await db.transaction((txn) async {
-        await txn.delete('clientes');
-        await txn.delete('plantas');
-        await txn.delete('balanzas');
-        await txn.delete('inf');
-        await txn.delete('equipamientos');
-        await txn.delete('servicios');
+    // Procesar cada tabla por separado para evitar transacciones gigantes
+    await _processTableInTransaction(db, 'clientes', results[0], shouldDeleteTables);
+    if (_isCancelled) throw Exception('Operación cancelada por el usuario');
 
-        for (var cliente in results[0]) {
-          await txn.insert('clientes', {
-            'codigo_cliente': cliente['codigo_cliente'],
-            'cliente_id': cliente['cliente_id'],
-            'cliente': cliente['cliente'],
-            'razonsocial': cliente['razonsocial'],
-          });
+    await _processTableInTransaction(db, 'plantas', results[1], shouldDeleteTables);
+    if (_isCancelled) throw Exception('Operación cancelada por el usuario');
 
-          itemsProcesados++;
-          if (itemsProcesados % 10 == 0) {
-            int progress = ((itemsProcesados / totalItems) * 100).toInt();
-            _progressNotifier.value = progress;
-          }
-        }
+    await _processTableInTransaction(db, 'balanzas', results[2], shouldDeleteTables);
+    if (_isCancelled) throw Exception('Operación cancelada por el usuario');
 
-        for (var planta in results[1]) {
-          await txn.insert('plantas', {
-            'planta': planta['planta'],
-            'planta_id': planta['planta_id'],
-            'cliente_id': planta['cliente_id'],
-            'dep_id': planta['dep_id'],
-            'unique_key': '${planta['planta_id']}_${planta['dep_id']}',
-            'codigo_planta': planta['codigo_planta'],
-            'dep': planta['dep'],
-            'dir': planta['dir'],
-          });
+    await _processTableInTransaction(db, 'inf', results[3], shouldDeleteTables);
+    if (_isCancelled) throw Exception('Operación cancelada por el usuario');
 
-          itemsProcesados++;
-          if (itemsProcesados % 10 == 0) {
-            int progress = ((itemsProcesados / totalItems) * 100).toInt();
-            _progressNotifier.value = progress;
-          }
-        }
+    await _processTableInTransaction(db, 'equipamientos', results[4], shouldDeleteTables);
+    if (_isCancelled) throw Exception('Operación cancelada por el usuario');
 
-        for (var balanza in results[2]) {
-          await txn.insert('balanzas', {
-            'cod_metrica': balanza['cod_metrica'],
-            'serie': balanza['serie'],
-            'unidad': balanza['unidad'],
-            'n_celdas': balanza['n_celdas'],
-            'cap_max1': balanza['cap_max1'],
-            'd1': balanza['d1'],
-            'e1': balanza['e1'],
-            'dec1': balanza['dec1'],
-            'cap_max2': balanza['cap_max2'],
-            'd2': balanza['d2'],
-            'e2': balanza['e2'],
-            'dec2': balanza['dec2'],
-            'cap_max3': balanza['cap_max3'],
-            'd3': balanza['d3'],
-            'e3': balanza['e3'],
-            'dec3': balanza['dec3'],
-            'categoria': balanza['categoria'],
-          });
-          itemsProcesados++;
-          if (itemsProcesados % 10 == 0) {
-            int progress = ((itemsProcesados / totalItems) * 100).toInt();
-            _progressNotifier.value = progress;
-          }
-        }
+    await _processTableInTransaction(db, 'servicios', results[5], shouldDeleteTables);
+    if (_isCancelled) throw Exception('Operación cancelada por el usuario');
 
-        for (var infItem in results[3]) {
-          await txn.insert('inf', {
-            'cod_interno': infItem['cod_interno'],
-            'cod_metrica': infItem['cod_metrica'],
-            'instrumento': infItem['instrumento'],
-            'tipo_instrumento': infItem['tipo_instrumento'],
-            'marca': infItem['marca'],
-            'modelo': infItem['modelo'],
-            'serie': infItem['serie'],
-            'estado': infItem['estado'],
-            'detalles': infItem['detalles'],
-            'ubicacion': infItem['ubicacion'],
-          });
-          itemsProcesados++;
-          if (itemsProcesados % 10 == 0) {
-            int progress = ((itemsProcesados / totalItems) * 100).toInt();
-            _progressNotifier.value = progress;
-          }
-        }
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now().toString();
+    await prefs.setString('lastUpdate', now);
 
-        for (var equipamiento in results[4]) {
-          await txn.insert('equipamientos', {
-            'cod_instrumento': equipamiento['cod_instrumento'],
-            'instrumento': equipamiento['instrumento'],
-            'cert_fecha': equipamiento['cert_fecha'],
-            'ente_calibrador': equipamiento['ente_calibrador'],
-            'estado': equipamiento['estado'],
-          });
-          itemsProcesados++;
-          if (itemsProcesados % 10 == 0) {
-            int progress = ((itemsProcesados / totalItems) * 100).toInt();
-            _progressNotifier.value = progress;
-          }
-        }
-
-        for (var servicio in results[5]) {
-          await txn.insert('servicios', {
-            'cod_metrica': servicio['cod_metrica'],
-            'seca': servicio['seca'],
-            'reg_fecha': servicio['reg_fecha'],
-            'reg_usuario': servicio['reg_usuario'],
-            'exc': servicio['exc'],
-            'rep1': servicio['rep1'],
-            'rep2': servicio['rep2'],
-            'rep3': servicio['rep3'],
-            'rep4': servicio['rep4'],
-            'rep5': servicio['rep5'],
-            'rep6': servicio['rep6'],
-            'rep7': servicio['rep7'],
-            'rep8': servicio['rep8'],
-            'rep9': servicio['rep9'],
-            'rep10': servicio['rep10'],
-            'rep11': servicio['rep11'],
-            'rep12': servicio['rep12'],
-            'rep13': servicio['rep13'],
-            'rep14': servicio['rep14'],
-            'rep15': servicio['rep15'],
-            'rep16': servicio['rep16'],
-            'rep17': servicio['rep17'],
-            'rep18': servicio['rep18'],
-            'rep19': servicio['rep19'],
-            'rep20': servicio['rep20'],
-            'rep21': servicio['rep21'],
-            'rep22': servicio['rep22'],
-            'rep23': servicio['rep23'],
-            'rep24': servicio['rep24'],
-            'rep25': servicio['rep25'],
-            'rep26': servicio['rep26'],
-            'rep27': servicio['rep27'],
-            'rep28': servicio['rep28'],
-            'rep29': servicio['rep29'],
-            'rep30': servicio['rep30'],
-            'lin1': servicio['lin1'],
-            'lin2': servicio['lin2'],
-            'lin3': servicio['lin3'],
-            'lin4': servicio['lin4'],
-            'lin5': servicio['lin5'],
-            'lin6': servicio['lin6'],
-            'lin7': servicio['lin7'],
-            'lin8': servicio['lin8'],
-            'lin9': servicio['lin9'],
-            'lin10': servicio['lin10'],
-            'lin11': servicio['lin11'],
-            'lin12': servicio['lin12'],
-            'lin13': servicio['lin13'],
-            'lin14': servicio['lin14'],
-            'lin15': servicio['lin15'],
-            'lin16': servicio['lin16'],
-            'lin17': servicio['lin17'],
-            'lin18': servicio['lin18'],
-            'lin19': servicio['lin19'],
-            'lin20': servicio['lin20'],
-            'lin21': servicio['lin21'],
-            'lin22': servicio['lin22'],
-            'lin23': servicio['lin23'],
-            'lin24': servicio['lin24'],
-            'lin25': servicio['lin25'],
-            'lin26': servicio['lin26'],
-            'lin27': servicio['lin27'],
-            'lin28': servicio['lin28'],
-            'lin29': servicio['lin29'],
-            'lin30': servicio['lin30'],
-            'lin31': servicio['lin31'],
-            'lin32': servicio['lin32'],
-            'lin33': servicio['lin33'],
-            'lin34': servicio['lin34'],
-            'lin35': servicio['lin35'],
-            'lin36': servicio['lin36'],
-            'lin37': servicio['lin37'],
-            'lin38': servicio['lin38'],
-            'lin39': servicio['lin39'],
-            'lin40': servicio['lin40'],
-            'lin41': servicio['lin41'],
-            'lin42': servicio['lin42'],
-            'lin43': servicio['lin43'],
-            'lin44': servicio['lin44'],
-            'lin45': servicio['lin45'],
-            'lin46': servicio['lin46'],
-            'lin47': servicio['lin47'],
-            'lin48': servicio['lin48'],
-            'lin49': servicio['lin49'],
-            'lin50': servicio['lin50'],
-            'lin51': servicio['lin51'],
-            'lin52': servicio['lin52'],
-            'lin53': servicio['lin53'],
-            'lin54': servicio['lin54'],
-            'lin55': servicio['lin55'],
-            'lin56': servicio['lin56'],
-            'lin57': servicio['lin57'],
-            'lin58': servicio['lin58'],
-            'lin59': servicio['lin59'],
-            'lin60': servicio['lin60'],
-          });
-          itemsProcesados++;
-          if (itemsProcesados % 10 == 0) {
-            int progress = ((itemsProcesados / totalItems) * 100).toInt();
-            _progressNotifier.value = progress;
-          }
-        }
-      });
-
-      final prefs = await SharedPreferences.getInstance();
-      final now = DateTime.now().toString();
-      await prefs.setString('lastUpdate', now);
-
+    if (mounted) {
       setState(() {
         lastUpdate = now;
         _isUpdating = false;
       });
+    }
 
-      Navigator.of(context, rootNavigator: true).pop();
+    // Reiniciar el timer de auto-delete
+    _autoDeleteTimer?.cancel();
+    _startAutoDeleteTimer();
+  }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PRECARGA REALIZADA EXITOSAMENTE')),
-      );
-    } on TimeoutException catch (e) {
-      Navigator.of(context, rootNavigator: true).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error de timeout: ${e.message}')),
-      );
-    } catch (e) {
-      Navigator.of(context, rootNavigator: true).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    } finally {
-      await connection?.disconnect();
+  Future<void> _verifyTablePermissions(MssqlConnection connection) async {
+    final testQueries = [
+      'SELECT TOP 1 * FROM DATA_CLIENTES',
+      'SELECT TOP 1 * FROM DATA_PLANTAS',
+      'SELECT TOP 1 * FROM DATA_EQUIPOS_BALANZAS',
+      'SELECT TOP 1 * FROM DATA_EQUIPOS',
+      'SELECT TOP 1 * FROM DATA_EQUIPOS_CAL',
+      'SELECT TOP 1 * FROM DATA_SERVICIOS_LEC'
+    ];
+
+    for (var query in testQueries) {
+      try {
+        await _executeQueryWithTimeout(connection, query, const Duration(seconds: 10));
+      } catch (e) {
+        throw Exception('No tiene permisos para acceder a todas las tablas necesarias');
+      }
+    }
+  }
+
+  Future<void> _processTableInTransaction(
+      Database db,
+      String tableName,
+      List<Map<String, dynamic>> data,
+      bool shouldDeleteTables
+      ) async {
+    _currentTableNotifier.value = tableName;
+
+    await db.transaction((txn) async {
+      if (shouldDeleteTables) {
+        await txn.delete(tableName);
+      }
+
+      int itemsProcesados = 0;
+      final totalItems = data.length;
+
+      for (var item in data) {
+        if (_isCancelled) break;
+
+        try {
+          await _insertValidatedData(txn, tableName, item);
+        } catch (e) {
+          debugPrint('Error insertando en $tableName: $e');
+          // Continuar con el siguiente registro en lugar de fallar toda la transacción
+          continue;
+        }
+
+        itemsProcesados++;
+        if (itemsProcesados % 10 == 0 || itemsProcesados == totalItems) {
+          final progress = ((itemsProcesados / totalItems) * 100).toInt();
+          _progressNotifier.value = progress;
+        }
+      }
+    });
+  }
+
+  Future<void> _insertValidatedData(Transaction txn, String tableName, Map<String, dynamic> data) async {
+    switch (tableName) {
+      case 'clientes':
+        final codigoCliente = data['codigo_cliente']?.toString();
+        final clienteId = data['cliente_id']?.toString();
+        if (codigoCliente == null || clienteId == null) {
+          throw Exception('Datos inválidos para cliente');
+        }
+        await txn.insert('clientes', {
+          'codigo_cliente': codigoCliente,
+          'cliente_id': clienteId,
+          'cliente': data['cliente']?.toString() ?? '',
+          'razonsocial': data['razonsocial']?.toString() ?? '',
+        });
+        break;
+
+      case 'plantas':
+        final plantaId = data['planta_id']?.toString();
+        final clienteId = data['cliente_id']?.toString();
+        final depId = data['dep_id']?.toString();
+        if (plantaId == null || clienteId == null || depId == null) {
+          throw Exception('Datos inválidos para planta');
+        }
+        await txn.insert('plantas', {
+          'planta': data['planta']?.toString() ?? '',
+          'planta_id': plantaId,
+          'cliente_id': clienteId,
+          'dep_id': depId,
+          'unique_key': '${plantaId}_$depId',
+          'codigo_planta': data['codigo_planta']?.toString() ?? '',
+          'dep': data['dep']?.toString() ?? '',
+          'dir': data['dir']?.toString() ?? '',
+        });
+        break;
+
+      case 'balanzas':
+        final codMetrica = data['cod_metrica']?.toString();
+        if (codMetrica == null) {
+          throw Exception('Datos inválidos para balanza');
+        }
+        await txn.insert('balanzas', {
+          'cod_metrica': codMetrica,
+          'serie': data['serie']?.toString() ?? '',
+          'unidad': data['unidad']?.toString() ?? '',
+          'n_celdas': data['n_celdas']?.toString() ?? '',
+          'cap_max1': data['cap_max1']?.toString() ?? '',
+          'd1': data['d1']?.toString() ?? '',
+          'e1': data['e1']?.toString() ?? '',
+          'dec1': data['dec1']?.toString() ?? '',
+          'cap_max2': data['cap_max2']?.toString() ?? '',
+          'd2': data['d2']?.toString() ?? '',
+          'e2': data['e2']?.toString() ?? '',
+          'dec2': data['dec2']?.toString() ?? '',
+          'cap_max3': data['cap_max3']?.toString() ?? '',
+          'd3': data['d3']?.toString() ?? '',
+          'e3': data['e3']?.toString() ?? '',
+          'dec3': data['dec3']?.toString() ?? '',
+          'categoria': data['categoria']?.toString() ?? '',
+        });
+        break;
+
+      case 'inf':
+        final codInterno = data['cod_interno']?.toString();
+        if (codInterno == null) {
+          throw Exception('Datos inválidos para inf');
+        }
+        await txn.insert('inf', {
+          'cod_interno': codInterno,
+          'cod_metrica': data['cod_metrica']?.toString() ?? '',
+          'instrumento': data['instrumento']?.toString() ?? '',
+          'tipo_instrumento': data['tipo_instrumento']?.toString() ?? '',
+          'marca': data['marca']?.toString() ?? '',
+          'modelo': data['modelo']?.toString() ?? '',
+          'serie': data['serie']?.toString() ?? '',
+          'estado': data['estado']?.toString() ?? '',
+          'detalles': data['detalles']?.toString() ?? '',
+          'ubicacion': data['ubicacion']?.toString() ?? '',
+        });
+        break;
+
+      case 'equipamientos':
+        final codInstrumento = data['cod_instrumento']?.toString();
+        if (codInstrumento == null) {
+          throw Exception('Datos inválidos para equipamiento');
+        }
+        await txn.insert('equipamientos', {
+          'cod_instrumento': codInstrumento,
+          'instrumento': data['instrumento']?.toString() ?? '',
+          'cert_fecha': data['cert_fecha']?.toString() ?? '',
+          'ente_calibrador': data['ente_calibrador']?.toString() ?? '',
+          'estado': data['estado']?.toString() ?? '',
+        });
+        break;
+
+      case 'servicios':
+        final codMetrica = data['cod_metrica']?.toString();
+        if (codMetrica == null) {
+          throw Exception('Datos inválidos para servicio');
+        }
+        // Insertar solo campos esenciales para servicios, el resto pueden ser null
+        final Map<String, dynamic> servicioData = {
+          'cod_metrica': codMetrica,
+          'seca': data['seca']?.toString() ?? '',
+          'reg_fecha': data['reg_fecha']?.toString() ?? '',
+          'reg_usuario': data['reg_usuario']?.toString() ?? '',
+          'exc': data['exc']?.toString() ?? '',
+        };
+
+        // Agregar campos rep y lin solo si existen
+        for (int i = 1; i <= 30; i++) {
+          final repKey = 'rep$i';
+          if (data.containsKey(repKey)) {
+            servicioData[repKey] = data[repKey]?.toString() ?? '';
+          }
+        }
+
+        for (int i = 1; i <= 60; i++) {
+          final linKey = 'lin$i';
+          if (data.containsKey(linKey)) {
+            servicioData[linKey] = data[linKey]?.toString() ?? '';
+          }
+        }
+
+        await txn.insert('servicios', servicioData);
+        break;
+
+      default:
+        throw Exception('Tabla desconocida: $tableName');
     }
   }
 
@@ -722,9 +856,11 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('lastUpdate');
 
-      setState(() {
-        lastUpdate = null;
-      });
+      if (mounted) {
+        setState(() {
+          lastUpdate = null;
+        });
+      }
 
       if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -732,7 +868,7 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
         );
       }
     } catch (e) {
-      if (!silent) {
+      if (!silent && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al eliminar la precarga: $e')),
         );

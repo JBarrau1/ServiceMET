@@ -8,6 +8,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:mssql_connection/mssql_connection.dart';
 import 'package:crypto/crypto.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -55,6 +56,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   void dispose() {
     _animationController.dispose();
+    _usuarioController.dispose();
+    _passController.dispose();
+    _ipController.dispose();
+    _portController.dispose();
+    _dbController.dispose();
+    _dbUserController.dispose();
+    _dbPassController.dispose();
     super.dispose();
   }
 
@@ -84,33 +92,58 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return !dangerousPatterns.any((pattern) => lowerInput.contains(pattern));
   }
 
+  Future<bool> _hasInternetConnection() async {
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      return connectivityResult != ConnectivityResult.none;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // CORREGIDO: Cargar preferencias incluyendo contraseña si recordar está activado
   Future<void> _loadPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Cargar configuración de conexión
     _ipController.text = prefs.getString('ip') ?? '';
     _portController.text = prefs.getString('port') ?? '1433';
     _dbController.text = prefs.getString('database') ?? '';
     _dbUserController.text = prefs.getString('dbuser') ?? '';
-    _dbPassController.text = '';
+    _dbPassController.text = prefs.getString('dbpass') ?? '';
 
-    _usuarioController.text = prefs.getString('usuario') ?? '';
-    _passController.text = '';
-
+    // Cargar credenciales de usuario SI recordar está activado
     recordarCredenciales = prefs.getBool('recordar') ?? false;
+    if (recordarCredenciales) {
+      _usuarioController.text = prefs.getString('usuario') ?? '';
+      _passController.text = prefs.getString('contrasena') ?? ''; // CARGAR CONTRASEÑA TAMBIÉN
+    }
+
     setState(() {});
   }
 
+  // CORREGIDO: Guardar preferencias incluyendo TODAS las contraseñas
   Future<void> _savePrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Guardar configuración de conexión (INCLUYENDO contraseña BD)
     await prefs.setString('ip', _ipController.text);
     await prefs.setString('port', _portController.text);
     await prefs.setString('database', _dbController.text);
     await prefs.setString('dbuser', _dbUserController.text);
-    await prefs.setString('dbpass', hashPassword(_dbPassController.text));
+
+    // CORREGIDO: Guardar contraseña de BD siempre que no esté vacía
+    if (_dbPassController.text.isNotEmpty) {
+      await prefs.setString('dbpass', _dbPassController.text);
+    }
+
+    // Guardar estado de recordar
     await prefs.setBool('recordar', recordarCredenciales);
 
+    // CORREGIDO: Guardar credenciales de usuario SI recordar está activado
     if (recordarCredenciales) {
       await prefs.setString('usuario', _usuarioController.text);
-      await prefs.setString('contrasena', hashPassword(_passController.text));
+      await prefs.setString('contrasena', _passController.text); // GUARDAR CONTRASEÑA EN TEXTO PLANO
     } else {
       await prefs.remove('usuario');
       await prefs.remove('contrasena');
@@ -152,7 +185,56 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
-  Future<void> _loginOffline(BuildContext context) async {
+  // NUEVO: Verificar usuario en SQLite (modo offline)
+  Future<Map<String, dynamic>?> _verificarUsuarioEnSQLite(String usuario, String pass) async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'usuarios.db');
+
+    try {
+      // Verificar si la BD existe
+      final dbExists = await databaseExists(path);
+      print('💾 ¿Base de datos SQLite existe? $dbExists');
+
+      if (!dbExists) {
+        print('⚠️ No hay base de datos SQLite. Se requiere login online exitoso primero.');
+        return null;
+      }
+
+      final db = await openDatabase(path);
+
+      // Verificar si la tabla existe
+      final tables = await db.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='usuarios'"
+      );
+      print('📊 Tablas encontradas: $tables');
+
+      if (tables.isEmpty) {
+        print('⚠️ Tabla "usuarios" no existe en SQLite');
+        await db.close();
+        return null;
+      }
+
+      final List<Map<String, dynamic>> results = await db.query(
+        'usuarios',
+        where: 'usuario = ? AND pass = ?',
+        whereArgs: [usuario, pass],
+      );
+
+      print('🔍 Resultados SQLite: ${results.length} registros encontrados');
+
+      await db.close();
+
+      if (results.isNotEmpty) {
+        return results.first;
+      }
+    } catch (e) {
+      print('❌ Error consultando SQLite: $e');
+    }
+    return null;
+  }
+
+  // CORREGIDO: Login unificado con detección inteligente de timeout
+  Future<void> _loginUnified(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
@@ -160,70 +242,177 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     final usuario = _usuarioController.text.trim();
     final pass = _passController.text.trim();
 
+    // Variable para controlar si mostrar diálogo de timeout
+    bool showTimeoutDialog = false;
+    Timer? timeoutTimer;
+
     try {
-      // Verificar credenciales guardadas
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final usuarioGuardado = prefs.getString('usuario');
-      final contrasenaGuardada = prefs.getString('contrasena');
+      // PASO 1: Verificar si hay conexión a internet
+      final hasInternet = await _hasInternetConnection();
 
-      if (usuarioGuardado == null || contrasenaGuardada == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No hay credenciales guardadas. Debe iniciar sesión en línea al menos una vez.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        setState(() => _loading = false);
-        return;
-      }
+      if (hasInternet) {
+        print('📡 Conexión a internet detectada. Intentando login online...');
 
-      // Validar usuario y contraseña
-      final passHasheada = hashPassword(pass);
+        // Timer para mostrar opción de modo offline después de 10 segundos
+        timeoutTimer = Timer(const Duration(seconds: 10), () {
+          if (_loading && mounted) {
+            showTimeoutDialog = true;
+            _mostrarDialogoModoOffline(context, usuario, pass);
+          }
+        });
 
-      if (usuario == usuarioGuardado && passHasheada == contrasenaGuardada) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✓ Inicio de sesión exitoso (modo offline)'),
-            backgroundColor: Color(0xFF0E8833),
-          ),
-        );
-        Navigator.pushReplacementNamed(context, '/home');
+        final successOnline = await _loginOnline(context, usuario, pass);
+
+        // Cancelar timer si login fue exitoso o falló rápido
+        timeoutTimer.cancel();
+
+        if (successOnline) {
+          setState(() => _loading = false);
+          return;
+        }
+
+        // Si no se mostró el diálogo y falló online, intentar offline
+        if (!showTimeoutDialog) {
+          print('⚠️ Login online falló. Intentando modo offline...');
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Usuario o contraseña incorrecta'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        print('📵 Sin conexión a internet. Modo offline.');
       }
+
+      // PASO 2: Modo OFFLINE (si no se mostró el diálogo)
+      if (!showTimeoutDialog) {
+        final successOffline = await _loginOffline(context, usuario, pass);
+
+        if (!successOffline && !hasInternet) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sin conexión. Debe iniciar sesión en línea al menos una vez.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+
     } catch (e) {
+      timeoutTimer?.cancel();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
     } finally {
-      setState(() => _loading = false);
+      if (!showTimeoutDialog) {
+        setState(() => _loading = false);
+      }
     }
   }
 
-  Future<void> _login(BuildContext context) async {
-    if (!_formKey.currentState!.validate()) return;
+  // NUEVO: Diálogo para ofrecer modo offline cuando tarda mucho
+  void _mostrarDialogoModoOffline(BuildContext context, String usuario, String pass) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(Icons.wifi_off_rounded, color: Colors.orange[700], size: 28),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Conexión lenta',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'El servidor está tardando en responder.',
+                style: TextStyle(fontSize: 15),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '¿Deseas continuar esperando o intentar acceder en modo offline?',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                // Seguir esperando, no hacer nada
+                print('⏳ Usuario decidió seguir esperando...');
+              },
+              child: Text(
+                'Seguir esperando',
+                style: GoogleFonts.inter(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                print('🔄 Usuario optó por modo offline...');
 
-    setState(() => _loading = true);
+                // Desconectar intento online
+                await connection.disconnect();
 
-    final ip = _ipController.text.trim();
-    final port = _portController.text.trim();
-    final dbName = _dbController.text.trim();
-    final dbUser = _dbUserController.text.trim();
-    final dbPass = _dbPassController.text.trim();
-    final usuario = _usuarioController.text.trim();
-    final pass = _passController.text.trim();
+                // Intentar login offline
+                final successOffline = await _loginOffline(context, usuario, pass);
 
+                if (!successOffline) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No hay credenciales guardadas para acceso offline'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+
+                setState(() => _loading = false);
+              },
+              icon: const Icon(Icons.offline_bolt, size: 20),
+              label: const Text('Modo Offline'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[700],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> _loginOnline(BuildContext context, String usuario, String pass) async {
     try {
       if (!isValidInput(usuario) || !isValidInput(pass)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Caracteres no válidos detectados')),
         );
-        return;
+        return false;
+      }
+
+      final ip = _ipController.text.trim();
+      final port = _portController.text.trim();
+      final dbName = _dbController.text.trim();
+      final dbUser = _dbUserController.text.trim();
+      final dbPass = _dbPassController.text.trim();
+
+      // Validar que todos los campos de configuración estén llenos
+      if (ip.isEmpty || port.isEmpty || dbName.isEmpty || dbUser.isEmpty || dbPass.isEmpty) {
+        print('⚠️ Configuración de conexión incompleta');
+        return false;
       }
 
       final usuarioSeguro = sanitizeInput(usuario);
@@ -239,15 +428,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         password: dbPass,
       )
           .timeout(timeoutDuration, onTimeout: () {
-        throw TimeoutException(
-            'La conexión tardó demasiado. Verifique su conexión a internet.');
+        print('⏱️ Timeout en conexión');
+        return false;
       });
 
       if (!connected) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al conectar con el servidor')),
-        );
-        return;
+        print('❌ No se pudo conectar al servidor');
+        return false;
       }
 
       final query = '''
@@ -256,49 +443,145 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       WHERE usuario = '$usuarioSeguro' AND pass = '$passSeguro'
     ''';
 
+      print('🔍 Query ejecutado: $query');
+      print('📤 Usuario enviado: "$usuarioSeguro"');
+      print('📤 Password enviado: "$passSeguro"');
+
       final resultJson = await connection
           .getData(query)
           .timeout(timeoutDuration, onTimeout: () {
-        throw TimeoutException(
-            'La consulta tardó demasiado. El servidor puede estar lento.');
+        print('⏱️ Timeout en consulta');
+        return '[]';
       });
+
+      print('📥 Respuesta del servidor: $resultJson');
+
+      if (resultJson.isEmpty || resultJson == '[]' || resultJson == 'null') {
+        print('❌ Respuesta vacía del servidor');
+        return false;
+      }
 
       final List<dynamic> result = jsonDecode(resultJson);
 
       if (result.isNotEmpty) {
         final userData = Map<String, dynamic>.from(result.first);
-        final userDataSeguro = {
-          ...userData,
-          'pass': hashPassword(userData['pass']),
-        };
 
-        await _saveUserToSQLite(userDataSeguro);
+        // GUARDAR EN SQLite para login offline
+        await _saveUserToSQLite(userData);
         await _savePrefs();
+
+        // Limpiar flag de modo demo
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('modoDemo', false);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ Inicio de sesión exitoso'),
+            content: Text('✓ Inicio de sesión exitoso (Online)'),
             backgroundColor: Color(0xFF0E8833),
           ),
         );
+
         Navigator.pushReplacementNamed(context, '/home');
+        return true;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Usuario o contraseña incorrecta')),
+          const SnackBar(
+            content: Text('Usuario o contraseña incorrecta'),
+            backgroundColor: Colors.red,
+          ),
         );
+        return false;
       }
     } on TimeoutException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Tiempo de espera agotado')),
-      );
+      print('⏱️ Timeout en login online: ${e.message}');
+      return false;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      print('❌ Error en login online: ${e.toString()}');
+      return false;
     } finally {
       await connection.disconnect();
-      setState(() => _loading = false);
     }
+  }
+
+  Future<bool> _loginOffline(BuildContext context, String usuario, String pass) async {
+    try {
+      // INTENTAR con SQLite primero
+      final usuarioSQLite = await _verificarUsuarioEnSQLite(usuario, pass);
+
+      if (usuarioSQLite != null) {
+        await _savePrefs(); // Actualizar preferencias
+
+        // Limpiar flag de modo demo
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('modoDemo', false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Inicio de sesión exitoso (Offline - SQLite)'),
+            backgroundColor: Color(0xFF0E8833),
+          ),
+        );
+
+        Navigator.pushReplacementNamed(context, '/home');
+        return true;
+      }
+
+      // FALLBACK: Verificar con SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final usuarioGuardado = prefs.getString('usuario');
+      final contrasenaGuardada = prefs.getString('contrasena');
+
+      if (usuarioGuardado != null && contrasenaGuardada != null) {
+        if (usuario == usuarioGuardado && pass == contrasenaGuardada) {
+          await prefs.setBool('modoDemo', false);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✓ Inicio de sesión exitoso (Offline - Prefs)'),
+              backgroundColor: Color(0xFF0E8833),
+            ),
+          );
+
+          Navigator.pushReplacementNamed(context, '/home');
+          return true;
+        }
+      }
+
+      // Credenciales incorrectas
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Usuario o contraseña incorrecta'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+
+    } catch (e) {
+      print('❌ Error en login offline: ${e.toString()}');
+      return false;
+    }
+  }
+
+  // NUEVO: Método para modo demo
+  Future<void> _loginDemo(BuildContext context) async {
+    setState(() => _loading = true);
+
+    // Simular pequeña espera
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    // Guardar flag de modo demo
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('modoDemo', true);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('✓ Ingresando en Modo DEMO'),
+        backgroundColor: Color(0xFFFF9800),
+      ),
+    );
+
+    setState(() => _loading = false);
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   @override
@@ -334,28 +617,23 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 children: [
                   const SizedBox(height: 40),
                   // Logo
-                  DecoratedBox(
+                  Container(
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
-                          blurRadius: 12,
-                          offset: Offset(0, 6),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        'images/logo_met.png',
-                        height: 75,
-                        fit: BoxFit.cover,
-                      ),
+                    child: Image.asset(
+                      'images/logo_met.png',
+                      height: 80,
                     ),
                   ),
-
                   const SizedBox(height: 40),
 
                   // Card principal
@@ -442,9 +720,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           ),
                           const SizedBox(height: 20),
 
-                          // Campo Contraseña
+                          // Campo Contraseña (CORREGIDO: teclado numérico)
                           Text(
-                            'Contraseña',
+                            'Contraseña (numérica)',
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -455,6 +733,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           TextFormField(
                             controller: _passController,
                             obscureText: _obscurePassword,
+                            keyboardType: TextInputType.number, // TECLADO NUMÉRICO
                             style: GoogleFonts.inter(
                               fontSize: 15,
                               color: isDark ? Colors.white : Colors.black87,
@@ -549,7 +828,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 ),
                                 shadowColor: const Color(0xFF0E8833).withOpacity(0.3),
                               ),
-                              onPressed: _loading ? null : () => _login(context),
+                              onPressed: _loading ? null : () => _loginUnified(context),
                               child: _loading
                                   ? const SizedBox(
                                 width: 24,
@@ -568,50 +847,41 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
-
-                          // Botón offline
-                          SizedBox(
-                            width: double.infinity,
-                            height: 54,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF9E2B2E),
-                                side: BorderSide(
-                                  color: isDark ? const Color(0xFF9E2B2E).withOpacity(0.3) : const Color(0xFF9E2B2E).withOpacity(0.5),
-                                  width: 1.5,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              onPressed: _loading ? null : () => _loginOffline(context),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.cloud_off_outlined,
-                                    size: 20,
-                                    color: isDark ? const Color(0xFF9E2B2E).withOpacity(0.8) : const Color(0xFF9E2B2E),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Iniciar sin conexión',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // Botón Modo DEMO (discreto)
+                  TextButton(
+                    onPressed: _loading ? null : () => _loginDemo(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.science_outlined,
+                          size: 16,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Modo DEMO',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.white38 : Colors.black38,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
 
                   // Botón configuración
                   TextButton.icon(
@@ -684,7 +954,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   Column(
                     children: [
                       Text(
-                        'versión 10.1.1_3_061025',
+                        'versión 10.1.2_1_141025',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           color: isDark ? Colors.white38 : Colors.black38,
@@ -769,6 +1039,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               return 'Campo requerido';
             }
             return null;
+          },
+          // NUEVO: Auto-guardar al cambiar el texto
+          onChanged: (value) async {
+            await _savePrefs();
+            print('💾 Configuración guardada automáticamente');
           },
         ),
       ],

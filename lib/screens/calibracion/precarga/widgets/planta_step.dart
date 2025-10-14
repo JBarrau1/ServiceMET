@@ -16,12 +16,15 @@ class _PlantaStepState extends State<PlantaStep> {
   final TextEditingController _plantaDirController = TextEditingController();
   final TextEditingController _plantaDepController = TextEditingController();
   final TextEditingController _codigoPlantaController = TextEditingController();
+  final TextEditingController _nombrePlantaController = TextEditingController();
+
 
   @override
   void dispose() {
     _plantaDirController.dispose();
     _plantaDepController.dispose();
     _codigoPlantaController.dispose();
+    _nombrePlantaController.dispose();
     super.dispose();
   }
 
@@ -146,6 +149,20 @@ class _PlantaStepState extends State<PlantaStep> {
             color: Colors.green[700],
           ),
         ).animate(delay: 300.ms).fadeIn().slideX(begin: -0.3),
+
+        const SizedBox(height: 20),
+
+        TextField(
+          controller: _nombrePlantaController,
+          decoration: InputDecoration(
+            labelText: 'Nombre de la Planta *',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            prefixIcon: const Icon(Icons.factory),
+          ),
+          onChanged: (value) => _updatePlantaData(controller),
+        ).animate(delay: 350.ms).fadeIn().slideX(begin: -0.3),
 
         const SizedBox(height: 20),
 
@@ -620,6 +637,7 @@ class _PlantaStepState extends State<PlantaStep> {
       _plantaDirController.text,
       _plantaDepController.text,
       _codigoPlantaController.text,
+      _nombrePlantaController.text,
     );
   }
 }

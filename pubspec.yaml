@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_typeahead: ^5.2.0
+  encrypt: ^5.0.3
   flutter_secure_storage: ^9.2.4
   crypto: ^3.0.6
   package_info_plus: ^9.0.0

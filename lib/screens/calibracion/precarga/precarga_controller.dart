@@ -48,6 +48,9 @@ class PrecargaController extends ChangeNotifier {
   bool get isNewClient => _isNewClient;
 
   // Datos de la planta
+  String? _selectedPlantaNombre;
+  String? get selectedPlantaNombre => _selectedPlantaNombre;
+
   List<dynamic>? _plantas;
   String? _selectedPlantaKey;
   String? _selectedPlantaDir;
@@ -370,6 +373,7 @@ class PrecargaController extends ChangeNotifier {
     );
 
     _selectedPlantaKey = uniqueKey;
+    _selectedPlantaNombre = selectedPlanta['planta']?.toString() ?? '';
     _selectedPlantaDir = selectedPlanta['dir']?.toString() ?? '';
     _selectedPlantaDep = selectedPlanta['dep']?.toString() ?? '';
     _selectedPlantaCodigo = selectedPlanta['codigo_planta']?.toString() ?? '';
@@ -379,10 +383,11 @@ class PrecargaController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPlantaManualData(String direccion, String departamento, String codigo) {
+  void setPlantaManualData(String direccion, String departamento, String codigo, dynamic controller, {String? nombrePlanta}) {
     _selectedPlantaDir = direccion;
     _selectedPlantaDep = departamento;
     _selectedPlantaCodigo = codigo;
+    _selectedPlantaNombre = nombrePlanta ?? 'Planta ${controller.selectedClienteName}'; // Nombre por defecto
 
     generateSugestedSeca();
     updateStepErrors();
@@ -462,7 +467,7 @@ class PrecargaController extends ChangeNotifier {
         'session_id': _generatedSessionId!,
         'cliente': _selectedClienteName ?? 'No especificado',
         'razon_social': _selectedClienteRazonSocial ?? 'No especificado',
-        'planta': _selectedClienteName ?? 'No especificado',
+        'planta': _selectedPlantaNombre ?? 'No especificado',
         'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
         'cod_planta': _selectedPlantaCodigo ?? 'No especificado',
@@ -790,7 +795,7 @@ class PrecargaController extends ChangeNotifier {
         'fecha_servicio': fechaServicio,
         'cliente': _selectedClienteName ?? 'No especificado',
         'razon_social': _selectedClienteRazonSocial ?? 'No especificado',
-        'planta': _selectedClienteName ?? 'No especificado',
+        'planta': _selectedPlantaNombre ?? 'No especificado',
         'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
         'cod_planta': _selectedPlantaCodigo ?? 'No especificado',
