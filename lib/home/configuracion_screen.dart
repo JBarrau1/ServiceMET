@@ -12,7 +12,7 @@ class ConfiguracionScreen extends StatefulWidget {
 
 class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   bool isDarkMode = false;
-  String appVersion = '10.1.1_6_141025';
+  String appVersion = '10.1.1_7_151025';
   String appName = 'METRICA LTDA';
 
   @override
@@ -85,6 +85,40 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 70,
+        title: const Text(
+          'CONFIGURACIÓN',
+          style: TextStyle(
+            fontSize: 16.0,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.transparent
+            : Colors.white,
+        elevation: 0,
+        flexibleSpace: Theme.of(context).brightness == Brightness.dark
+            ? ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(
+              color: Colors.black.withOpacity(0.4),
+            ),
+          ),
+        )
+            : null,
+        iconTheme: IconThemeData(color: Theme.of(context).iconTheme.color),
+        titleTextStyle: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : Colors.black,
+        ),
+        centerTitle: true,
+        actions: [],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -117,19 +151,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                         MaterialPageRoute(builder: (context) => RespaldoScreen()),
                       );
                     },
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Cerrar sesión
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Cerrar Sesión'),
-                    subtitle: const Text('Salir de la aplicación'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _cerrarSesion(context),
                   ),
                 ),
               ],

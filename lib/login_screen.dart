@@ -254,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         print('📡 Conexión a internet detectada. Intentando login online...');
 
         // Timer para mostrar opción de modo offline después de 10 segundos
-        timeoutTimer = Timer(const Duration(seconds: 10), () {
+        timeoutTimer = Timer(const Duration(seconds: 3), () {
           if (_loading && mounted) {
             showTimeoutDialog = true;
             _mostrarDialogoModoOffline(context, usuario, pass);
@@ -319,7 +319,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'Conexión lenta',
+                  'Sin Conexion a la Red',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -330,12 +330,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'El servidor está tardando en responder.',
+                'No se encuentra dentro de la red de METRICA, debe acceder modo Offline.',
                 style: TextStyle(fontSize: 15),
               ),
               const SizedBox(height: 12),
               const Text(
-                '¿Deseas continuar esperando o intentar acceder en modo offline?',
+                '¿Continuar en modo offline?',
                 style: TextStyle(fontSize: 14, color: Colors.black54),
               ),
             ],
@@ -476,7 +476,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ Inicio de sesión exitoso (Online)'),
+            content: Text('Inicio de sesión exitoso'),
             backgroundColor: Color(0xFF0E8833),
           ),
         );
@@ -517,7 +517,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ Inicio de sesión exitoso (Offline - SQLite)'),
+            content: Text('Inicio de sesión exitoso'),
             backgroundColor: Color(0xFF0E8833),
           ),
         );
@@ -537,7 +537,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✓ Inicio de sesión exitoso (Offline - Prefs)'),
+              content: Text('Inicio de sesión exitoso'),
               backgroundColor: Color(0xFF0E8833),
             ),
           );
@@ -575,7 +575,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('✓ Ingresando en Modo DEMO'),
+        content: Text('Ingresando en Modo DESCONECTADO'),
         backgroundColor: Color(0xFFFF9800),
       ),
     );
@@ -722,7 +722,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
                           // Campo Contraseña (CORREGIDO: teclado numérico)
                           Text(
-                            'Contraseña (numérica)',
+                            'Contraseña',
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -870,7 +870,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Modo DEMO',
+                          'Modo DESCONECTADO',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -954,7 +954,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   Column(
                     children: [
                       Text(
-                        'versión 10.1.2_1_141025',
+                        'versión 10.1.1_7_151025',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           color: isDark ? Colors.white38 : Colors.black38,

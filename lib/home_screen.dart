@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int totalServiciosSop = 0;
   String fechaUltimaPrecarga = "Sin datos";
 
-  // Variables para la navegación
+  // Variables para la navegación (ahora solo 3 tabs)
   int _currentIndex = 0;
   final PageController _pageController = PageController();
 
@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initializeDateFormatting();
-    _checkModoDemo(); // Verificar modo DEMO
+    _checkModoDemo();
     _fetchUserData();
     _loadDashboardData();
   }
@@ -78,12 +78,11 @@ class _HomeScreenState extends State<HomeScreen> {
     await initializeDateFormatting('es_ES', null);
   }
 
-  // Lista de pantallas para cada tab
+  // Lista de pantallas para cada tab (sin Configuración)
   List<Widget> _screens(BuildContext context) => [
-    _buildHomeContent(context), // Contenido del home
+    _buildHomeContent(context),
     ServiciosScreen(userName: userName),
     OtrosApartadosScreen(userName: userName),
-    ConfiguracionScreen(),
   ];
 
   // Cargar datos del dashboard
@@ -821,19 +820,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : (isDarkMode ? Colors.white70 : Colors.black54),
                     size: 20,
                   ),
-                  label: 'Otros',
-                ),
-                NavigationDestination(
-                  icon: Icon(
-                    FontAwesomeIcons.cog,
-                    color: _modoDemo
-                        ? (isDarkMode ? Colors.white24 : Colors.black26)
-                        : _currentIndex == 3
-                        ? const Color(0xFFE8CB0C)
-                        : (isDarkMode ? Colors.white70 : Colors.black54),
-                    size: 20,
-                  ),
-                  label: 'Configuración',
+                  label: 'Precarga',
                 ),
               ],
               selectedIndex: _currentIndex,
@@ -948,6 +935,25 @@ class _HomeScreenState extends State<HomeScreen> {
               elevation: 0,
               centerTitle: true,
               actions: [
+                // Botón de Configuración en el AppBar
+                if (!_modoDemo)
+                  IconButton(
+                    icon: Icon(
+                      FontAwesomeIcons.cog,
+                      size: 20,
+                      color: isDarkMode ? Colors.white70 : Colors.black54,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ConfiguracionScreen(),
+                        ),
+                      );
+                    },
+                    tooltip: 'Configuración',
+                  ),
+
                 // Botón para salir del modo DEMO
                 if (_modoDemo)
                   IconButton(
@@ -969,11 +975,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: const Color(0xFFFF9800),
                               ),
                               const SizedBox(width: 12),
-                              Text(
-                                'Salir del modo DESCONECTADO',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: Text(
+                                  'Salir del modo DESCONECTADO',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1050,9 +1058,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return 'SERVICIOS';
       case 2:
-        return 'OTROS';
-      case 3:
-        return 'CONFIGURACIÓN';
+        return 'PRECARGA';
       default:
         return 'INICIO';
     }
