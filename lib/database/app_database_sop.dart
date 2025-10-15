@@ -237,7 +237,6 @@ class DatabaseHelperSop {
 
   Future<void> exportAllTablesToCSV() async {
     final tables = [
-      'inf_cliente_balanza',
       'relevamiento_de_datos',
       'ajustes_metrológicos',
       'diagnostico',

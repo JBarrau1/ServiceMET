@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/screens/calibracion/precarga/precarga_screen.dart';
-import 'package:service_met/screens/soporte/soporte_screen.dart';
+import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 
 
 class ServiciosScreen extends StatelessWidget {
@@ -70,29 +70,12 @@ class ServiciosScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => SoporteScreen(userName: userName)),
+                      builder: (context) => PrecargaScreenSop(userName: userName)),
                 );
               },
               color: const Color(0xFF89B2CC),
               delay: 500.ms,
             ),
-
-            //_buildServiceCard(
-              //context,
-              //icon: FontAwesomeIcons.mapMarkedAlt,
-              //title: 'Selección de Área',
-              //subtitle: 'Gestión y selección de áreas de trabajo',
-              //onTap: () {
-                //Navigator.push(
-                  //context,
-                  //MaterialPageRoute(
-                      //builder: (context) =>
-                          //AreaSeleccionScreen(userName: userName)),
-                //);
-              //},
-              //color: const Color(0xFFD6D4A7),
-              //delay: 600.ms,
-            //),
 
             const SizedBox(height: 30),
 
