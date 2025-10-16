@@ -329,7 +329,7 @@ class DatabaseHelperSop {
         categoria TEXT DEFAULT '',
         instrumento TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',

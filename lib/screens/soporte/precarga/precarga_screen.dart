@@ -2,6 +2,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -13,9 +14,7 @@ import 'widgets/cliente_step.dart';
 import 'widgets/planta_step.dart';
 import 'widgets/seca_step.dart';
 import 'widgets/balanza_step.dart';
-import 'widgets/equipos_step.dart';
 import 'widgets/tipo_servicio_step.dart';
-
 
 
 class PrecargaScreenSop extends StatefulWidget {
@@ -87,7 +86,6 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
   Future<void> _initializeData() async {
     try {
       await controller.fetchClientes();
-      await controller.fetchEquipos();
 
       if (widget.sessionId != null && widget.secaValue != null) {
         await _loadExistingSession();
@@ -215,7 +213,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
           child: AppBar(
             toolbarHeight: 70,
             title: Text(
-              'CALIBRACIÓN',
+              'SOPORTE TÉCNICO',
               style: GoogleFonts.poppins(
                 color: isDarkMode ? Colors.white : Colors.black,
                 fontWeight: FontWeight.w700,
@@ -257,11 +255,129 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
           selectedCliente: controller.selectedClienteId ?? '',
           loadFromSharedPreferences: false,
         );
-      case 4:
-        return const EquiposStep();
+      case 4: // MODIFICAR ESTE CASE
+      // En soporte técnico no hay selección de equipos
+      // Mostrar pantalla de confirmación final
+        return _buildFinalConfirmationStep(controller);
       default:
         return const SizedBox();
     }
+  }
+
+  Widget _buildFinalConfirmationStep(PrecargaControllerSop controller) {
+    return Column(
+      children: [
+        Text(
+          'CONFIRMACIÓN FINAL',
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : const Color(0xFF2C3E50),
+          ),
+        ).animate().fadeIn(duration: 600.ms),
+
+        const SizedBox(height: 30),
+
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue[50]!, Colors.blue[100]!],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.blue[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700]),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Resumen del Servicio',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[800],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              _buildSummaryRow('Tipo de Servicio', controller.selectedTipoServicioLabel ?? 'N/A'),
+              _buildSummaryRow('OTST', controller.generatedSeca ?? 'N/A'),
+              _buildSummaryRow('Cliente', controller.selectedClienteName ?? 'N/A'),
+              _buildSummaryRow('Planta', controller.selectedPlantaNombre ?? 'N/A'),
+              _buildSummaryRow('Código Métrica', _balanzaControllers['cod_metrica']?.text ?? 'N/A'),
+              _buildSummaryRow('Técnico', widget.userName),
+              _buildSummaryRow('Fecha', _fechaController.text),
+
+              const SizedBox(height: 20),
+
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green[700]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Presione "Finalizar y Continuar" para guardar y proceder al servicio.',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.green[800],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.3),
+      ],
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              '$label:',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[800],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBottomButtons(PrecargaControllerSop controller) {
@@ -471,8 +587,6 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
   }
 
   Future<void> _saveAndNavigate() async {
-    // Validar campos finales
-    if (!_validateFinalFields()) return;
 
     try {
       // Preparar datos de la balanza
@@ -658,25 +772,6 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
         );
       },
     );
-  }
-
-  bool _validateFinalFields() {
-    if (_nRecaController.text.trim().isEmpty) {
-      _showSnackBar('Por favor ingrese el Nº RECA');
-      return false;
-    }
-
-    if (_stickerController.text.trim().isEmpty) {
-      _showSnackBar('Por favor ingrese el Nº Sticker');
-      return false;
-    }
-
-    if (controller.getAllSelectedEquipos().isEmpty) {
-      _showSnackBar('Por favor seleccione al menos un equipo');
-      return false;
-    }
-
-    return true;
   }
 
   void _showSnackBar(String message, {bool isError = false}) {

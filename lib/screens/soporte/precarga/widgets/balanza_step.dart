@@ -100,11 +100,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
             const SizedBox(height: 30),
 
-            // Campos RECA y Sticker
-            _buildRecaAndStickerFields(),
-
-            const SizedBox(height: 30),
-
             // Sección de fotografías
             _buildPhotoSection(controller),
           ],
@@ -530,28 +525,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
         ],
       ),
     );
-  }
-
-  Widget _buildRecaAndStickerFields() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildTextField(
-            controller: widget.nRecaController,
-            label: 'N° RECA *',
-            prefixIcon: Icons.assignment,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildTextField(
-            controller: widget.stickerController,
-            label: 'N° Sticker *',
-            prefixIcon: Icons.local_offer,
-          ),
-        ),
-      ],
-    ).animate(delay: 600.ms).fadeIn().slideX(begin: 0.3);
   }
 
   Widget _buildPhotoSection(PrecargaControllerSop controller) {

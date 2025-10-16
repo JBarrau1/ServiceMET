@@ -12,7 +12,7 @@ class StepIndicator extends StatelessWidget {
     return Consumer<PrecargaControllerSop>(
         builder: (context, controller, child) {
           // MODIFICAR ESTA LÍNEA:
-          final steps = ['Servicio', 'Cliente', 'Planta', 'SECA', 'Balanza', 'Equipos'];
+          final steps = ['Servicio', 'Cliente', 'Planta', 'OTST', 'Balanza', 'Confirmar'];
 
           return Container(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),

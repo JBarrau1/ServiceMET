@@ -167,24 +167,6 @@ class PrecargaControllerSop extends ChangeNotifier {
         }
         return null;
 
-      case 4: // Equipos
-        if (_selectedEquipos.isEmpty && _selectedTermohigrometros.isEmpty) {
-          return 'Debe seleccionar al menos un equipo';
-        }
-        for (var equipo in _selectedEquipos) {
-          final cantidad = equipo['cantidad']?.toString() ?? '';
-          if (cantidad.isEmpty) {
-            return 'Todos los equipos deben tener cantidad especificada';
-          }
-        }
-        for (var termo in _selectedTermohigrometros) {
-          final cantidad = termo['cantidad']?.toString() ?? '';
-          if (cantidad.isEmpty) {
-            return 'Todos los termohigrometros deben tener cantidad especificada';
-          }
-        }
-        return null;
-
       default:
         return null;
     }
@@ -377,7 +359,6 @@ class PrecargaControllerSop extends ChangeNotifier {
     notifyListeners();
 
     fetchPlantas(_selectedClienteId!);
-    fetchEquipos();
   }
 
   void selectNewClient(String nombreComercial, String razonSocial) {
@@ -676,79 +657,6 @@ class PrecargaControllerSop extends ChangeNotifier {
     notifyListeners();
   }
 
-  // MÉTODOS DE EQUIPOS
-  Future<void> fetchEquipos() async {
-    try {
-      String path = join(await getDatabasesPath(), 'precarga_database.db');
-      final db = await openDatabase(path);
-
-      final List<Map<String, dynamic>> equiposList = await db.query(
-        'equipamientos',
-        where: "estado != 'DESACTIVADO'",
-      );
-
-      _equipos = equiposList;
-      await db.close();
-      notifyListeners();
-    } catch (e) {
-      throw Exception('Error al cargar equipos: $e');
-    }
-  }
-
-  void addEquipo(Map<String, dynamic> equipo, String tipo, String cantidad) {
-    final equipoWithType = {
-      ...equipo,
-      'tipo': tipo,
-      'cantidad': cantidad,
-    };
-
-    if (tipo == 'pesa') {
-      if (_selectedEquipos.length < 5) {
-        _selectedEquipos.add(equipoWithType);
-      }
-    } else if (tipo == 'termohigrometro') {
-      if (_selectedTermohigrometros.length < 2) {
-        _selectedTermohigrometros.add(equipoWithType);
-      }
-    }
-
-    updateStepErrors();
-    notifyListeners();
-  }
-
-  void removeEquipo(String codInstrumento, String tipo) {
-    if (tipo == 'pesa') {
-      _selectedEquipos.removeWhere((e) =>
-      e['cod_instrumento'] == codInstrumento && e['tipo'] == tipo);
-    } else if (tipo == 'termohigrometro') {
-      _selectedTermohigrometros.removeWhere((e) =>
-      e['cod_instrumento'] == codInstrumento && e['tipo'] == tipo);
-    }
-
-    updateStepErrors();
-    notifyListeners();
-  }
-
-  void updateEquipoCantidad(String codInstrumento, String tipo, String cantidad) {
-    List<Map<String, dynamic>> targetList = tipo == 'pesa'
-        ? _selectedEquipos
-        : _selectedTermohigrometros;
-
-    for (var equipo in targetList) {
-      if (equipo['cod_instrumento'] == codInstrumento && equipo['tipo'] == tipo) {
-        equipo['cantidad'] = cantidad;
-        break;
-      }
-    }
-
-    updateStepErrors();
-    notifyListeners();
-  }
-
-  List<Map<String, dynamic>> getAllSelectedEquipos() {
-    return [..._selectedEquipos, ..._selectedTermohigrometros];
-  }
-
   Future<void> takePhoto() async {
     final photo = await _imagePicker.pickImage(source: ImageSource.camera);
     if (photo != null) {
@@ -778,36 +686,6 @@ class PrecargaControllerSop extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       throw Exception('Error al eliminar foto: $e');
-    }
-  }
-
-  Future<void> _renameRemainingPhotos() async {
-    try {
-      final photos = _balanzaPhotos['identificacion'] ?? [];
-
-      for (int i = 0; i < photos.length; i++) {
-        final currentFile = photos[i];
-        final photoNumber = (i + 1).toString().padLeft(2, '0');
-
-        final folderName = _baseFotoPath!.split('/').last;
-        final codMetrica = folderName.split('_').first;
-
-        final newFileName = '${codMetrica}_$photoNumber.jpg';
-        final newFilePath = join(_baseFotoPath!, newFileName);
-
-        if (currentFile.path != newFilePath) {
-          try {
-            final renamedFile = await currentFile.rename(newFilePath);
-            photos[i] = renamedFile;
-          } catch (e) {
-            final newFile = await currentFile.copy(newFilePath);
-            await currentFile.delete();
-            photos[i] = newFile;
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error al renombrar fotos: $e');
     }
   }
 
@@ -901,27 +779,6 @@ class PrecargaControllerSop extends ChangeNotifier {
         // Campos adicionales según tu necesidad
         ...balanzaData,
       };
-
-      // Guardar equipos (pesas 1-5)
-      for (int i = 0; i < _selectedEquipos.length && i < 5; i++) {
-        final pesa = _selectedEquipos[i];
-        registro['equipo${i + 1}'] = pesa['cod_instrumento']?.toString() ?? '';
-        registro['certificado${i + 1}'] = pesa['cert_fecha']?.toString() ?? '';
-        registro['ente_calibrador${i + 1}'] = pesa['ente_calibrador']?.toString() ?? '';
-        registro['estado${i + 1}'] = pesa['estado']?.toString() ?? '';
-        registro['cantidad${i + 1}'] = pesa['cantidad']?.toString() ?? '1';
-      }
-
-      // Guardar termohigrómetros (equipos 6-7)
-      for (int i = 0; i < _selectedTermohigrometros.length && i < 2; i++) {
-        final equipoNum = i + 6;
-        final termo = _selectedTermohigrometros[i];
-        registro['equipo$equipoNum'] = termo['cod_instrumento']?.toString() ?? '';
-        registro['certificado$equipoNum'] = termo['cert_fecha']?.toString() ?? '';
-        registro['ente_calibrador$equipoNum'] = termo['ente_calibrador']?.toString() ?? '';
-        registro['estado$equipoNum'] = termo['estado']?.toString() ?? '';
-        registro['cantidad$equipoNum'] = termo['cantidad']?.toString() ?? '1';
-      }
 
       // Guardar en la tabla correspondiente
       await dbHelperSop.upsertRegistro(_tableName!, registro);

@@ -1,7 +1,6 @@
 // widgets/seca_step.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../precarga_controller.dart';
@@ -43,9 +42,9 @@ class _SecaStepState extends State<SecaStep> {
     _cotizacionController.text = _getCotizacionPart(controller);
   }
 
-  String _getFixedSecaPart(PrecargaControllerSop controller) {
-    final seca = controller.generatedSeca ?? '';
-    final parts = seca.split('-');
+  String _getFixedOtstPart(PrecargaControllerSop controller) {
+    final otst = controller.generatedSeca ?? ''; // Internamente sigue siendo _generatedSeca
+    final parts = otst.split('-');
     if (parts.length >= 3) {
       return '${parts[0]}-${parts[1]}-${parts[2]}-';
     }
@@ -53,8 +52,8 @@ class _SecaStepState extends State<SecaStep> {
   }
 
   String _getCotizacionPart(PrecargaControllerSop controller) {
-    final seca = controller.generatedSeca ?? '';
-    final parts = seca.split('-');
+    final otst = controller.generatedSeca ?? '';
+    final parts = otst.split('-');
     if (parts.length >= 4) {
       return parts[3];
     }
@@ -67,9 +66,9 @@ class _SecaStepState extends State<SecaStep> {
       builder: (context, controller, child) {
         return Column(
           children: [
-            // Título
+            // Título - CAMBIAR A OTST
             Text(
-              'CÓDIGO SECA GENERADO',
+              'CÓDIGO OTST GENERADO',
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -86,8 +85,8 @@ class _SecaStepState extends State<SecaStep> {
 
             const SizedBox(height: 30),
 
-            // Card principal del SECA
-            _buildSecaCard(controller, context),
+            // Card principal del OTST
+            _buildOtstCard(controller, context),
 
             const SizedBox(height: 30),
 
@@ -129,10 +128,11 @@ class _SecaStepState extends State<SecaStep> {
             ],
           ),
           const SizedBox(height: 16),
+          _buildSummaryRow('Tipo de Servicio', controller.selectedTipoServicioLabel ?? 'N/A'),
+          const SizedBox(height: 8),
           _buildSummaryRow('Cliente', controller.selectedClienteName ?? 'N/A'),
           const SizedBox(height: 8),
-          _buildSummaryRow(
-              'Código Planta', controller.selectedPlantaCodigo ?? 'N/A'),
+          _buildSummaryRow('Código Planta', controller.selectedPlantaCodigo ?? 'N/A'),
           const SizedBox(height: 8),
           _buildSummaryRow('Técnico', widget.userName),
           const SizedBox(height: 8),
@@ -146,7 +146,7 @@ class _SecaStepState extends State<SecaStep> {
     return Row(
       children: [
         SizedBox(
-          width: 100,
+          width: 120,
           child: Text(
             '$label:',
             style: GoogleFonts.inter(
@@ -169,7 +169,7 @@ class _SecaStepState extends State<SecaStep> {
     );
   }
 
-  Widget _buildSecaCard(PrecargaControllerSop controller, BuildContext context) {
+  Widget _buildOtstCard(PrecargaControllerSop controller, BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -198,9 +198,9 @@ class _SecaStepState extends State<SecaStep> {
       ),
       child: Column(
         children: [
-          // Etiqueta
+          // Etiqueta - CAMBIAR A OTST
           Text(
-            controller.secaConfirmed ? 'SECA Confirmado:' : 'SECA Sugerido:',
+            controller.secaConfirmed ? 'OTST Confirmado:' : 'OTST Sugerido:',
             style: GoogleFonts.inter(
               fontSize: 16,
               color: controller.secaConfirmed
@@ -212,7 +212,7 @@ class _SecaStepState extends State<SecaStep> {
 
           const SizedBox(height: 12),
 
-          // Código SECA - Confirmado (solo lectura)
+          // Código OTST - Confirmado (solo lectura)
           if (controller.secaConfirmed)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -240,7 +240,7 @@ class _SecaStepState extends State<SecaStep> {
               ),
             ).animate(delay: 300.ms).fadeIn()
           else
-          // Código SECA - No confirmado (editable)
+          // Código OTST - No confirmado (editable)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -260,7 +260,7 @@ class _SecaStepState extends State<SecaStep> {
                 children: [
                   // Parte fija
                   Text(
-                    _getFixedSecaPart(controller),
+                    _getFixedOtstPart(controller),
                     style: GoogleFonts.robotoMono(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -309,16 +309,13 @@ class _SecaStepState extends State<SecaStep> {
                             maxLength}) =>
                       null,
                       onChanged: (value) {
-                        // Validar formato mientras escribe
                         if (value.isEmpty) {
-                          return; // Permitir campo vacío temporalmente
+                          return;
                         }
 
-                        // Solo permitir C seguido de hasta 2 dígitos
                         if (!RegExp(r'^C\d{0,2}$').hasMatch(value)) {
-                          // Revertir al valor anterior
                           final previousText = _cotizacionController.text;
-                          if (previousText.length > 0) {
+                          if (previousText.isNotEmpty) {
                             _cotizacionController.text = previousText.substring(0, previousText.length - 1);
                             _cotizacionController.selection = TextSelection.fromPosition(
                               TextPosition(offset: _cotizacionController.text.length),
@@ -327,16 +324,14 @@ class _SecaStepState extends State<SecaStep> {
                           return;
                         }
 
-                        // Si tiene el formato completo C## (por ejemplo C05)
                         if (RegExp(r'^C\d{2}$').hasMatch(value)) {
                           try {
                             final ctrl = Provider.of<PrecargaControllerSop>(
                               context,
                               listen: false,
                             );
-                            // Actualizar el SECA con el nuevo número
                             ctrl.updateNumeroCotizacion(value);
-                            debugPrint('SECA actualizado a: ${ctrl.generatedSeca}');
+                            debugPrint('OTST actualizado a: ${ctrl.generatedSeca}');
                           } catch (e) {
                             debugPrint('Error al actualizar cotización: $e');
                           }
@@ -424,7 +419,7 @@ class _SecaStepState extends State<SecaStep> {
       PrecargaControllerSop controller, BuildContext context) {
     return Column(
       children: [
-        // Información sobre formato SECA
+        // Información sobre formato OTST
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -445,7 +440,7 @@ class _SecaStepState extends State<SecaStep> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Formato del Código SECA',
+                      'Formato del Código OTST',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -503,7 +498,7 @@ class _SecaStepState extends State<SecaStep> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Procederá a la identificación de la balanza y selección de equipos de calibración.',
+                        'Procederá a la identificación de la balanza para el servicio de soporte técnico.',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: Colors.green[700],
@@ -547,7 +542,7 @@ class _SecaStepState extends State<SecaStep> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'La información del cliente, planta y SECA se ha guardado en el sistema y estará disponible para futuros servicios.',
+                      'La información del servicio, cliente, planta y OTST se ha guardado en el sistema.',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: Colors.purple[700],
