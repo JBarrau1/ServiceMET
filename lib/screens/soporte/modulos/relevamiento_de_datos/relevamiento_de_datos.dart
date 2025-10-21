@@ -16,20 +16,16 @@ import 'package:sqflite/sqflite.dart';
 import '../../componentes/test_container.dart';
 
 class RelevamientoDeDatosScreen extends StatefulWidget {
-  final String dbName;
-  final String dbPath;
-  final String otValue;
-  final String selectedCliente;
-  final String selectedPlantaNombre;
+  final String nReca;
   final String codMetrica;
+  final String secaValue;
+  final String sessionId;
 
   const RelevamientoDeDatosScreen({
     super.key,
-    required this.dbName,
-    required this.dbPath,
-    required this.otValue,
-    required this.selectedCliente,
-    required this.selectedPlantaNombre,
+    required this.secaValue,
+    required this.sessionId,
+    required this.nReca,
     required this.codMetrica,
   });
 
@@ -149,7 +145,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
     _initializeFieldData();
     _initializeCommentControllers();
     _setupAllAutoSaveListeners();
-    _loadExistingData(context);
   }
 
   void _initializeFieldData() {
@@ -226,31 +221,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
         }
       }
 
-      _autoSaveData();
     });
-  }
-
-  Future<void> _loadExistingData(context) async {
-    try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
-
-      final tableExists = await _doesTableExist(db, 'relevamiento_de_datos');
-      if (!tableExists) {
-        await db.close();
-        return;
-      }
-
-      final existingData = await db
-          .query('relevamiento_de_datos', where: 'id = ?', whereArgs: [1]);
-      await db.close();
-
-      if (existingData.isNotEmpty) {
-        _loadSavedData(context, existingData.first);
-      }
-    } catch (e) {
-      debugPrint('Error cargando datos existentes: $e');
-    }
   }
 
   Future<bool> _doesTableExist(Database db, String tableName) async {
@@ -280,57 +251,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
       return false;
     }
     return true;
-  }
-
-  Future<void> _autoSaveData({bool force = false}) async {
-    if (_isAutoSaving && !force) return;
-
-    if (_debounceTimer?.isActive ?? false) {
-      _debounceTimer?.cancel();
-    }
-
-    _debounceTimer = Timer(const Duration(seconds: 2), () async {
-      _isAutoSaving = true;
-
-      try {
-        final path = join(widget.dbPath, '${widget.dbName}.db');
-        final db = await openDatabase(path);
-
-        final Map<String, dynamic> relevamientoData = _prepareDataForSave();
-
-        final existingRecord = await db.query(
-          'relevamiento_de_datos',
-          where: 'id = ?',
-          whereArgs: [1],
-        );
-
-        if (existingRecord.isNotEmpty) {
-          await db.update(
-            'relevamiento_de_datos',
-            relevamientoData,
-            where: 'id = ?',
-            whereArgs: [1],
-          );
-        } else {
-          await db.insert(
-            'relevamiento_de_datos',
-            relevamientoData,
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
-        }
-
-        await db.close();
-        debugPrint('Datos guardados automáticamente');
-
-        if (!_isDataSaved.value) {
-          _isDataSaved.value = true;
-        }
-      } catch (e) {
-        debugPrint('Error en autoguardado: $e');
-      } finally {
-        _isAutoSaving = false;
-      }
-    });
   }
 
   Map<String, dynamic> _prepareDataForSave() {
@@ -593,7 +513,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                     setState(() {
                       _fieldData[label] ??= {};
                       _fieldData[label]!['value'] = newValue;
-                      _autoSaveData();
                     });
                   }
                 },
@@ -664,7 +583,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                     _commentControllers[label]?.clear();
                   }
                 },
-                onChanged: (_) => _autoSaveData(),
+
               ),
             ),
             const SizedBox(width: 10),
@@ -874,7 +793,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
       final zipData = zipEncoder.encode(archive);
       final uint8ListData = Uint8List.fromList(zipData);
       final zipFileName =
-          '${widget.otValue}_${widget.codMetrica}_relevamiento_de_datos_fotos.zip';
+          '${widget.secaValue}_${widget.codMetrica}_relevamiento_de_datos_fotos.zip';
 
       final params = SaveFileDialogParams(
         data: uint8ListData,

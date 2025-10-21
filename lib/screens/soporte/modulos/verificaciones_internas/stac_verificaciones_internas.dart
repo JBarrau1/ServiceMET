@@ -14,20 +14,16 @@ import 'package:service_met/screens/soporte/modulos/verificaciones_internas/fin_
 import 'package:sqflite/sqflite.dart';
 
 class StacVerificacionesInternasScreen extends StatefulWidget {
-  final String dbName;
-  final String dbPath;
-  final String otValue;
-  final String selectedCliente;
-  final String selectedPlantaNombre;
+  final String nReca;
+  final String secaValue;
+  final String sessionId;
   final String codMetrica;
 
   const StacVerificacionesInternasScreen({
     super.key,
-    required this.dbName,
-    required this.dbPath,
-    required this.otValue,
-    required this.selectedCliente,
-    required this.selectedPlantaNombre,
+    required this.nReca,
+    required this.secaValue,
+    required this.sessionId,
     required this.codMetrica,
   });
 

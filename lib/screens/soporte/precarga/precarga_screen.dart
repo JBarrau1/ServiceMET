@@ -8,6 +8,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/screens/calibracion/servicio_screen.dart';
 import '../../../database/app_database.dart';
+import '../modulos/ajuste_verificaciones/stac_ajuste_verificaciones.dart';
+import '../modulos/diagnostico/stac_diagnostico.dart';
+import '../modulos/instalacion/stac_instalacion.dart';
+import '../modulos/mnt_correctivo/stac_mnt_correctivo.dart';
+import '../modulos/mnt_prv_avanzado/stac_mnt_prv_avanzado.dart';
+import '../modulos/mnt_prv_avanzado/stil_mnt_prv_avanzado.dart';
+import '../modulos/mnt_prv_regular/mnt_prv_regular_stil/stil_mnt_prv_regular.dart';
+import '../modulos/mnt_prv_regular/stac_mnt_prv_regular.dart';
+import '../modulos/relevamiento_de_datos/relevamiento_de_datos.dart';
+import '../modulos/verificaciones_internas/stac_verificaciones_internas.dart';
 import 'precarga_controller.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/cliente_step.dart';
@@ -587,7 +597,6 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
   }
 
   Future<void> _saveAndNavigate() async {
-
     try {
       // Preparar datos de la balanza
       final balanzaData = <String, String>{};
@@ -606,11 +615,10 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       _showSnackBar('Datos guardados correctamente');
 
-      // NUEVO: Mostrar confirmación de guardado de fotos
+      // Mostrar confirmación de guardado de fotos
       if (controller.fotosTomadas && controller.baseFotoPath != null) {
         final photoCount = controller.balanzaPhotos['identificacion']?.length ?? 0;
 
-        // Diálogo de confirmación con detalles
         await _showPhotosSavedDialog(
           photoCount: photoCount,
           directoryPath: controller.baseFotoPath!,
@@ -628,22 +636,109 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
         debugPrint('Error al crear ZIP: $e');
       }
 
-      // Navegar al siguiente módulo
+      // Navegar a la pantalla correspondiente según el tipo de servicio
       if (mounted) {
+        final destinationScreen = _getDestinationScreen(controller);
+
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ServicioScreen(
-              codMetrica: _balanzaControllers['cod_metrica']!.text,
-              nReca: _nRecaController.text,
-              secaValue: controller.generatedSeca!,
-              sessionId: controller.generatedSessionId!,
-            ),
+            builder: (context) => destinationScreen,
           ),
         );
       }
     } catch (e) {
       _showSnackBar('Error al guardar: $e', isError: true);
+    }
+  }
+
+  Widget _getDestinationScreen(PrecargaControllerSop controller) {
+    final codMetrica = _balanzaControllers['cod_metrica']!.text;
+    final nReca = _nRecaController.text;
+    final secaValue = controller.generatedSeca!;
+    final sessionId = controller.generatedSessionId!;
+
+    switch (controller.selectedTipoServicio) {
+      case 'relevamiento_de_datos':
+        return RelevamientoDeDatosScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'ajustes_metrologicos':
+        return StacAjusteVerificacionesScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'diagnostico':
+        return StacDiagnosticoScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'instalacion':
+        return StacInstalacionScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'mnt_correctivo':
+        return StacMntCorrectivoScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'mnt_prv_avanzado_stac':
+        return StacMntPrvAvanzadoStacScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'mnt_prv_avanzado_stil':
+        return StilMntPrvAvanzadoStacScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'mnt_prv_regular_stac':
+        return StacMntPrvRegularStacScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'mnt_prv_regular_stil':
+        return StilMntPrvRegularStacScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
+      case 'verificaciones_internas':
+        return StacVerificacionesInternasScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
+
     }
   }
 

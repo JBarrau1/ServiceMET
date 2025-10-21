@@ -15,20 +15,16 @@ import 'package:sqflite/sqflite.dart';
 import 'fin_servicio_stac.dart';
 
 class StacMntPrvRegularStacScreen extends StatefulWidget {
-  final String dbName;
-  final String dbPath;
-  final String otValue;
-  final String selectedCliente;
-  final String selectedPlantaNombre;
+  final String nReca;
+  final String secaValue;
+  final String sessionId;
   final String codMetrica;
 
   const StacMntPrvRegularStacScreen({
     super.key,
-    required this.dbName,
-    required this.dbPath,
-    required this.otValue,
-    required this.selectedCliente,
-    required this.selectedPlantaNombre,
+    required this.nReca,
+    required this.secaValue,
+    required this.sessionId,
     required this.codMetrica,
   });
 
