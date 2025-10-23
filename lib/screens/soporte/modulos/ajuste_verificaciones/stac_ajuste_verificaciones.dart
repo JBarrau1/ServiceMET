@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../database/app_database_sop.dart';
 import 'fin_servicio_ajustes_verificaciones.dart';
 
 class StacAjusteVerificacionesScreen extends StatefulWidget {
@@ -237,8 +238,7 @@ class _StacAjusteVerificacionesScreenState
         final zipData = zipEncoder.encode(archive);
 
         final uint8ListData = Uint8List.fromList(zipData);
-        final zipFileName =
-            '${widget.otValue}_${widget.codMetrica}_ajustes_verificaciones.zip';
+        final zipFileName = '${widget.secaValue}_${widget.codMetrica}_ajustes_verificaciones.zip';
 
         final params = SaveFileDialogParams(
           data: uint8ListData,
@@ -292,80 +292,64 @@ class _StacAjusteVerificacionesScreenState
 
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // ✅ Usar DatabaseHelperSop
+      final dbHelper = DatabaseHelperSop();
 
-      String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
-      }
-
+      // Preparar comentarios
       final Map<String, dynamic> comentariosData = {};
       for (int i = 0; i < _comentariosControllers.length; i++) {
         comentariosData['comentario_${i + 1}'] =
-            _comentariosControllers[i].text.isNotEmpty
-                ? _comentariosControllers[i].text
-                : null;
+        _comentariosControllers[i].text.isNotEmpty
+            ? _comentariosControllers[i].text
+            : null;
       }
 
-      // Convertir todos los datos a un mapa para la base de datos
+      // ✅ Convertir todos los datos a un mapa para la base de datos
       final Map<String, dynamic> dbData = {
-        'tipo_servicio': 'relevamiento de datos',
+        // ✅ AGREGAR CAMPOS CLAVE
+        'session_id': widget.sessionId,
         'cod_metrica': widget.codMetrica,
+        'otst': widget.secaValue,
+
+        // Campos existentes
+        'tipo_servicio': 'ajustes y verificaciones',
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
-        // Datos de pruebas metrológicas iniciales
-        ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
-        // Datos de pruebas metrológicas finales
-        ..._convertTestDataToDbFormat(_finalTestsData, 'final'),
-        //comentarios
-        ...comentariosData,
-        // Retorno a Cero
-        'retorno_cero_inicial_valoracion':
-            _fieldData['Retorno a cero']?['initial_value'] ?? '',
-        'retorno_cero_inicial_carga':
-            _fieldData['Retorno a cero']?['initial_load'] ?? '',
-        'retorno_cero_inicial_unidad':
-            _fieldData['Retorno a cero']?['initial_unit'] ?? '',
-        'retorno_cero_final_valoracion':
-            _fieldData['Retorno a cero']?['solution_value'] ?? '',
-        'retorno_cero_final_carga':
-            _fieldData['Retorno a cero']?['final_load'] ?? '',
-        'retorno_cero_final_unidad':
-            _fieldData['Retorno a cero']?['final_unit'] ?? '',
 
-        // Sección Estructural
+        // Datos de pruebas metrológicas
+        ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
+        ..._convertTestDataToDbFormat(_finalTestsData, 'final'),
+
+        // Comentarios
+        ...comentariosData,
       };
 
-      // Verificar si ya existe un registro
-      final existing = await db.query(
-        'ajustes_metrológicos',
-        where: 'cod_metrica = ?',
-        whereArgs: [widget.codMetrica],
-      );
+      // ✅ Agregar datos de campos de inspección (si existen)
+      _fieldData.forEach((label, fieldData) {
+        final key = _getFieldKey(label);
+        dbData[key] = fieldData['initial_value'] ?? '';
+        dbData['${key}_solucion'] = fieldData['solution_value'] ?? '';
 
-      if (existing.isNotEmpty) {
-        await db.update(
-          'ajustes_metrológicos',
-          dbData,
-          where: 'cod_metrica = ?',
-          whereArgs: [widget.codMetrica],
-        );
-      } else {
-        await db.insert(
-          'ajustes_metrológicos',
-          dbData,
-        );
-      }
+        // Agregar fotos si existen
+        final fotos = _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
+        if (fotos.isNotEmpty) {
+          dbData['${key}_foto'] = fotos;
+        }
+      });
 
-      await db.close();
+      // ✅ USAR UPSERT (actualiza si existe, inserta si no)
+      await dbHelper.upsertRegistro('ajustes_metrológicos', dbData);
+
       _showSnackBar(
         context,
         'Datos guardados exitosamente',
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
-      _isDataSaved.value = true;
+
+      setState(() {
+        _isDataSaved.value = true;
+      });
     } catch (e) {
       _showSnackBar(
         context,
@@ -374,9 +358,24 @@ class _StacAjusteVerificacionesScreenState
         textColor: Colors.white,
       );
       debugPrint('Error al guardar: $e');
-      _isDataSaved.value =
-          false; // Asegurarse de mantenerlo en false si hay error
+      _isDataSaved.value = false;
     }
+  }
+
+  String _getFieldKey(String label) {
+    // Convertir etiquetas a claves de base de datos
+    return label
+        .toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll('(', '')
+        .replaceAll(')', '')
+        .replaceAll('/', '_');
   }
 
   Map<String, dynamic> _convertTestDataToDbFormat(
@@ -484,7 +483,7 @@ class _StacAjusteVerificacionesScreenState
               ),
               const SizedBox(height: 5),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO METRICA: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -745,12 +744,9 @@ class _StacAjusteVerificacionesScreenState
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           FinServicioAjustesVerificacionesScreen(
-                                        dbName: widget.dbName,
-                                        dbPath: widget.dbPath,
-                                        otValue: widget.otValue,
-                                        selectedCliente: widget.selectedCliente,
-                                        selectedPlantaNombre:
-                                            widget.selectedPlantaNombre,
+                                        nReca: widget.nReca,
+                                        secaValue: widget.secaValue,
+                                        sessionId: widget.sessionId,
                                         codMetrica: widget.codMetrica,
                                       ),
                                     ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -16,6 +17,317 @@ class DatabaseHelperSop {
     _database = await _initDatabase();
     return _database!;
   }
+
+  Future<void> upsertRegistro(
+      String tableName,
+      Map<String, dynamic> registro,
+      ) async {
+    try {
+      final db = await database;
+
+      // Agregar timestamps
+      final now = DateTime.now().toIso8601String();
+      registro['fecha_actualizacion'] = now;
+
+      if (!registro.containsKey('fecha_creacion')) {
+        registro['fecha_creacion'] = now;
+      }
+
+      // Validar campos requeridos
+      final codMetrica = registro['cod_metrica'];
+
+      if (codMetrica == null || codMetrica.toString().isEmpty) {
+        throw Exception('cod_metrica es requerido para guardar');
+      }
+
+      // Verificar si existe el registro usando cod_metrica como identificador único
+      final existing = await db.query(
+        tableName,
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+        limit: 1,
+      );
+
+      if (existing.isNotEmpty) {
+        // UPDATE - Actualizar registro existente
+        await db.update(
+          tableName,
+          registro,
+          where: 'cod_metrica = ?',
+          whereArgs: [codMetrica],
+        );
+        debugPrint('✅ Registro actualizado en $tableName: $codMetrica');
+      } else {
+        // INSERT - Crear nuevo registro
+        await db.insert(
+          tableName,
+          registro,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        debugPrint('✅ Registro insertado en $tableName: $codMetrica');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error en upsertRegistro: $e');
+      debugPrint('StackTrace: $stackTrace');
+      throw Exception('Error al guardar en $tableName: $e');
+    }
+  }
+
+  /// Verificar si existe un registro con ese cod_metrica en una tabla específica
+  Future<bool> metricaExists(String codMetrica, String tableName) async {
+    try {
+      final db = await database;
+      final result = await db.query(
+        tableName,
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+        limit: 1,
+      );
+      return result.isNotEmpty;
+    } catch (e) {
+      debugPrint('❌ Error al verificar métrica: $e');
+      return false;
+    }
+  }
+
+  /// Obtener último registro por cod_metrica
+  Future<Map<String, dynamic>?> getUltimoRegistroPorMetrica(
+      String codMetrica,
+      String tableName,
+      ) async {
+    try {
+      final db = await database;
+      final result = await db.query(
+        tableName,
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+        orderBy: 'fecha_servicio DESC',
+        limit: 1,
+      );
+
+      if (result.isNotEmpty) {
+        return result.first;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error al obtener último registro: $e');
+      return null;
+    }
+  }
+
+  /// Generar sessionId único para una tabla
+  Future<String> generateSessionId(String codMetrica, String tableName) async {
+    try {
+      final db = await database;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      // Contar registros existentes para este código de métrica
+      final count = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(*) FROM $tableName WHERE cod_metrica = ?',
+          [codMetrica],
+        ),
+      ) ?? 0;
+
+      // Formato: CODMETRICA_TIMESTAMP_CONTADOR
+      final sessionId = '${codMetrica}_${timestamp}_${count + 1}';
+      debugPrint('✅ SessionId generado: $sessionId');
+      return sessionId;
+    } catch (e) {
+      debugPrint('❌ Error al generar sessionId: $e');
+      throw Exception('Error al generar sessionId: $e');
+    }
+  }
+
+  /// Obtener registro completo por cod_metrica
+  Future<Map<String, dynamic>?> getRegistro(
+      String tableName,
+      String codMetrica,
+      ) async {
+    try {
+      final db = await database;
+      final result = await db.query(
+        tableName,
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+        limit: 1,
+      );
+
+      if (result.isNotEmpty) {
+        return result.first;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Error al obtener registro: $e');
+      return null;
+    }
+  }
+
+  /// Obtener todos los registros de una tabla con filtros opcionales
+  Future<List<Map<String, dynamic>>> getAllRegistros(
+      String tableName, {
+        String? whereClause,
+        List<dynamic>? whereArgs,
+        String? orderBy,
+      }) async {
+    try {
+      final db = await database;
+      return await db.query(
+        tableName,
+        where: whereClause,
+        whereArgs: whereArgs,
+        orderBy: orderBy ?? 'fecha_servicio DESC',
+      );
+    } catch (e) {
+      debugPrint('❌ Error al obtener registros: $e');
+      return [];
+    }
+  }
+
+  /// Obtener registros por OTST (puede haber múltiples servicios para un mismo OTST)
+  Future<List<Map<String, dynamic>>> getRegistrosPorOtst(
+      String tableName,
+      String otst,
+      ) async {
+    try {
+      final db = await database;
+      return await db.query(
+        tableName,
+        where: 'otst = ?',
+        whereArgs: [otst],
+        orderBy: 'fecha_servicio DESC',
+      );
+    } catch (e) {
+      debugPrint('❌ Error al obtener registros por OTST: $e');
+      return [];
+    }
+  }
+
+  /// Eliminar registro por cod_metrica
+  Future<void> deleteRegistro(
+      String tableName,
+      String codMetrica,
+      ) async {
+    try {
+      final db = await database;
+      final deletedRows = await db.delete(
+        tableName,
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+      );
+
+      if (deletedRows > 0) {
+        debugPrint('✅ Registro eliminado de $tableName: $codMetrica');
+      } else {
+        debugPrint('⚠️ No se encontró registro para eliminar: $codMetrica');
+      }
+    } catch (e) {
+      debugPrint('❌ Error al eliminar registro: $e');
+      throw Exception('Error al eliminar registro: $e');
+    }
+  }
+
+  /// Actualizar solo campos específicos de un registro
+  Future<void> updateCamposEspecificos(
+      String tableName,
+      String codMetrica,
+      Map<String, dynamic> campos,
+      ) async {
+    try {
+      final db = await database;
+
+      // Agregar timestamp de actualización
+      campos['fecha_actualizacion'] = DateTime.now().toIso8601String();
+
+      final updatedRows = await db.update(
+        tableName,
+        campos,
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+      );
+
+      if (updatedRows > 0) {
+        debugPrint('✅ Campos actualizados en $tableName: $codMetrica');
+      } else {
+        debugPrint('⚠️ No se encontró registro para actualizar: $codMetrica');
+      }
+    } catch (e) {
+      debugPrint('❌ Error al actualizar campos: $e');
+      throw Exception('Error al actualizar campos: $e');
+    }
+  }
+
+  /// Contar registros en una tabla
+  Future<int> contarRegistros(
+      String tableName, {
+        String? whereClause,
+        List<dynamic>? whereArgs,
+      }) async {
+    try {
+      final db = await database;
+      final count = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(*) FROM $tableName ${whereClause != null ? 'WHERE $whereClause' : ''}',
+          whereArgs,
+        ),
+      );
+      return count ?? 0;
+    } catch (e) {
+      debugPrint('❌ Error al contar registros: $e');
+      return 0;
+    }
+  }
+
+  /// Verificar si una tabla existe
+  Future<bool> tableExists(String tableName) async {
+    try {
+      final db = await database;
+      final result = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        [tableName],
+      );
+      return result.isNotEmpty;
+    } catch (e) {
+      debugPrint('❌ Error al verificar tabla: $e');
+      return false;
+    }
+  }
+
+  /// Obtener estructura de una tabla (para debug)
+  Future<List<Map<String, dynamic>>> getTableInfo(String tableName) async {
+    try {
+      final db = await database;
+      return await db.rawQuery('PRAGMA table_info($tableName)');
+    } catch (e) {
+      debugPrint('❌ Error al obtener info de tabla: $e');
+      return [];
+    }
+  }
+
+  /// Guardar datos completos de ajustes metrológicos
+  Future<void> guardarAjustesMetrologicos(
+      Map<String, dynamic> datosCompletos,
+      ) async {
+    await upsertRegistro('ajustes_metrologicos', datosCompletos);
+  }
+
+  /// Obtener ajustes metrológicos por cod_metrica
+  Future<Map<String, dynamic>?> getAjustesMetrologicos(String codMetrica) async {
+    return await getRegistro('ajustes_metrologicos', codMetrica);
+  }
+
+  /// Guardar solo comentarios adicionales
+  Future<void> guardarComentario(
+      String codMetrica,
+      Map<String, String> comentarios,
+      ) async {
+    await updateCamposEspecificos(
+      'ajustes_metrologicos',
+      codMetrica,
+      comentarios,
+    );
+  }
+
 
   Future<Database> _initDatabase() async {
     String path =

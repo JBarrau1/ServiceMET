@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../database/app_database_sop.dart';
 import 'fin_servicio_mntcorrectivo.dart';
 
 class StacMntCorrectivoScreen extends StatefulWidget {
@@ -306,7 +307,7 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
 
         final uint8ListData = Uint8List.fromList(zipData);
         final zipFileName =
-            '${widget.otValue}_${widget.codMetrica}_diagnostico.zip';
+            '${widget.secaValue}_${widget.codMetrica}_diagnostico.zip';
 
         final params = SaveFileDialogParams(
           data: uint8ListData,
@@ -360,292 +361,223 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
 
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // ✅ Usar DatabaseHelperSop
+      final dbHelper = DatabaseHelperSop();
 
-      String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
-      }
-
+      // Preparar comentarios
       final Map<String, dynamic> comentariosData = {};
       for (int i = 0; i < _comentariosControllers.length; i++) {
         comentariosData['comentario_${i + 1}'] =
-            _comentariosControllers[i].text.isNotEmpty
-                ? _comentariosControllers[i].text
-                : null;
+        _comentariosControllers[i].text.isNotEmpty
+            ? _comentariosControllers[i].text
+            : null;
       }
 
-      // Convertir todos los datos a un mapa para la base de datos
+      // ✅ Convertir todos los datos a un mapa para la base de datos
       final Map<String, dynamic> dbData = {
-        'tipo_servicio': 'mnt correctivo',
+        // ✅ AGREGAR CAMPOS CLAVE
+        'session_id': widget.sessionId,
         'cod_metrica': widget.codMetrica,
+        'otst': widget.secaValue,
+
+        // Campos existentes
+        'tipo_servicio': 'mnt correctivo',
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
         'reporte': _reporteFallaController.text,
         'evaluacion': _evaluacionController.text,
-        // Datos de pruebas metrológicas iniciales
-        ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
 
+        // Datos de pruebas metrológicas
+        ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
         ..._convertTestDataToDbFormat(_finalTestsData, 'final'),
-        //comentarios
+
+        // Comentarios
         ...comentariosData,
-        // Retorno a Cero
-        'retorno_cero_inicial_valoracion':
-            _fieldData['Retorno a cero']?['initial_value'] ?? '',
-        'retorno_cero_inicial_carga':
-            _fieldData['Retorno a cero']?['initial_load'] ?? '',
-        'retorno_cero_inicial_unidad':
-            _fieldData['Retorno a cero']?['initial_unit'] ?? '',
-        // Sección Estructural
+
+        // Retorno a Cero (si existe)
+        'retorno_cero_inicial_valoracion': _fieldData['Retorno a cero']?['initial_value'] ?? '',
+        'retorno_cero_inicial_carga': _fieldData['Retorno a cero']?['initial_load'] ?? '',
+        'retorno_cero_inicial_unidad': _fieldData['Retorno a cero']?['initial_unit'] ?? '',
+
         // Entorno de instalación
         'vibracion_estado': _fieldData['Vibración']?['initial_value'] ?? '',
         'vibracion_solucion': _fieldData['Vibración']?['solution_value'] ?? '',
         'vibracion_comentario': _vibracionComentarioController.text,
-        'vibracion_foto': getFotosString('Vibración'),
+        'vibracion_foto': _getFotosString('Vibración'),
 
         'polvo_estado': _fieldData['Polvo']?['initial_value'] ?? '',
         'polvo_solucion': _fieldData['Polvo']?['solution_value'] ?? '',
         'polvo_comentario': _polvoComentarioController.text,
-        'polvo_foto': getFotosString('Polvo'),
+        'polvo_foto': _getFotosString('Polvo'),
 
         'temperatura_estado': _fieldData['Temperatura']?['initial_value'] ?? '',
-        'temperatura_solucion':
-            _fieldData['Temperatura']?['solution_value'] ?? '',
+        'temperatura_solucion': _fieldData['Temperatura']?['solution_value'] ?? '',
         'temperatura_comentario': _teperaturaComentarioController.text,
-        'temperatura_foto': getFotosString('Temperatura'),
+        'temperatura_foto': _getFotosString('Temperatura'),
 
         'humedad_estado': _fieldData['Humedad']?['initial_value'] ?? '',
         'humedad_solucion': _fieldData['Humedad']?['solution_value'] ?? '',
         'humedad_comentario': _humedadComentarioController.text,
-        'humedad_foto': getFotosString('Humedad'),
+        'humedad_foto': _getFotosString('Humedad'),
 
         'mesada_estado': _fieldData['Mesada']?['initial_value'] ?? '',
         'mesada_solucion': _fieldData['Mesada']?['solution_value'] ?? '',
         'mesada_comentario': _mesadaComentarioController.text,
-        'mesada_foto': getFotosString('Mesada'),
+        'mesada_foto': _getFotosString('Mesada'),
 
         'iluminacion_estado': _fieldData['Iluminación']?['initial_value'] ?? '',
-        'iluminacion_solucion':
-            _fieldData['Iluminación']?['solution_value'] ?? '',
+        'iluminacion_solucion': _fieldData['Iluminación']?['solution_value'] ?? '',
         'iluminacion_comentario': _iluminacionComentarioController.text,
-        'iluminacion_foto': getFotosString('Iluminación'),
+        'iluminacion_foto': _getFotosString('Iluminación'),
 
-        'limpieza_fosa_estado':
-            _fieldData['Limpieza de Fosa']?['initial_value'] ?? '',
-        'limpieza_fosa_solucion':
-            _fieldData['Limpieza de Fosa']?['solution_value'] ?? '',
+        'limpieza_fosa_estado': _fieldData['Limpieza de Fosa']?['initial_value'] ?? '',
+        'limpieza_fosa_solucion': _fieldData['Limpieza de Fosa']?['solution_value'] ?? '',
         'limpieza_fosa_comentario': _limpiezaFosaComentarioController.text,
-        'limpieza_fosa_foto': getFotosString('Limpieza de Fosa'),
+        'limpieza_fosa_foto': _getFotosString('Limpieza de Fosa'),
 
-        'estado_drenaje_estado':
-            _fieldData['Estado de Drenaje']?['initial_value'] ?? '',
-        'estado_drenaje_solucion':
-            _fieldData['Estado de Drenaje']?['solution_value'] ?? '',
+        'estado_drenaje_estado': _fieldData['Estado de Drenaje']?['initial_value'] ?? '',
+        'estado_drenaje_solucion': _fieldData['Estado de Drenaje']?['solution_value'] ?? '',
         'estado_drenaje_comentario': _estadoDrenajeComentarioController.text,
-        'estado_drenaje_foto': getFotosString('Estado de Drenaje'),
+        'estado_drenaje_foto': _getFotosString('Estado de Drenaje'),
 
         // Terminal de pesaje
         'carcasa_estado': _fieldData['Carcasa']?['initial_value'] ?? '',
         'carcasa_solucion': _fieldData['Carcasa']?['solution_value'] ?? '',
         'carcasa_comentario': _carcasaComentarioController.text,
-        'carcasa_foto': getFotosString('Carcasa'),
+        'carcasa_foto': _getFotosString('Carcasa'),
 
-        'teclado_fisico_estado':
-            _fieldData['Teclado Fisico']?['initial_value'] ?? '',
-        'teclado_fisico_solucion':
-            _fieldData['Teclado Fisico']?['solution_value'] ?? '',
+        'teclado_fisico_estado': _fieldData['Teclado Fisico']?['initial_value'] ?? '',
+        'teclado_fisico_solucion': _fieldData['Teclado Fisico']?['solution_value'] ?? '',
         'teclado_fisico_comentario': _tecladoFisicoComentarioController.text,
-        'teclado_fisico_foto': getFotosString('Teclado Fisico'),
+        'teclado_fisico_foto': _getFotosString('Teclado Fisico'),
 
-        'display_fisico_estado':
-            _fieldData['Display Fisico']?['initial_value'] ?? '',
-        'display_fisico_solucion':
-            _fieldData['Display Fisico']?['solution_value'] ?? '',
+        'display_fisico_estado': _fieldData['Display Fisico']?['initial_value'] ?? '',
+        'display_fisico_solucion': _fieldData['Display Fisico']?['solution_value'] ?? '',
         'display_fisico_comentario': _displayFisicoComentarioController.text,
-        'display_fisico_foto': getFotosString('Display Fisico'),
+        'display_fisico_foto': _getFotosString('Display Fisico'),
 
-        'fuente_poder_estado':
-            _fieldData['Fuente de poder']?['initial_value'] ?? '',
-        'fuente_poder_solucion':
-            _fieldData['Fuente de poder']?['solution_value'] ?? '',
+        'fuente_poder_estado': _fieldData['Fuente de poder']?['initial_value'] ?? '',
+        'fuente_poder_solucion': _fieldData['Fuente de poder']?['solution_value'] ?? '',
         'fuente_poder_comentario': _fuentePoderComentarioController.text,
-        'fuente_poder_foto': getFotosString('Fuente de poder'),
+        'fuente_poder_foto': _getFotosString('Fuente de poder'),
 
-        'bateria_operacional_estado':
-            _fieldData['Bateria operacional']?['initial_value'] ?? '',
-        'bateria_operacional_solucion':
-            _fieldData['Bateria operacional']?['solution_value'] ?? '',
-        'bateria_operacional_comentario':
-            _bateriaOperacionalComentarioController.text,
-        'bateria_operacional_foto': getFotosString('Bateria operacional'),
+        'bateria_operacional_estado': _fieldData['Bateria operacional']?['initial_value'] ?? '',
+        'bateria_operacional_solucion': _fieldData['Bateria operacional']?['solution_value'] ?? '',
+        'bateria_operacional_comentario': _bateriaOperacionalComentarioController.text,
+        'bateria_operacional_foto': _getFotosString('Bateria operacional'),
 
         'bracket_estado': _fieldData['Bracket']?['initial_value'] ?? '',
         'bracket_solucion': _fieldData['Bracket']?['solution_value'] ?? '',
         'bracket_comentario': _bracketComentarioController.text,
-        'bracket_foto': getFotosString('Bracket'),
+        'bracket_foto': _getFotosString('Bracket'),
 
-        'teclado_operativo_estado':
-            _fieldData['Teclado Operativo']?['initial_value'] ?? '',
-        'teclado_operativo_solucion':
-            _fieldData['Teclado Operativo']?['solution_value'] ?? '',
-        'teclado_operativo_comentario':
-            _tecladoOperativoComentarioController.text,
-        'teclado_operativo_foto': getFotosString('Teclado Operativo'),
+        'teclado_operativo_estado': _fieldData['Teclado Operativo']?['initial_value'] ?? '',
+        'teclado_operativo_solucion': _fieldData['Teclado Operativo']?['solution_value'] ?? '',
+        'teclado_operativo_comentario': _tecladoOperativoComentarioController.text,
+        'teclado_operativo_foto': _getFotosString('Teclado Operativo'),
 
-        'display_operativo_estado':
-            _fieldData['Display Operativo']?['initial_value'] ?? '',
-        'display_operativo_solucion':
-            _fieldData['Display Operativo']?['solution_value'] ?? '',
-        'display_operativo_comentario':
-            _displayOperativoComentarioController.text,
-        'display_operativo_foto': getFotosString('Display Operativo'),
+        'display_operativo_estado': _fieldData['Display Operativo']?['initial_value'] ?? '',
+        'display_operativo_solucion': _fieldData['Display Operativo']?['solution_value'] ?? '',
+        'display_operativo_comentario': _displayOperativoComentarioController.text,
+        'display_operativo_foto': _getFotosString('Display Operativo'),
 
-        'conector_celda_estado':
-            _fieldData['Contector de celda']?['initial_value'] ?? '',
-        'conector_celda_solucion':
-            _fieldData['Contector de celda']?['solution_value'] ?? '',
+        'conector_celda_estado': _fieldData['Contector de celda']?['initial_value'] ?? '',
+        'conector_celda_solucion': _fieldData['Contector de celda']?['solution_value'] ?? '',
         'conector_celda_comentario': _contectorCeldaComentarioController.text,
-        'conector_celda_foto': getFotosString('Contector de celda'),
+        'conector_celda_foto': _getFotosString('Contector de celda'),
 
-        'bateria_memoria_estado':
-            _fieldData['Bateria de memoria']?['initial_value'] ?? '',
-        'bateria_memoria_solucion':
-            _fieldData['Bateria de memoria']?['solution_value'] ?? '',
+        'bateria_memoria_estado': _fieldData['Bateria de memoria']?['initial_value'] ?? '',
+        'bateria_memoria_solucion': _fieldData['Bateria de memoria']?['solution_value'] ?? '',
         'bateria_memoria_comentario': _bateriaMemoriaComentarioController.text,
-        'bateria_memoria_foto': getFotosString('Bateria de memoria'),
+        'bateria_memoria_foto': _getFotosString('Bateria de memoria'),
 
         // Estado general de la balanza
-        'limpieza_general_estado':
-            _fieldData['Limpieza general']?['initial_value'] ?? '',
-        'limpieza_general_solucion':
-            _fieldData['Limpieza general']?['solution_value'] ?? '',
-        'limpieza_general_comentario':
-            _limpiezaGeneralComentarioController.text,
-        'limpieza_general_foto': getFotosString('Limpieza general'),
+        'limpieza_general_estado': _fieldData['Limpieza general']?['initial_value'] ?? '',
+        'limpieza_general_solucion': _fieldData['Limpieza general']?['solution_value'] ?? '',
+        'limpieza_general_comentario': _limpiezaGeneralComentarioController.text,
+        'limpieza_general_foto': _getFotosString('Limpieza general'),
 
-        'golpes_terminal_estado':
-            _fieldData['Golpes al terminal']?['initial_value'] ?? '',
-        'golpes_terminal_solucion':
-            _fieldData['Golpes al terminal']?['solution_value'] ?? '',
+        'golpes_terminal_estado': _fieldData['Golpes al terminal']?['initial_value'] ?? '',
+        'golpes_terminal_solucion': _fieldData['Golpes al terminal']?['solution_value'] ?? '',
         'golpes_terminal_comentario': _golpesTerminalComentarioController.text,
-        'golpes_terminal_foto': getFotosString('Golpes al terminal'),
+        'golpes_terminal_foto': _getFotosString('Golpes al terminal'),
 
         'nivelacion_estado': _fieldData['Nivelacion']?['initial_value'] ?? '',
-        'nivelacion_solucion':
-            _fieldData['Nivelacion']?['solution_value'] ?? '',
+        'nivelacion_solucion': _fieldData['Nivelacion']?['solution_value'] ?? '',
         'nivelacion_comentario': _nivelacionComentarioController.text,
-        'nivelacion_foto': getFotosString('Nivelacion'),
+        'nivelacion_foto': _getFotosString('Nivelacion'),
 
-        'limpieza_receptor_estado':
-            _fieldData['Limpieza receptor']?['initial_value'] ?? '',
-        'limpieza_receptor_solucion':
-            _fieldData['Limpieza receptor']?['solution_value'] ?? '',
-        'limpieza_receptor_comentario':
-            _limpiezaReceptorComentarioController.text,
-        'limpieza_receptor_foto': getFotosString('Limpieza receptor'),
+        'limpieza_receptor_estado': _fieldData['Limpieza receptor']?['initial_value'] ?? '',
+        'limpieza_receptor_solucion': _fieldData['Limpieza receptor']?['solution_value'] ?? '',
+        'limpieza_receptor_comentario': _limpiezaReceptorComentarioController.text,
+        'limpieza_receptor_foto': _getFotosString('Limpieza receptor'),
 
-        'golpes_receptor_estado':
-            _fieldData['Golpes al receptor de carga']?['initial_value'] ?? '',
-        'golpes_receptor_solucion':
-            _fieldData['Golpes al receptor de carga']?['solution_value'] ?? '',
+        'golpes_receptor_estado': _fieldData['Golpes al receptor de carga']?['initial_value'] ?? '',
+        'golpes_receptor_solucion': _fieldData['Golpes al receptor de carga']?['solution_value'] ?? '',
         'golpes_receptor_comentario': _golpesReceptorComentarioController.text,
-        'golpes_receptor_foto': getFotosString('Golpes al receptor de carga'),
+        'golpes_receptor_foto': _getFotosString('Golpes al receptor de carga'),
 
         'encendido_estado': _fieldData['Encendido']?['initial_value'] ?? '',
         'encendido_solucion': _fieldData['Encendido']?['solution_value'] ?? '',
         'encendido_comentario': _encendidoComentarioController.text,
-        'encendido_foto': getFotosString('Encendido'),
+        'encendido_foto': _getFotosString('Encendido'),
 
         // Balanza/Plataforma
-        'limitador_movimiento_estado':
-            _fieldData['Limitador de movimiento']?['initial_value'] ?? '',
-        'limitador_movimiento_solucion':
-            _fieldData['Limitador de movimiento']?['solution_value'] ?? '',
-        'limitador_movimiento_comentario':
-            _limitadorMovimientoComentarioController.text,
-        'limitador_movimiento_foto': getFotosString('Limitador de movimiento'),
+        'limitador_movimiento_estado': _fieldData['Limitador de movimiento']?['initial_value'] ?? '',
+        'limitador_movimiento_solucion': _fieldData['Limitador de movimiento']?['solution_value'] ?? '',
+        'limitador_movimiento_comentario': _limitadorMovimientoComentarioController.text,
+        'limitador_movimiento_foto': _getFotosString('Limitador de movimiento'),
 
         'suspension_estado': _fieldData['Suspensión']?['initial_value'] ?? '',
-        'suspension_solucion':
-            _fieldData['Suspensión']?['solution_value'] ?? '',
+        'suspension_solucion': _fieldData['Suspensión']?['solution_value'] ?? '',
         'suspension_comentario': _suspensionComentarioController.text,
-        'suspension_foto': getFotosString('Suspensión'),
+        'suspension_foto': _getFotosString('Suspensión'),
 
-        'limitador_carga_estado':
-            _fieldData['Limitador de carga']?['initial_value'] ?? '',
-        'limitador_carga_solucion':
-            _fieldData['Limitador de carga']?['solution_value'] ?? '',
+        'limitador_carga_estado': _fieldData['Limitador de carga']?['initial_value'] ?? '',
+        'limitador_carga_solucion': _fieldData['Limitador de carga']?['solution_value'] ?? '',
         'limitador_carga_comentario': _limitadorCargaComentarioController.text,
-        'limitador_carga_foto': getFotosString('Limitador de carga'),
+        'limitador_carga_foto': _getFotosString('Limitador de carga'),
 
-        'celda_carga_estado':
-            _fieldData['Celda de carga']?['initial_value'] ?? '',
-        'celda_carga_solucion':
-            _fieldData['Celda de carga']?['solution_value'] ?? '',
+        'celda_carga_estado': _fieldData['Celda de carga']?['initial_value'] ?? '',
+        'celda_carga_solucion': _fieldData['Celda de carga']?['solution_value'] ?? '',
         'celda_carga_comentario': _celdaCargaComentarioController.text,
-        'celda_carga_foto': getFotosString('Celda de carga'),
+        'celda_carga_foto': _getFotosString('Celda de carga'),
 
         // Caja sumadora
-        'tapa_caja_estado':
-            _fieldData['Tapa de caja sumadora']?['initial_value'] ?? '',
-        'tapa_caja_solucion':
-            _fieldData['Tapa de caja sumadora']?['solution_value'] ?? '',
+        'tapa_caja_estado': _fieldData['Tapa de caja sumadora']?['initial_value'] ?? '',
+        'tapa_caja_solucion': _fieldData['Tapa de caja sumadora']?['solution_value'] ?? '',
         'tapa_caja_comentario': _tapaCajaComentarioController.text,
-        'tapa_caja_foto': getFotosString('Tapa de caja sumadora'),
+        'tapa_caja_foto': _getFotosString('Tapa de caja sumadora'),
 
-        'humedad_interna_estado':
-            _fieldData['Humedad Interna']?['initial_value'] ?? '',
-        'humedad_interna_solucion':
-            _fieldData['Humedad Interna']?['solution_value'] ?? '',
+        'humedad_interna_estado': _fieldData['Humedad Interna']?['initial_value'] ?? '',
+        'humedad_interna_solucion': _fieldData['Humedad Interna']?['solution_value'] ?? '',
         'humedad_interna_comentario': _humedadInternaComentarioController.text,
-        'humedad_interna_foto': getFotosString('Humedad Interna'),
+        'humedad_interna_foto': _getFotosString('Humedad Interna'),
 
-        'estado_prensacables_estado':
-            _fieldData['Estado de prensacables']?['initial_value'] ?? '',
-        'estado_prensacables_solucion':
-            _fieldData['Estado de prensacables']?['solution_value'] ?? '',
-        'estado_prensacables_comentario':
-            _estadoPrensacablesComentarioController.text,
-        'estado_prensacables_foto': getFotosString('Estado de prensacables'),
+        'estado_prensacables_estado': _fieldData['Estado de prensacables']?['initial_value'] ?? '',
+        'estado_prensacables_solucion': _fieldData['Estado de prensacables']?['solution_value'] ?? '',
+        'estado_prensacables_comentario': _estadoPrensacablesComentarioController.text,
+        'estado_prensacables_foto': _getFotosString('Estado de prensacables'),
 
-        'estado_borneas_estado':
-            _fieldData['Estado de borneas']?['initial_value'] ?? '',
-        'estado_borneas_solucion':
-            _fieldData['Estado de borneas']?['solution_value'] ?? '',
+        'estado_borneas_estado': _fieldData['Estado de borneas']?['initial_value'] ?? '',
+        'estado_borneas_solucion': _fieldData['Estado de borneas']?['solution_value'] ?? '',
         'estado_borneas_comentario': _estadoBorneasComentarioController.text,
-        'estado_borneas_foto': getFotosString('Estado de borneas'),
+        'estado_borneas_foto': _getFotosString('Estado de borneas'),
       };
 
-      // Verificar si ya existe un registro
-      final existing = await db.query(
-        'mnt_correctivo',
-        where: 'cod_metrica = ?',
-        whereArgs: [widget.codMetrica],
-      );
+      // ✅ USAR UPSERT (actualiza si existe, inserta si no)
+      await dbHelper.upsertRegistro('mnt_correctivo', dbData);
 
-      if (existing.isNotEmpty) {
-        await db.update(
-          'mnt_correctivo',
-          dbData,
-          where: 'cod_metrica = ?',
-          whereArgs: [widget.codMetrica],
-        );
-      } else {
-        await db.insert(
-          'mnt_correctivo',
-          dbData,
-        );
-      }
-
-      await db.close();
       _showSnackBar(
         context,
         'Datos guardados exitosamente',
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
-      _isDataSaved.value = true;
+
+      setState(() {
+        _isDataSaved.value = true;
+      });
     } catch (e) {
       _showSnackBar(
         context,
@@ -654,9 +586,12 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
         textColor: Colors.white,
       );
       debugPrint('Error al guardar: $e');
-      _isDataSaved.value =
-          false; // Asegurarse de mantenerlo en false si hay error
+      _isDataSaved.value = false;
     }
+  }
+
+  String _getFotosString(String label) {
+    return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
   }
 
   Map<String, dynamic> _convertTestDataToDbFormat(
@@ -872,16 +807,14 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               onPressed: () {
-                Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                Navigator.of(dialogContext).pop();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => FinServicioMntcorrectivoScreen(
-                      dbName: widget.dbName,
-                      dbPath: widget.dbPath,
-                      otValue: widget.otValue,
-                      selectedCliente: widget.selectedCliente,
-                      selectedPlantaNombre: widget.selectedPlantaNombre,
+                      nReca: widget.nReca,
+                      secaValue: widget.secaValue,
+                      sessionId: widget.sessionId,
                       codMetrica: widget.codMetrica,
                     ),
                   ),
@@ -919,7 +852,7 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
               ),
               const SizedBox(height: 5),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,

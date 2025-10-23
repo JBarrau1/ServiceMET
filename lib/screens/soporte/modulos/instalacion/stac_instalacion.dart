@@ -13,6 +13,8 @@ import 'package:service_met/provider/balanza_provider.dart';
 import 'package:service_met/screens/soporte/modulos/instalacion/fin_servicio_instalacion.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../database/app_database_sop.dart';
+
 class StacInstalacionScreen extends StatefulWidget {
   final String nReca;
   final String secaValue;
@@ -32,22 +34,14 @@ class StacInstalacionScreen extends StatefulWidget {
 }
 
 class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
-  final TextEditingController _entornoComentarioController =
-      TextEditingController();
-  final TextEditingController _nivelacionComentarioController =
-      TextEditingController();
-  final TextEditingController _movilizacionComentarioController =
-      TextEditingController();
-  final TextEditingController _flujoPesadasComentarioController =
-      TextEditingController();
-  final TextEditingController _celulasComentarioController =
-      TextEditingController();
-  final TextEditingController _cablesComentarioController =
-      TextEditingController();
-  final TextEditingController _cubiertaSiliconaComentarioController =
-      TextEditingController();
-  final TextEditingController _flujoPesasComentarioController =
-      TextEditingController();
+  final TextEditingController _entornoComentarioController = TextEditingController();
+  final TextEditingController _nivelacionComentarioController = TextEditingController();
+  final TextEditingController _movilizacionComentarioController = TextEditingController();
+  final TextEditingController _flujoPesadasComentarioController = TextEditingController();
+  final TextEditingController _celulasComentarioController = TextEditingController();
+  final TextEditingController _cablesComentarioController = TextEditingController();
+  final TextEditingController _cubiertaSiliconaComentarioController = TextEditingController();
+  final TextEditingController _flujoPesasComentarioController = TextEditingController();
   final TextEditingController _horaController = TextEditingController();
   final TextEditingController _horaFinController = TextEditingController();
   final List<TextEditingController> _comentariosControllers = [];
@@ -182,7 +176,7 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
 
         final uint8ListData = Uint8List.fromList(zipData);
         final zipFileName =
-            '${widget.otValue}_${widget.codMetrica}_ajustes_verificaciones.zip';
+            '${widget.secaValue}_${widget.codMetrica}_ajustes_verificaciones.zip';
 
         final params = SaveFileDialogParams(
           data: uint8ListData,
@@ -236,52 +230,42 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
 
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // ✅ Usar DatabaseHelperSop
+      final dbHelper = DatabaseHelperSop();
 
-      String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
-      }
-
+      // Preparar comentarios
       final Map<String, dynamic> comentariosData = {};
       for (int i = 0; i < _comentariosControllers.length; i++) {
         comentariosData['comentario_${i + 1}'] =
-            _comentariosControllers[i].text.isNotEmpty
-                ? _comentariosControllers[i].text
-                : null;
+        _comentariosControllers[i].text.isNotEmpty
+            ? _comentariosControllers[i].text
+            : null;
       }
 
-      // Convertir todos los datos a un mapa para la base de datos
+      // ✅ Convertir todos los datos a un mapa para la base de datos
       final Map<String, dynamic> dbData = {
-        'tipo_servicio': 'Instalacion',
+        // ✅ AGREGAR CAMPOS CLAVE
+        'session_id': widget.sessionId,
         'cod_metrica': widget.codMetrica,
+        'otst': widget.secaValue,
+
+        // Campos existentes
+        'tipo_servicio': 'instalacion',
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
 
         // Datos de pruebas metrológicas iniciales
         ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
-        // Datos de pruebas metrológicas finales
-        //comentarios
+
+        // Comentarios
         ...comentariosData,
-        // Retorno a Cero
-        'retorno_cero_inicial_valoracion':
-            _fieldData['Retorno a cero']?['initial_value'] ?? '',
-        'retorno_cero_inicial_carga':
-            _fieldData['Retorno a cero']?['initial_load'] ?? '',
-        'retorno_cero_inicial_unidad':
-            _fieldData['Retorno a cero']?['initial_unit'] ?? '',
-        'retorno_cero_final_valoracion':
-            _fieldData['Retorno a cero']?['solution_value'] ?? '',
-        'retorno_cero_final_carga':
-            _fieldData['Retorno a cero']?['final_load'] ?? '',
-        'retorno_cero_final_unidad':
-            _fieldData['Retorno a cero']?['final_unit'] ?? '',
 
-        // Sección Estructural
-      };
+        // Retorno a Cero (si existe)
+        'retorno_cero_inicial_valoracion': _fieldData['Retorno a cero']?['initial_value'] ?? '',
+        'retorno_cero_inicial_carga': _fieldData['Retorno a cero']?['initial_load'] ?? '',
+        'retorno_cero_inicial_unidad': _fieldData['Retorno a cero']?['initial_unit'] ?? '',
 
-      dbData.addAll({
+        // Condiciones del entorno
         'entorno_valor': _fieldData['Entorno']?['value'] ?? '',
         'entorno_comentario': _entornoComentarioController.text,
         'nivelacion_valor': _fieldData['Nivelación']?['value'] ?? '',
@@ -290,37 +274,30 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
         'movilizacion_comentario': _movilizacionComentarioController.text,
         'flujo_pesadas_valor': _fieldData['Flujo de Pesadas']?['value'] ?? '',
         'flujo_pesadas_comentario': _flujoPesadasComentarioController.text,
+      };
+
+      // ✅ Agregar fotos de campos si existen
+      _fieldData.forEach((label, fieldData) {
+        final fotos = _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
+        if (fotos.isNotEmpty) {
+          final key = _getFieldKey(label);
+          dbData['${key}_foto'] = fotos;
+        }
       });
 
-      // Verificar si ya existe un registro
-      final existing = await db.query(
-        'instalacion',
-        where: 'cod_metrica = ?',
-        whereArgs: [widget.codMetrica],
-      );
+      // ✅ USAR UPSERT (actualiza si existe, inserta si no)
+      await dbHelper.upsertRegistro('instalacion', dbData);
 
-      if (existing.isNotEmpty) {
-        await db.update(
-          'instalacion',
-          dbData,
-          where: 'cod_metrica = ?',
-          whereArgs: [widget.codMetrica],
-        );
-      } else {
-        await db.insert(
-          'instalacion',
-          dbData,
-        );
-      }
-
-      await db.close();
       _showSnackBar(
         context,
         'Datos guardados exitosamente',
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
-      _isDataSaved.value = true;
+
+      setState(() {
+        _isDataSaved.value = true;
+      });
     } catch (e) {
       _showSnackBar(
         context,
@@ -329,9 +306,24 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
         textColor: Colors.white,
       );
       debugPrint('Error al guardar: $e');
-      _isDataSaved.value =
-          false; // Asegurarse de mantenerlo en false si hay error
+      _isDataSaved.value = false;
     }
+  }
+
+  String _getFieldKey(String label) {
+    // Convertir etiquetas a claves de base de datos
+    return label
+        .toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll('(', '')
+        .replaceAll(')', '')
+        .replaceAll('/', '_');
   }
 
   Map<String, dynamic> _convertTestDataToDbFormat(
@@ -551,7 +543,7 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
               ),
               const SizedBox(height: 5),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -848,25 +840,21 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
                     builder: (context, isSaved, child) {
                       return Expanded(
                         child: ElevatedButton(
-                          onPressed: isSaved
-                              ? () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          FinServicioInstalacionScreen(
-                                        dbName: widget.dbName,
-                                        dbPath: widget.dbPath,
-                                        otValue: widget.otValue,
-                                        selectedCliente: widget.selectedCliente,
-                                        selectedPlantaNombre:
-                                            widget.selectedPlantaNombre,
-                                        codMetrica: widget.codMetrica,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              : null,
+                          onPressed: isSaved ? ()
+                          {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FinServicioInstalacionScreen(
+                                  nReca: widget.nReca,
+                                  secaValue: widget.secaValue,
+                                  sessionId: widget.sessionId,
+                                  codMetrica: widget.codMetrica,
+                                ),
+                              ),
+                            );
+                          }
+                          : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                             isSaved ? const Color(0xFF167D1D) : Colors.grey,

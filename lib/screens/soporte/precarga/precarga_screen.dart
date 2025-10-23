@@ -131,8 +131,12 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
         await Future.delayed(const Duration(milliseconds: 200));
 
+        // AGREGAR: Si viene de sesión existente, ir directamente al paso 4 (confirmación)
         if (widget.initialStep > 0 && widget.initialStep <= 4) {
           controller.setCurrentStep(widget.initialStep);
+        } else {
+          // Si no se especifica paso inicial, ir a confirmación
+          controller.setCurrentStep(4);
         }
       }
     } catch (e) {
@@ -440,12 +444,12 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
   VoidCallback? _getNextButtonAction(PrecargaControllerSop controller) {
     switch (controller.currentStep) {
-      case -1: // AGREGAR ESTE CASE COMPLETO
+      case -1: // Tipo de Servicio
         return controller.canProceedToStep(-1)
             ? () => controller.nextStep()
             : null;
 
-      case 0: // Cliente (resto del código sin cambios)
+      case 0: // Cliente
         return controller.canProceedToStep(0)
             ? () => controller.nextStep()
             : null;
@@ -465,7 +469,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
             ? () => controller.nextStep()
             : null;
 
-      case 4: // Equipos
+      case 4: // Confirmación Final
         return controller.canProceedToStep(4)
             ? () => _saveAndNavigate()
             : null;
@@ -739,6 +743,14 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
           sessionId: sessionId,
         );
 
+      default:
+      // Fallback a ServicioScreen si no coincide ningún caso
+        return ServicioScreen(
+          codMetrica: codMetrica,
+          nReca: nReca,
+          secaValue: secaValue,
+          sessionId: sessionId,
+        );
     }
   }
 

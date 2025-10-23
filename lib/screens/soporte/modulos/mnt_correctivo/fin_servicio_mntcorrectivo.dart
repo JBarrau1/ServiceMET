@@ -7,26 +7,25 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:service_met/home_screen.dart';
+import 'package:service_met/screens/soporte/precarga/precarga_controller.dart';
+import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:service_met/screens/soporte/modulos/iden_balanza.dart';
-import 'package:service_met/bdb/calibracion_bd.dart';
+
+import '../../../../database/app_database_sop.dart';
 
 class FinServicioMntcorrectivoScreen extends StatefulWidget {
-  final String dbName;
-  final String dbPath;
-  final String otValue;
-  final String selectedCliente;
-  final String selectedPlantaNombre;
+  final String nReca;
+  final String secaValue;
+  final String sessionId;
   final String codMetrica;
 
   const FinServicioMntcorrectivoScreen({
     super.key,
-    required this.dbName,
-    required this.dbPath,
-    required this.otValue,
-    required this.selectedCliente,
-    required this.selectedPlantaNombre,
+    required this.nReca,
+    required this.secaValue,
+    required this.sessionId,
     required this.codMetrica,
   });
 
@@ -39,7 +38,6 @@ class _FinServicioMntcorrectivoScreenState
     extends State<FinServicioMntcorrectivoScreen> {
   String? errorMessage;
   bool _isExporting = false;
-  final DatabaseHelper _dbHelper = DatabaseHelper();
 
   void _showSnackBar(BuildContext context, String message,
       {bool isError = false, int duration = 4}) {
@@ -90,176 +88,107 @@ class _FinServicioMntcorrectivoScreenState
 
     try {
       // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 20),
-              Text('Procesando datos para exportación...'),
-            ],
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 20),
+                Text('Generando archivo CSV...'),
+              ],
+            ),
           ),
-        ),
+        );
+      }
+
+      // ✅ Obtener datos desde BD interna usando el helper
+      final dbHelper = DatabaseHelperSop();
+      final db = await dbHelper.database;
+
+      // ✅ Consultar tabla mnt_correctivo por session_id
+      final List<Map<String, dynamic>> registros = await db.query(
+        'mnt_correctivo',
+        where: 'session_id = ?',
+        whereArgs: [widget.sessionId],
       );
 
-      // 1. Verificar y abrir la base de datos
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      if (!await File(path).exists()) {
-        throw Exception('La base de datos no existe en la ruta especificada');
-      }
-
-      final db = await openDatabase(path);
-
-      // 2. Verificar tablas necesarias
-      final tables = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
-      final tableNames = tables.map((t) => t['name'] as String).toList();
-
-      // Verificar tablas mínimas requeridas
-      if (!tableNames.contains('inf_cliente_balanza') || !tableNames.contains('mnt_correctivo')) {
-        throw Exception('Tablas básicas requeridas no encontradas en la base de datos');
-      }
-
-      // 3. Verificar si la tabla diagnostico tiene datos
-      bool diagnosticoHasData = false;
-      if (tableNames.contains('diagnostico')) {
-        final count = Sqflite.firstIntValue(await db.rawQuery(
-            'SELECT COUNT(*) FROM diagnostico WHERE cod_metrica IS NOT NULL'
-        )) ?? 0;
-        diagnosticoHasData = count > 0;
-      }
-
-      // 4. Obtener datos combinados según disponibilidad
-      List<Map<String, dynamic>> registros;
-
-      if (diagnosticoHasData) {
-        registros = await db.rawQuery('''
-          SELECT icb.*, mc.*, d.*
-          FROM inf_cliente_balanza AS icb
-          LEFT JOIN mnt_correctivo AS mc ON icb.cod_metrica = mc.cod_metrica
-          LEFT JOIN diagnostico AS d ON icb.cod_metrica = d.cod_metrica
-          WHERE icb.cod_metrica = ?
-        ''', [widget.codMetrica]);
-      } else {
-        registros = await db.rawQuery('''
-          SELECT icb.*, mc.*
-          FROM inf_cliente_balanza AS icb
-          LEFT JOIN mnt_correctivo AS mc ON icb.cod_metrica = mc.cod_metrica
-          WHERE icb.cod_metrica = ?
-        ''', [widget.codMetrica]);
-      }
-
-      // 5. Depurar datos
-      final List<Map<String, dynamic>> registrosDepurados = await _depurarDatos(registros);
-
-      if (registrosDepurados.isEmpty) {
-        if (!mounted) return;
-        Navigator.of(context).pop(); // Cerrar diálogo de carga
-        _showSnackBar(context, 'No hay datos para exportar', isError: true);
+      if (registros.isEmpty) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          _showSnackBar(context, 'No hay datos para exportar', isError: true);
+        }
         return;
       }
 
-      // 6. Preparar estructura CSV
-      Set<String> uniqueKeys = {};
-      List<String> headers = [];
+      // ✅ Obtener headers de las columnas
+      final headers = registros.first.keys.toList();
 
-      for (var registro in registrosDepurados) {
-        for (var key in registro.keys) {
-          if (!uniqueKeys.contains(key)) {
-            uniqueKeys.add(key);
-            headers.add(key);
-          }
-        }
-      }
+      // ✅ Construir matriz CSV
+      final matrix = <List<dynamic>>[
+        headers,
+        ...registros.map((reg) {
+          return headers.map((header) {
+            final value = reg[header];
+            if (value is double) {
+              return value.toStringAsFixed(2);
+            } else if (value is num) {
+              return value.toString();
+            }
+            return value?.toString() ?? '';
+          }).toList();
+        })
+      ];
 
-      List<List<dynamic>> rows = [];
-      rows.add(headers);
-
-      for (var registro in registrosDepurados) {
-        List<dynamic> row = [];
-        for (var header in headers) {
-          final value = registro[header];
-          if (value is double) {
-            row.add(value.toStringAsFixed(2)); // Formatear números con 2 decimales
-          } else if (value is num) {
-            row.add(value.toString());
-          } else {
-            row.add(value?.toString() ?? '');
-          }
-        }
-        rows.add(row);
-      }
-
-      // 7. Generar CSV
-      String csv = const ListToCsvConverter(
+      // ✅ Convertir a CSV con punto y coma
+      final csvString = const ListToCsvConverter(
         fieldDelimiter: ';',
         textDelimiter: '"',
-        eol: '\r\n', // Formato Windows para Excel
-      ).convert(rows);
-      final csvBytes = utf8.encode(csv);
+        eol: '\r\n',
+      ).convert(matrix);
 
-      // 8. Guardar en directorio interno
-      final internalDir = await getApplicationSupportDirectory();
-      final csvDir = Directory('${internalDir.path}/csv_servicios');
-      if (!await csvDir.exists()) {
-        await csvDir.create(recursive: true);
-      }
+      final csvBytes = utf8.encode(csvString);
 
-      final fileName = '${widget.dbName}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}_mnt_correctivo.csv';
-      final internalFile = File('${csvDir.path}/$fileName');
-      await internalFile.writeAsBytes(csvBytes);
+      // ✅ Nombre del archivo
+      final now = DateTime.now();
+      final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_mnt_correctivo.csv';
 
-      // 9. Permitir al usuario elegir ubicación adicional
-      if (!mounted) return;
-      Navigator.of(context).pop(); // Cerrar diálogo de carga
+      // ✅ Cerrar diálogo de carga
+      if (mounted) Navigator.of(context).pop();
 
+      // ✅ Pedir al usuario dónde guardar
       final directoryPath = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Seleccione carpeta para guardar el archivo',
+        dialogTitle: 'Seleccione carpeta para guardar el CSV',
       );
 
       if (directoryPath != null) {
-        final userFile = File('$directoryPath/$fileName');
-        await userFile.writeAsBytes(csvBytes);
-        _showSnackBar(context, 'Archivo guardado en: $directoryPath/$fileName');
-      } else {
-        _showSnackBar(context, 'Exportación completada (guardado localmente)');
-      }
+        final outFile = File(join(directoryPath, csvName));
+        await outFile.writeAsBytes(csvBytes);
 
-      // 10. Crear respaldo automático
-      await _crearRespaldoAutomatico(csvBytes, fileName);
+        if (mounted) {
+          _showSnackBar(context, 'CSV guardado en: ${outFile.path}');
+        }
+      } else {
+        if (mounted) {
+          _showSnackBar(context, 'Exportación cancelada');
+        }
+      }
     } catch (e) {
-      debugPrint('Error al exportar CSV: $e');
-      if (!mounted) return;
-      Navigator.of(context).pop(); // Cerrar diálogo de carga en caso de error
-      _showSnackBar(context, 'Error al exportar: ${e.toString()}',
-          isError: true, duration: 5);
+      if (mounted) {
+        Navigator.of(context).pop();
+        _showSnackBar(context, 'Error en exportación: $e', isError: true);
+      }
+      debugPrint('Error exportando CSV: $e');
     } finally {
       _isExporting = false;
     }
   }
 
-  Future<void> _crearRespaldoAutomatico(
-      List<int> csvBytes, String fileName) async {
-    try {
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        final backupDir =
-        Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
-        if (!await backupDir.exists()) {
-          await backupDir.create(recursive: true);
-        }
-        final backupFile = File('${backupDir.path}/$fileName');
-        await backupFile.writeAsBytes(csvBytes);
-      }
-    } catch (e) {
-      debugPrint('Error al crear respaldo automático: $e');
-    }
-  }
-
   Future<void> _confirmarSeleccionOtraBalanza(BuildContext context) async {
-    final bool confirmado = await showDialog<bool>(
+    final bool? confirmado = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -275,269 +204,64 @@ class _FinServicioMntcorrectivoScreenState
             children: [
               Text('¿Está seguro que desea seleccionar otra balanza?'),
               SizedBox(height: 10),
-              Text('Se generará un respaldo CSV antes de continuar.',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                'Los datos actuales se mantendrán guardados.',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           actions: <Widget>[
-            TextButton(
-              style: TextButton.styleFrom(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
               ),
-              child: const Text('Cancelar'),
               onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
             ),
-            TextButton(
-              style: TextButton.styleFrom(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
               ),
-              child: const Text('Continuar'),
               onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Sí, continuar'),
             ),
           ],
         );
       },
-    ) ??
-        false;
-
-    if (!confirmado) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 20),
-            Text('Preparando datos para nueva balanza...'),
-          ],
-        ),
-      ),
     );
 
+    if (confirmado != true) return;
+
     try {
-      await _exportBackupCSV();
-      await _copyDataFromId1();
+      // ✅ Obtener el controlador actual de precarga
+      final controller = Provider.of<PrecargaControllerSop>(context, listen: false);
 
-      if (!mounted) return;
-      Navigator.of(context).pop();
+      // ✅ Los datos de cliente, planta y SECA ya están en el controlador
+      // Solo necesitamos ir al paso 3 (Balanza)
+      controller.setCurrentStep(3);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => IdenBalanzaScreen(
-            dbName: widget.dbName,
-            dbPath: widget.dbPath,
-            otValue: widget.otValue,
-            selectedPlantaCodigo: '',
-            selectedCliente: widget.selectedCliente,
-            selectedPlantaNombre: widget.selectedPlantaNombre,
-            loadFromSharedPreferences: true,
+      // ✅ Navegar a la pantalla de precarga en el paso correcto
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (BuildContext context) => PrecargaScreenSop(
+              userName: 'Usuario', // ⚠️ Necesitas pasar el userName desde algún lugar
+              initialStep: 3, // Ir directo al paso de balanza
+              sessionId: widget.sessionId,
+              secaValue: widget.secaValue,
+            ),
           ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      _showSnackBar(context, 'Error al preparar nueva balanza: $e',
-          isError: true, duration: 5);
-    }
-  }
-
-  Future<void> _exportBackupCSV() async {
-    final path = join(widget.dbPath, '${widget.dbName}.db');
-    final db = await openDatabase(path);
-
-    try {
-      // Verificar si la tabla diagnostico tiene datos
-      bool diagnosticoHasData = false;
-      final tables = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
-      if (tables.any((t) => t['name'] == 'diagnostico')) {
-        final count = Sqflite.firstIntValue(await db.rawQuery(
-            'SELECT COUNT(*) FROM diagnostico WHERE cod_metrica IS NOT NULL'
-        )) ?? 0;
-        diagnosticoHasData = count > 0;
-      }
-
-      // Obtener datos combinados según disponibilidad
-      List<Map<String, dynamic>> registros;
-
-      if (diagnosticoHasData) {
-        registros = await db.rawQuery('''
-          SELECT icb.*, mc.*, d.*
-          FROM inf_cliente_balanza AS icb
-          LEFT JOIN mnt_correctivo AS mc ON icb.cod_metrica = mc.cod_metrica
-          LEFT JOIN diagnostico AS d ON icb.cod_metrica = d.cod_metrica
-        ''');
-      } else {
-        registros = await db.rawQuery('''
-          SELECT icb.*, mc.*
-          FROM inf_cliente_balanza AS icb
-          LEFT JOIN mnt_correctivo AS mc ON icb.cod_metrica = mc.cod_metrica
-        ''');
-      }
-
-      // Depurar datos
-      final List<Map<String, dynamic>> registrosDepurados = await _depurarDatos(registros);
-      if (registrosDepurados.isEmpty) {
-        throw Exception('No hay datos para exportar');
-      }
-
-      // Preparar estructura CSV
-      Set<String> uniqueKeys = {};
-      List<String> headers = [];
-
-      for (var registro in registrosDepurados) {
-        for (var key in registro.keys) {
-          if (!uniqueKeys.contains(key)) {
-            uniqueKeys.add(key);
-            headers.add(key);
-          }
-        }
-      }
-
-      List<List<dynamic>> rows = [];
-      rows.add(headers);
-      for (var registro in registrosDepurados) {
-        rows.add(headers.map((header) {
-          final value = registro[header];
-          if (value == null) return '';
-          if (value is double) return value.toStringAsFixed(2);
-          if (value is num) return value.toString();
-          return value.toString();
-        }).toList());
-      }
-
-      // Generar CSV
-      String csv = const ListToCsvConverter(
-        fieldDelimiter: ';',
-        textDelimiter: '"',
-        eol: '\r\n',
-      ).convert(rows);
-      final csvBytes = utf8.encode(csv);
-
-      // Guardar backup
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        final backupDir = Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
-        if (!await backupDir.exists()) {
-          await backupDir.create(recursive: true);
-        }
-
-        final fileName = '${widget.dbName}_mnt_correctivo_auto_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}.csv';
-        final backupFile = File('${backupDir.path}/$fileName');
-        await backupFile.writeAsBytes(csvBytes);
-      }
-    } catch (e) {
-      debugPrint('Error en backup CSV: $e');
-      rethrow; // Propagar el error para manejo superior
-    } finally {
-      await db.close();
-    }
-  }
-
-  Future<void> _copyDataFromId1() async {
-    String path = join(widget.dbPath, '${widget.dbName}.db');
-    final db = await openDatabase(path);
-
-    try {
-      final List<Map<String, dynamic>> result = await db.query(
-        'diagnostico',
-        where: 'id = ?',
-        whereArgs: [1],
-      );
-
-      if (result.isNotEmpty) {
-        final Map<String, dynamic> data = Map.from(result.first);
-        data.remove('id');
-
-        final List<Map<String, dynamic>> allRows =
-        await db.query('mnt_correctivo');
-        final int nextId = allRows.isEmpty ? 2 : allRows.last['id'] + 1;
-
-        await db.insert('mnt_correctivo', {...data, 'id': nextId});
-
-        final List<Map<String, dynamic>> tableInfo =
-        await db.rawQuery('PRAGMA table_info(mnt_correctivo)');
-        final List<String> allColumns =
-        tableInfo.map((col) => col['name'] as String).toList();
-
-        final Map<String, dynamic> emptyData = {};
-        for (final column in allColumns) {
-          if (column != 'id') {
-            emptyData[column] = '';
-          }
-        }
-
-        await db.update(
-          'mnt_correctivo',
-          emptyData,
-          where: 'id = ?',
-          whereArgs: [1],
         );
       }
     } catch (e) {
-      setState(() {
-        errorMessage = 'Error copiando datos: $e';
-      });
-    } finally {
-      await db.close();
-    }
-  }
-
-  Future<void> _backupDatabase(BuildContext context) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 20),
-              Text('Creando respaldo de la base de datos...'),
-            ],
-          ),
-        ),
-      );
-
-      final dbPath = join(widget.dbPath, '${widget.dbName}.db');
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir == null) {
-        throw Exception("No se pudo acceder al almacenamiento externo");
+      if (mounted) {
+        _showSnackBar(
+          context,
+          'Error al navegar: ${e.toString()}',
+          isError: true,
+        );
       }
-
-      final backupDir =
-      Directory('${externalDir.path}/RespaldoSM/Database_Backups');
-      if (!await backupDir.exists()) {
-        await backupDir.create(recursive: true);
-      }
-
-      final now = DateTime.now();
-      final formattedDate =
-          "${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_"
-          "${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}";
-      final backupPath =
-      join(backupDir.path, '${widget.dbName}_backup_$formattedDate.db');
-
-      final dbFile = File(dbPath);
-      if (await dbFile.exists()) {
-        await dbFile.copy(backupPath);
-      }
-
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      _showSnackBar(context, 'RESPALDO REALIZADO CORRECTAMENTE');
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      _showSnackBar(context, 'ERROR AL REALIZAR EL RESPALDO: $e',
-          isError: true);
     }
   }
 
@@ -564,7 +288,7 @@ class _FinServicioMntcorrectivoScreenState
             ),
             const SizedBox(height: 5),
             Text(
-              'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+              'CÓDIGO MET: ${widget.codMetrica}',
               style: TextStyle(
                 fontSize: 10,
                 color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -599,8 +323,9 @@ class _FinServicioMntcorrectivoScreenState
             children: [
               const SizedBox(height: 40.0),
               _buildInfoSection(
-                'EXPORTAR DATOS A CSV',
-                'Al dar clic se generará el archivo CSV con todos los datos registrados. Verifique el SECA para confirmar si ha finalizado con el servicio de todas las balanzas.',
+                'EXPORTAR',
+                'Generará un archivo CSV con todos los datos del mantenimiento correctivo. '
+                    'El archivo se guardará con separador punto y coma (;).',
                 textColor,
               ),
               _buildActionCard(
@@ -613,7 +338,8 @@ class _FinServicioMntcorrectivoScreenState
               const SizedBox(height: 40),
               _buildInfoSection(
                 'SELECCIONAR OTRA BALANZA',
-                'Al dar clic se volverá a la pantalla de identificación de balanza para seleccionar otra balanza del cliente seleccionado.',
+                'Volverá a la pantalla de identificación para seleccionar otra balanza. '
+                    'Los datos actuales se mantendrán guardados en la sesión.',
                 textColor,
               ),
               _buildActionCard(
@@ -626,8 +352,12 @@ class _FinServicioMntcorrectivoScreenState
               const SizedBox(height: 20.0),
               ElevatedButton(
                 onPressed: () async {
-                  await _backupDatabase(context);
+                  // ✅ Exportar CSV antes de finalizar
+                  await _exportDataToCSV(context);
+
                   if (!mounted) return;
+
+                  // ✅ Volver al home
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => const HomeScreen()),

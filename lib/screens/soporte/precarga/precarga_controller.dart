@@ -131,7 +131,7 @@ class PrecargaControllerSop extends ChangeNotifier {
   // MÉTODOS DE VALIDACIÓN
   String? validateStep(int step) {
     switch (step) {
-      case -1: // Tipo de Servicio (NUEVO)
+      case -1: // Tipo de Servicio
         if (_selectedTipoServicio == null || _selectedTipoServicio!.isEmpty) {
           return 'Debe seleccionar un tipo de servicio';
         }

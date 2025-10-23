@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../database/app_database_sop.dart';
 import '../mnt_correctivo/stac_mnt_correctivo.dart';
 import 'fin_servicio_diagnostico.dart';
 
@@ -239,7 +240,7 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
 
         final uint8ListData = Uint8List.fromList(zipData);
         final zipFileName =
-            '${widget.otValue}_${widget.codMetrica}_diagnostico.zip';
+            '${widget.secaValue}_${widget.codMetrica}_diagnostico.zip';
 
         final params = SaveFileDialogParams(
           data: uint8ListData,
@@ -293,73 +294,70 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
 
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // ✅ Usar DatabaseHelperSop
+      final dbHelper = DatabaseHelperSop();
 
-      String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
-      }
-
+      // Preparar comentarios
       final Map<String, dynamic> comentariosData = {};
       for (int i = 0; i < _comentariosControllers.length; i++) {
         comentariosData['comentario_${i + 1}'] =
-            _comentariosControllers[i].text.isNotEmpty
-                ? _comentariosControllers[i].text
-                : null;
+        _comentariosControllers[i].text.isNotEmpty
+            ? _comentariosControllers[i].text
+            : null;
       }
 
-      // Convertir todos los datos a un mapa para la base de datos
+      // ✅ Convertir todos los datos a un mapa para la base de datos
       final Map<String, dynamic> dbData = {
-        'tipo_servicio': 'relevamiento de datos',
+        // ✅ AGREGAR CAMPOS CLAVE
+        'session_id': widget.sessionId,
         'cod_metrica': widget.codMetrica,
+        'otst': widget.secaValue,
+
+        // Campos existentes
+        'tipo_servicio': 'diagnostico',
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
         'reporte': _reporteFallaController.text,
         'evaluacion': _evaluacionController.text,
+
         // Datos de pruebas metrológicas iniciales
         ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
-        //comentarios
+
+        // Comentarios
         ...comentariosData,
-        // Retorno a Cero
-        'retorno_cero_inicial_valoracion':
-            _fieldData['Retorno a cero']?['initial_value'] ?? '',
-        'retorno_cero_inicial_carga':
-            _fieldData['Retorno a cero']?['initial_load'] ?? '',
-        'retorno_cero_inicial_unidad':
-            _fieldData['Retorno a cero']?['initial_unit'] ?? '',
-        // Sección Estructural
+
+        // Retorno a Cero (si existe)
+        'retorno_cero_inicial_valoracion': _fieldData['Retorno a cero']?['initial_value'] ?? '',
+        'retorno_cero_inicial_carga': _fieldData['Retorno a cero']?['initial_load'] ?? '',
+        'retorno_cero_inicial_unidad': _fieldData['Retorno a cero']?['initial_unit'] ?? '',
       };
 
-      // Verificar si ya existe un registro
-      final existing = await db.query(
-        'diagnostico',
-        where: 'cod_metrica = ?',
-        whereArgs: [widget.codMetrica],
-      );
+      // ✅ Agregar datos de campos de inspección (si existen)
+      _fieldData.forEach((label, fieldData) {
+        final key = _getFieldKey(label);
+        dbData[key] = fieldData['initial_value'] ?? '';
+        dbData['${key}_solucion'] = fieldData['solution_value'] ?? '';
 
-      if (existing.isNotEmpty) {
-        await db.update(
-          'diagnostico',
-          dbData,
-          where: 'cod_metrica = ?',
-          whereArgs: [widget.codMetrica],
-        );
-      } else {
-        await db.insert(
-          'diagnostico',
-          dbData,
-        );
-      }
+        // Agregar fotos si existen
+        final fotos = _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
+        if (fotos.isNotEmpty) {
+          dbData['${key}_foto'] = fotos;
+        }
+      });
 
-      await db.close();
+      // ✅ USAR UPSERT (actualiza si existe, inserta si no)
+      await dbHelper.upsertRegistro('diagnostico', dbData);
+
       _showSnackBar(
         context,
         'Datos guardados exitosamente',
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
-      _isDataSaved.value = true;
+
+      setState(() {
+        _isDataSaved.value = true;
+      });
     } catch (e) {
       _showSnackBar(
         context,
@@ -368,9 +366,24 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
         textColor: Colors.white,
       );
       debugPrint('Error al guardar: $e');
-      _isDataSaved.value =
-          false; // Asegurarse de mantenerlo en false si hay error
+      _isDataSaved.value = false;
     }
+  }
+
+  String _getFieldKey(String label) {
+    // Convertir etiquetas a claves de base de datos
+    return label
+        .toLowerCase()
+        .replaceAll(' ', '_')
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll('(', '')
+        .replaceAll(')', '')
+        .replaceAll('/', '_');
   }
 
   Map<String, dynamic> _convertTestDataToDbFormat(
@@ -473,16 +486,14 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
               onPressed: () {
-                Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                Navigator.of(dialogContext).pop();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => StacMntCorrectivoScreen(
-                      dbName: widget.dbName,
-                      dbPath: widget.dbPath,
-                      otValue: widget.otValue,
-                      selectedCliente: widget.selectedCliente,
-                      selectedPlantaNombre: widget.selectedPlantaNombre,
+                      nReca: widget.nReca,
+                      secaValue: widget.secaValue,
+                      sessionId: widget.sessionId,
                       codMetrica: widget.codMetrica,
                     ),
                   ),
@@ -494,16 +505,14 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               onPressed: () {
-                Navigator.of(dialogContext).pop(); // Cerrar diálogo
+                Navigator.of(dialogContext).pop();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => FinServicioDiagnosticoScreen(
-                      dbName: widget.dbName,
-                      dbPath: widget.dbPath,
-                      otValue: widget.otValue,
-                      selectedCliente: widget.selectedCliente,
-                      selectedPlantaNombre: widget.selectedPlantaNombre,
+                      nReca: widget.nReca,
+                      secaValue: widget.secaValue,
+                      sessionId: widget.sessionId,
                       codMetrica: widget.codMetrica,
                     ),
                   ),
@@ -541,7 +550,7 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
               ),
               const SizedBox(height: 5),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,

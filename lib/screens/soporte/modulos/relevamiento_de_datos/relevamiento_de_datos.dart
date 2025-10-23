@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
+import '../../../../database/app_database_sop.dart';
 import '../../componentes/test_container.dart';
 
 class RelevamientoDeDatosScreen extends StatefulWidget {
@@ -140,11 +141,9 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
   @override
   void initState() {
     super.initState();
-    _setupAllAutoSaveListeners();
     _actualizarHora();
     _initializeFieldData();
     _initializeCommentControllers();
-    _setupAllAutoSaveListeners();
   }
 
   void _initializeFieldData() {
@@ -224,16 +223,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
     });
   }
 
-  Future<bool> _doesTableExist(Database db, String tableName) async {
-    try {
-      final result = await db.rawQuery(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName'");
-      return result.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
-  }
-
   Future<bool> _onWillPop(BuildContext context) async {
     final now = DateTime.now();
     if (_lastPressedTime == null ||
@@ -255,15 +244,20 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
   Map<String, dynamic> _prepareDataForSave() {
     final data = <String, dynamic>{
-      'tipo_servicio': 'relevamiento de datos',
+      // ✅ AGREGAR estos campos al inicio
+      'session_id': widget.sessionId,
       'cod_metrica': widget.codMetrica,
+      'otst': widget.secaValue,
+
+      // Campos existentes (MANTENER)
+      'tipo_servicio': 'relevamiento de datos',
       'hora_inicio': _horaController.text,
       'hora_fin': _horaFinController.text,
       'comentario_general': _comentarioGeneralController.text,
       'recomendaciones': _selectedRecommendation ?? '',
     };
 
-    // Agregar datos de inspección
+    // Resto del código existente (MANTENER)
     _fieldData.forEach((label, fieldData) {
       final key = _getFieldKey(label);
       data[key] = fieldData['value'] ?? '';
@@ -271,7 +265,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
       data['${key}_foto'] = fieldData['foto'] ?? '';
     });
 
-    // Agregar datos de pruebas metrológicas
     _extractMetrologicalTestsData(data);
 
     return data;
@@ -823,6 +816,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
   }
 
   Future<void> _saveRelevamientoData(BuildContext context) async {
+    // Validaciones actuales (MANTENER)
     if (_comentarioGeneralController.text.isEmpty) {
       _showSnackBar(
         context,
@@ -860,33 +854,19 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
     }
 
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // ✅ USAR DatabaseHelperSop en lugar de abrir BD manualmente
+      final dbHelper = DatabaseHelperSop();
 
+      // Preparar datos
       final Map<String, dynamic> relevamientoData = _prepareDataForSave();
 
-      final existingRecord = await db.query(
-        'relevamiento_de_datos',
-        where: 'id = ?',
-        whereArgs: [1],
-      );
+      // ✅ AGREGAR session_id y cod_metrica del widget
+      relevamientoData['session_id'] = widget.sessionId;
+      relevamientoData['cod_metrica'] = widget.codMetrica;
+      relevamientoData['otst'] = widget.secaValue;
 
-      if (existingRecord.isNotEmpty) {
-        await db.update(
-          'relevamiento_de_datos',
-          relevamientoData,
-          where: 'id = ?',
-          whereArgs: [1],
-        );
-      } else {
-        await db.insert(
-          'relevamiento_de_datos',
-          relevamientoData,
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
-
-      await db.close();
+      // ✅ USAR upsertRegistro del helper (actualiza si existe, inserta si no)
+      await dbHelper.upsertRegistro('relevamiento_de_datos', relevamientoData);
 
       _showSnackBar(
         context,
@@ -906,6 +886,29 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
         textColor: Colors.white,
       );
       debugPrint('Error al guardar relevamiento: $e');
+    }
+  }
+
+  Future<void> _loadCurrentSessionData(BuildContext context) async {
+    try {
+      final dbHelper = DatabaseHelperSop();
+      final db = await dbHelper.database;
+
+      final savedData = await db.query(
+        'relevamiento_de_datos',
+        where: 'session_id = ? AND cod_metrica = ?',
+        whereArgs: [widget.sessionId, widget.codMetrica],
+      );
+
+      if (savedData.isEmpty) {
+        _showSnackBar(context, 'No hay datos guardados en esta sesión');
+        return;
+      }
+
+      _loadSavedData(context, savedData.first);
+    } catch (e) {
+      _showSnackBar(context, 'Error al cargar datos: $e');
+      debugPrint('Error al cargar datos: $e');
     }
   }
 
@@ -946,137 +949,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
         );
       },
     );
-  }
-
-  Future<void> _showRecoveryDialog(BuildContext context) async {
-    try {
-      final directory = Directory(widget.dbPath);
-      final List<FileSystemEntity> files = await directory.list().toList();
-      final List<FileSystemEntity> dbFiles =
-          files.where((file) => file.path.endsWith('.db')).toList();
-
-      if (dbFiles.isEmpty) {
-        _showSnackBar(
-            context, 'No se encontraron bases de datos para recuperar');
-        return;
-      }
-
-      await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Bases de Datos Disponibles'),
-            content: SingleChildScrollView(
-              child: Column(
-                children: dbFiles.map((dbFile) {
-                  final dbName = basename(dbFile.path);
-                  return ListTile(
-                    title: Text(dbName),
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await _loadSelectedDatabase(dbFile.path, context);
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-            ],
-          );
-        },
-      );
-    } catch (e) {
-      _showSnackBar(context, 'Error al listar bases de datos: $e');
-      debugPrint('Error al listar bases de datos: $e');
-    }
-  }
-
-  Future<void> _loadSelectedDatabase(
-      String dbPath, BuildContext context) async {
-    try {
-      final db = await openDatabase(dbPath);
-      final tableExists = await _doesTableExist(db, 'relevamiento_de_datos');
-      if (!tableExists) {
-        await db.close();
-        _showSnackBar(
-            context, 'La base de datos no contiene datos de relevamiento');
-        return;
-      }
-
-      final savedData = await db.query('relevamiento_de_datos');
-      await db.close();
-
-      if (savedData.isEmpty) {
-        _showSnackBar(context, 'No hay datos guardados en esta base de datos');
-        return;
-      }
-
-      await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Registros Disponibles'),
-            content: SingleChildScrollView(
-              child: Column(
-                children: savedData.map((data) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (data['hora_inicio'] != null)
-                        Text('Hora inicio: ${data['hora_inicio']}'),
-                      if (data['hora_fin'] != null)
-                        Text('Hora fin: ${data['hora_fin']}'),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: () {
-                          _loadSavedData(context, data);
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('Recuperar este registro'),
-                      ),
-                      const Divider(),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-            ],
-          );
-        },
-      );
-    } catch (e) {
-      _showSnackBar(context, 'Error al cargar la base de datos: $e');
-      debugPrint('Error al cargar la base de datos: $e');
-    }
-  }
-
-  void _setupAllAutoSaveListeners() {
-    _comentarioGeneralController.addListener(_autoSaveData);
-    _horaController.addListener(_autoSaveData);
-    _horaFinController.addListener(_autoSaveData);
-
-    _commentControllers.values.forEach((controller) {
-      controller.addListener(_autoSaveData);
-    });
-  }
-
-  void _removeAllAutoSaveListeners() {
-    _comentarioGeneralController.removeListener(_autoSaveData);
-    _horaController.removeListener(_autoSaveData);
-    _horaFinController.removeListener(_autoSaveData);
-
-    _commentControllers.values.forEach((controller) {
-      controller.removeListener(_autoSaveData);
-    });
   }
 
   void _showSnackBar(BuildContext context, String message,
@@ -1184,7 +1056,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
     return WillPopScope(
       onWillPop: () async {
-        await _autoSaveData(force: true);
         return _onWillPop(context);
       },
       child: Scaffold(
@@ -1203,7 +1074,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
               ),
               const SizedBox(height: 5.0),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -1303,7 +1174,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                   onTestsDataChanged: (data) {
                     setState(() {
                       _metrologicalTestsData = data;
-                      _autoSaveData();
                     });
                   },
                   selectedUnit: _selectedUnit,
@@ -1352,7 +1222,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                   onChanged: (String? newValue) {
                     setState(() {
                       _selectedRecommendation = newValue;
-                      _autoSaveData();
                     });
                   },
                   validator: (value) {
@@ -1484,23 +1353,20 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                       builder: (context, isSaved, child) {
                         return Expanded(
                           child: ElevatedButton(
-                            onPressed: isSaved
-                                ? () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => FinServicioScreen(
-                                          dbName: widget.dbName,
-                                          dbPath: widget.dbPath,
-                                          otValue: widget.otValue,
-                                          selectedCliente: widget.selectedCliente,
-                                          selectedPlantaNombre: widget.selectedPlantaNombre,
-                                          codMetrica: widget.codMetrica,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                : null,
+                            onPressed: isSaved ? () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FinServicioScreen(
+                                    sessionId: widget.sessionId,        // ✅ AGREGAR
+                                    secaValue: widget.secaValue,        // ✅ AGREGAR
+                                    codMetrica: widget.codMetrica,
+                                    nReca: widget.nReca,                // ✅ AGREGAR
+                                  ),
+                                ),
+                              );
+                            }
+                            : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isSaved
                                   ? const Color(0xFF167D1D)
@@ -1585,7 +1451,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
           child: const Icon(Icons.restore),
           backgroundColor: Colors.green,
           label: 'Recuperar datos',
-          onTap: () => _showRecoveryDialog(context),
+          onTap: () => _loadCurrentSessionData(context),
         ),
       ],
     );
@@ -1677,7 +1543,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
   @override
   void dispose() {
-    _removeAllAutoSaveListeners();
     _debounceTimer?.cancel();
 
     _comentarioGeneralController.dispose();
