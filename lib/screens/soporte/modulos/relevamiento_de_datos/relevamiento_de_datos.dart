@@ -1419,25 +1419,20 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                         ),
                         const SizedBox(height: 10),
                         if (balanza != null) ...[
-                          _buildDetailContainer(
-                              'Código Métrica', balanza.cod_metrica),
-                          _buildDetailContainer(
-                              'Unidades', balanza.unidad.toString()),
+                          _buildDetailContainer('Código Métrica', balanza.cod_metrica),
+                          _buildDetailContainer('Unidades', balanza.unidad.toString()),
                           _buildDetailContainer('pmax1', balanza.cap_max1),
                           _buildDetailContainer('d1', balanza.d1.toString()),
                           _buildDetailContainer('e1', balanza.e1.toString()),
-                          _buildDetailContainer(
-                              'dec1', balanza.dec1.toString()),
+                          _buildDetailContainer('dec1', balanza.dec1.toString()),
                           _buildDetailContainer('pmax2', balanza.cap_max2),
                           _buildDetailContainer('d2', balanza.d2.toString()),
                           _buildDetailContainer('e2', balanza.e2.toString()),
-                          _buildDetailContainer(
-                              'dec2', balanza.dec2.toString()),
+                          _buildDetailContainer('dec2', balanza.dec2.toString()),
                           _buildDetailContainer('pmax3', balanza.cap_max3),
                           _buildDetailContainer('d3', balanza.d3.toString()),
                           _buildDetailContainer('e3', balanza.e3.toString()),
-                          _buildDetailContainer(
-                              'dec3', balanza.dec3.toString()),
+                          _buildDetailContainer('dec3', balanza.dec3.toString()),
                         ],
                       ],
                     ),

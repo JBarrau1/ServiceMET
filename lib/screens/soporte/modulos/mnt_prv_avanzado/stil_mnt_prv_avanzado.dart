@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
+import '../../../../database/app_database_sop.dart';
 
 class StilMntPrvAvanzadoStacScreen extends StatefulWidget {
   final String nReca;
@@ -42,86 +43,48 @@ class _StilMntPrvAvanzadoStacScreenState
   DateTime? _lastPressedTime;
   final TextEditingController _horaController = TextEditingController();
   //controladores para los comentarios
-  final TextEditingController _vibracionComentarioController =
-      TextEditingController();
-  final TextEditingController _polvoComentarioController =
-      TextEditingController();
-  final TextEditingController _teperaturaComentarioController =
-      TextEditingController();
-  final TextEditingController _humedadComentarioController =
-      TextEditingController();
-  final TextEditingController _mesadaComentarioController =
-      TextEditingController();
-  final TextEditingController _iluminacionComentarioController =
-      TextEditingController();
-  final TextEditingController _limpiezaFosaComentarioController =
-      TextEditingController();
-  final TextEditingController _estadoDrenajeComentarioController =
-      TextEditingController();
-  final TextEditingController _carcasaComentarioController =
-      TextEditingController();
-  final TextEditingController _tecladoFisicoComentarioController =
-      TextEditingController();
-  final TextEditingController _displayFisicoComentarioController =
-      TextEditingController();
-  final TextEditingController _fuentePoderComentarioController =
-      TextEditingController();
-  final TextEditingController _bateriaOperacionalComentarioController =
-      TextEditingController();
-  final TextEditingController _bracketComentarioController =
-      TextEditingController();
-  final TextEditingController _tecladoOperativoComentarioController =
-      TextEditingController();
-  final TextEditingController _displayOperativoComentarioController =
-      TextEditingController();
-  final TextEditingController _contectorCeldaComentarioController =
-      TextEditingController();
-  final TextEditingController _bateriaMemoriaComentarioController =
-      TextEditingController();
-  final TextEditingController _limpiezaGeneralComentarioController =
-      TextEditingController();
-  final TextEditingController _golpesTerminalComentarioController =
-      TextEditingController();
-  final TextEditingController _nivelacionComentarioController =
-      TextEditingController();
-  final TextEditingController _limpiezaReceptorComentarioController =
-      TextEditingController();
-  final TextEditingController _golpesReceptorComentarioController =
-      TextEditingController();
-  final TextEditingController _encendidoComentarioController =
-      TextEditingController();
-  final TextEditingController _limitadorMovimientoComentarioController =
-      TextEditingController();
-  final TextEditingController _suspensionComentarioController =
-      TextEditingController();
-  final TextEditingController _limitadorCargaComentarioController =
-      TextEditingController();
-  final TextEditingController _celdaCargaComentarioController =
-      TextEditingController();
-  final TextEditingController _tapaCajaComentarioController =
-      TextEditingController();
-  final TextEditingController _humedadInternaComentarioController =
-      TextEditingController();
-  final TextEditingController _estadoPrensacablesComentarioController =
-      TextEditingController();
-  final TextEditingController _estadoBorneasComentarioController =
-      TextEditingController();
-  final TextEditingController _pintadoComentarioController =
-      TextEditingController();
-  final TextEditingController _limpiezaProfundaComentarioController =
-      TextEditingController();
+  final TextEditingController _vibracionComentarioController = TextEditingController();
+  final TextEditingController _polvoComentarioController = TextEditingController();
+  final TextEditingController _teperaturaComentarioController = TextEditingController();
+  final TextEditingController _humedadComentarioController = TextEditingController();
+  final TextEditingController _mesadaComentarioController = TextEditingController();
+  final TextEditingController _iluminacionComentarioController = TextEditingController();
+  final TextEditingController _limpiezaFosaComentarioController = TextEditingController();
+  final TextEditingController _estadoDrenajeComentarioController = TextEditingController();
+  final TextEditingController _carcasaComentarioController = TextEditingController();
+  final TextEditingController _tecladoFisicoComentarioController = TextEditingController();
+  final TextEditingController _displayFisicoComentarioController = TextEditingController();
+  final TextEditingController _fuentePoderComentarioController = TextEditingController();
+  final TextEditingController _bateriaOperacionalComentarioController = TextEditingController();
+  final TextEditingController _bracketComentarioController = TextEditingController();
+  final TextEditingController _tecladoOperativoComentarioController = TextEditingController();
+  final TextEditingController _displayOperativoComentarioController = TextEditingController();
+  final TextEditingController _contectorCeldaComentarioController = TextEditingController();
+  final TextEditingController _bateriaMemoriaComentarioController = TextEditingController();
+  final TextEditingController _limpiezaGeneralComentarioController = TextEditingController();
+  final TextEditingController _golpesTerminalComentarioController = TextEditingController();
+  final TextEditingController _nivelacionComentarioController = TextEditingController();
+  final TextEditingController _limpiezaReceptorComentarioController = TextEditingController();
+  final TextEditingController _golpesReceptorComentarioController = TextEditingController();
+  final TextEditingController _encendidoComentarioController = TextEditingController();
+  final TextEditingController _limitadorMovimientoComentarioController = TextEditingController();
+  final TextEditingController _suspensionComentarioController = TextEditingController();
+  final TextEditingController _limitadorCargaComentarioController = TextEditingController();
+  final TextEditingController _celdaCargaComentarioController = TextEditingController();
+  final TextEditingController _tapaCajaComentarioController = TextEditingController();
+  final TextEditingController _humedadInternaComentarioController = TextEditingController();
+  final TextEditingController _estadoPrensacablesComentarioController = TextEditingController();
+  final TextEditingController _estadoBorneasComentarioController = TextEditingController();
+  final TextEditingController _pintadoComentarioController = TextEditingController();
+  final TextEditingController _limpiezaProfundaComentarioController = TextEditingController();
 
   //pruebas metrológicas iniciales
   //Controladores excentricidad
-  final ValueNotifier<String> _retornoCeroInicialDropdownController =
-      ValueNotifier<String>('1 Bueno'); // Controlador inicializado
-  final TextEditingController _retornoCeroInicialValorController =
-      TextEditingController();
-  final TextEditingController _cargaExcInicialController =
-      TextEditingController();
+  final ValueNotifier<String> _retornoCeroInicialDropdownController = ValueNotifier<String>('1 Bueno'); // Controlador inicializado
+  final TextEditingController _retornoCeroInicialValorController = TextEditingController();
+  final TextEditingController _cargaExcInicialController = TextEditingController();
   final TextEditingController _cargaInicialController = TextEditingController();
-  final TextEditingController _oneThirdPmax1InicialController =
-      TextEditingController();
+  final TextEditingController _oneThirdPmax1InicialController = TextEditingController();
   double? _oneThirdpmax1Inicial;
   String _selectedUnitInicial = 'kg';
   bool _showPlatformFieldsInicial = false;
@@ -1093,31 +1056,52 @@ class _StilMntPrvAvanzadoStacScreenState
     }
   }
 
+  // dart
   Future<double> _getD1FromDatabase() async {
     try {
-      String path = join(await getDatabasesPath(), '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      final dbHelper = DatabaseHelperSop();
+      Database? db;
 
-      // Verificar si la tabla existe primero
-      final tableExists = await _doesTableExist(db, 'inf_cliente_balanza');
+      // Intentar obtener la BD desde la helper (compatible con distintas API)
+      try {
+        db = await (dbHelper as dynamic).database;
+      } catch (_) {
+        try {
+          db = await (dbHelper as dynamic).getDatabase();
+        } catch (__) {
+          db = null;
+        }
+      }
+
+      // Si no se pudo obtener la DB desde el helper, devolver valor por defecto
+      if (db == null) {
+        debugPrint('No se pudo obtener la instancia de Database desde DatabaseHelperSop');
+        return 0.1;
+      }
+
+      // Verificar si la tabla existe
+      final tableExists = await _doesTableExist(db, 'mnt_prv_avanzado_stil');
       if (!tableExists) return 0.1;
 
       final List<Map<String, dynamic>> result = await db.query(
-          'inf_cliente_balanza',
-          where: 'id = ?',
-          whereArgs: [1],
-          columns: ['d1'],
-          limit: 1);
+        'mnt_prv_avanzado_stil',
+        where: 'id = ?',
+        whereArgs: [1],
+        columns: ['d1'],
+        limit: 1,
+      );
 
       if (result.isNotEmpty && result.first['d1'] != null) {
         return double.tryParse(result.first['d1'].toString()) ?? 0.1;
       }
+
       return 0.1;
     } catch (e) {
       debugPrint('Error al obtener d1: $e');
       return 0.1;
     }
   }
+
 
   void _updateIndicacionValuesInicial(String value) {
     if (value.isEmpty) return;
@@ -2598,7 +2582,7 @@ class _StilMntPrvAvanzadoStacScreenState
 
       final uint8ListData = Uint8List.fromList(zipData);
       final zipFileName =
-          '${widget.otValue}_${widget.codMetrica}_mnt_prv_avanzado_stil.zip';
+          '${widget.secaValue}_${widget.codMetrica}_mnt_prv_avanzado_stil.zip';
 
       final params = SaveFileDialogParams(
         data: uint8ListData,
@@ -2643,27 +2627,6 @@ class _StilMntPrvAvanzadoStacScreenState
   }
 
   Future<void> _savemnt_prv_regular_stilData(BuildContext context) async {
-    // Validaciones básicas
-    if (_retornoCeroInicialValorController.text.isEmpty) {
-      _showSnackBar(
-        context,
-        'Por favor complete el campo "Carga de Prueba Inicial"',
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-      return;
-    }
-
-    if (_retornoCeroValorController.text.isEmpty) {
-      _showSnackBar(
-        context,
-        'Por favor complete el campo "Carga de Prueba Final"',
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-      return;
-    }
-
     if (_comentarioGeneralController.text.isEmpty) {
       _showSnackBar(
         context,
@@ -2675,19 +2638,22 @@ class _StilMntPrvAvanzadoStacScreenState
     }
 
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // âœ… USAR DatabaseHelperSop
+      final dbHelper = DatabaseHelperSop();
 
       // Convertir listas de fotos a strings separados por comas
       String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
+        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
       }
 
       // Preparar datos para insertar/actualizar
       final Map<String, dynamic> relevamientoData = {
-        'tipo_servicio': 'mnt prv avanzado stil',
+        // âœ… CAMPOS CLAVE PARA IDENTIFICAR LA SESIÓN
+        'session_id': widget.sessionId,
         'cod_metrica': widget.codMetrica,
+
+        // Campos existentes
+        'tipo_servicio': 'mnt prv avanzado stil',
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
         'comentario_general': _comentarioGeneralController.text,
@@ -2890,8 +2856,7 @@ class _StilMntPrvAvanzadoStacScreenState
           final position = i + 1;
           relevamientoData.addAll({
             'posicion_inicial_$position': _positionInicialControllers[i].text,
-            'indicacion_inicial_$position':
-                _indicationInicialControllers[i].text,
+            'indicacion_inicial_$position': _indicationInicialControllers[i].text,
             'retorno_inicial_$position': _returnInicialControllers[i].text,
           });
         }
@@ -2899,26 +2864,22 @@ class _StilMntPrvAvanzadoStacScreenState
 
       if (_showRepetibilidadFieldsInicial) {
         // Carga 1 inicial
-        relevamientoData['repetibilidad1_inicial'] =
-            _repetibilidadInicialController1.text;
+        relevamientoData['repetibilidad1_inicial'] = _repetibilidadInicialController1.text;
         for (int i = 0; i < _selectedRowCountInicial; i++) {
           final testNum = i + 1;
           relevamientoData.addAll({
-            'indicacion1_inicial_$testNum':
-                _indicacionInicialControllers1[i].text,
+            'indicacion1_inicial_$testNum': _indicacionInicialControllers1[i].text,
             'retorno1_inicial_$testNum': _retornoInicialControllers1[i].text,
           });
         }
 
         // Carga 2 inicial (si aplica)
         if (_selectedRepetibilityCountInicial >= 2) {
-          relevamientoData['repetibilidad2_inicial'] =
-              _repetibilidadInicialController2.text;
+          relevamientoData['repetibilidad2_inicial'] = _repetibilidadInicialController2.text;
           for (int i = 0; i < _selectedRowCountInicial; i++) {
             final testNum = i + 1;
             relevamientoData.addAll({
-              'indicacion2_inicial_$testNum':
-                  _indicacionInicialControllers2[i].text,
+              'indicacion2_inicial_$testNum': _indicacionInicialControllers2[i].text,
               'retorno2_inicial_$testNum': _retornoInicialControllers2[i].text,
             });
           }
@@ -2926,13 +2887,11 @@ class _StilMntPrvAvanzadoStacScreenState
 
         // Carga 3 inicial (si aplica)
         if (_selectedRepetibilityCountInicial >= 3) {
-          relevamientoData['repetibilidad3_inicial'] =
-              _repetibilidadInicialController3.text;
+          relevamientoData['repetibilidad3_inicial'] = _repetibilidadInicialController3.text;
           for (int i = 0; i < _selectedRowCountInicial; i++) {
             final testNum = i + 1;
             relevamientoData.addAll({
-              'indicacion3_inicial_$testNum':
-                  _indicacionInicialControllers3[i].text,
+              'indicacion3_inicial_$testNum': _indicacionInicialControllers3[i].text,
               'retorno3_inicial_$testNum': _retornoInicialControllers3[i].text,
             });
           }
@@ -2945,8 +2904,7 @@ class _StilMntPrvAvanzadoStacScreenState
           relevamientoData.addAll({
             'lin_inicial_$pointNum': _rowsInicial[i]['lt']?.text ?? '',
             'ind_inicial_$pointNum': _rowsInicial[i]['indicacion']?.text ?? '',
-            'retorno_lin_inicial_$pointNum':
-                _rowsInicial[i]['retorno']?.text ?? '0',
+            'retorno_lin_inicial_$pointNum': _rowsInicial[i]['retorno']?.text ?? '0',
           });
         }
       }
@@ -2978,13 +2936,11 @@ class _StilMntPrvAvanzadoStacScreenState
       }
 
       if (_showRepetibilidadFields) {
-        relevamientoData['repetibilidad_count_final'] =
-            _selectedRepetibilityCount;
+        relevamientoData['repetibilidad_count_final'] = _selectedRepetibilityCount;
         relevamientoData['repetibilidad_rows_final'] = _selectedRowCount;
 
         // Carga 1 final
-        relevamientoData['repetibilidad1_final'] =
-            _repetibilidadController1.text;
+        relevamientoData['repetibilidad1_final'] = _repetibilidadController1.text;
         for (int i = 0; i < _selectedRowCount; i++) {
           final testNum = i + 1;
           relevamientoData.addAll({
@@ -2995,8 +2951,7 @@ class _StilMntPrvAvanzadoStacScreenState
 
         // Carga 2 final (si aplica)
         if (_selectedRepetibilityCount >= 2) {
-          relevamientoData['repetibilidad2_final'] =
-              _repetibilidadController2.text;
+          relevamientoData['repetibilidad2_final'] = _repetibilidadController2.text;
           for (int i = 0; i < _selectedRowCount; i++) {
             final testNum = i + 1;
             relevamientoData.addAll({
@@ -3008,8 +2963,7 @@ class _StilMntPrvAvanzadoStacScreenState
 
         // Carga 3 final (si aplica)
         if (_selectedRepetibilityCount >= 3) {
-          relevamientoData['repetibilidad3_final'] =
-              _repetibilidadController3.text;
+          relevamientoData['repetibilidad3_final'] = _repetibilidadController3.text;
           for (int i = 0; i < _selectedRowCount; i++) {
             final testNum = i + 1;
             relevamientoData.addAll({
@@ -3031,27 +2985,8 @@ class _StilMntPrvAvanzadoStacScreenState
         }
       }
 
-      // Verificar si ya existe un registro para esta OT y código métrica
-      final existingRecords = await db.query(
-        'mnt_prv_avanzado_stil',
-      );
-
-      if (existingRecords.isNotEmpty) {
-        // Actualizar registro existente
-        await db.update(
-          'mnt_prv_avanzado_stil',
-          relevamientoData,
-        );
-      } else {
-        // Insertar nuevo registro
-        await db.insert(
-          'mnt_prv_avanzado_stil',
-          relevamientoData,
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
-
-      await db.close();
+      // ✅ USAR upsertRegistro del helper (actualiza si existe, inserta si no)
+      await dbHelper.upsertRegistro('mnt_prv_avanzado_stil', relevamientoData);
 
       _showSnackBar(
         context,
@@ -3100,7 +3035,7 @@ class _StilMntPrvAvanzadoStacScreenState
               ),
               const SizedBox(height: 5.0),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}', // Aquí se añade el código métrico
+                'CÓDIGO MET: ${widget.codMetrica}', // Aquí se añade el código métrico
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -4052,26 +3987,21 @@ class _StilMntPrvAvanzadoStacScreenState
                       builder: (context, isSaved, child) {
                         return Expanded(
                           child: ElevatedButton(
-                            onPressed: isSaved
-                                ? () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            FinServicioMntAvaStilScreen(
-                                          dbName: widget.dbName,
-                                          dbPath: widget.dbPath,
-                                          otValue: widget.otValue,
-                                          selectedCliente:
-                                              widget.selectedCliente,
-                                          selectedPlantaNombre:
-                                              widget.selectedPlantaNombre,
-                                          codMetrica: widget.codMetrica,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                : null,
+                            onPressed: isSaved ? ()
+                            {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FinServicioMntAvaStilScreen(
+                                    sessionId: widget.sessionId,
+                                    secaValue: widget.secaValue,
+                                    codMetrica: widget.codMetrica,
+                                    nReca: widget.nReca,
+                                  ),
+                                ),
+                              );
+                            }
+                            : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor:
                               isSaved ? const Color(0xFF167D1D) : Colors.grey,
