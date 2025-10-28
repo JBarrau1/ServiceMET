@@ -2,12 +2,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class MntPrvRegularStilModel {
-  final String dbName;
-  final String dbPath;
-  final String otValue;
-  final String selectedCliente;
-  final String selectedPlantaNombre;
+
   final String codMetrica;
+  final String sessionId; // ✅ AGREGAR
+  final String secaValue; // ✅ AGREGAR
 
   // Campos de estado general
   Map<String, CampoEstado> camposEstado;
@@ -26,12 +24,10 @@ class MntPrvRegularStilModel {
   String horaFin;
 
   MntPrvRegularStilModel({
-    required this.dbName,
-    required this.dbPath,
-    required this.otValue,
-    required this.selectedCliente,
-    required this.selectedPlantaNombre,
+
     required this.codMetrica,
+    required this.sessionId,
+    required this.secaValue,
     required this.camposEstado,
     PruebasMetrologicas? pruebasIniciales,
     PruebasMetrologicas? pruebasFinales,

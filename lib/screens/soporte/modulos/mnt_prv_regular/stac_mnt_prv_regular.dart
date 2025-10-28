@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
@@ -12,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../database/app_database_sop.dart';
 import 'fin_servicio_stac.dart';
 
 class StacMntPrvRegularStacScreen extends StatefulWidget {
@@ -33,12 +35,14 @@ class StacMntPrvRegularStacScreen extends StatefulWidget {
       _StacMntPrvRegularStacScreenState();
 }
 
-class _StacMntPrvRegularStacScreenState
-    extends State<StacMntPrvRegularStacScreen> {
+class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScreen> {
+
+  final _formKey = GlobalKey<FormState>();
+  Timer? _debounceTimer;
+
   final TextEditingController _horaController = TextEditingController();
   final TextEditingController _horaFinController = TextEditingController();
-  final TextEditingController _comentarioGeneralController =
-      TextEditingController();
+  final TextEditingController _comentarioGeneralController = TextEditingController();
 
   String? _selectedRecommendation;
   String? _selectedFisico;
@@ -58,84 +62,51 @@ class _StacMntPrvRegularStacScreenState
   DateTime? _lastPressedTime;
 
   //controladores de comentarios de los campos
-  final TextEditingController _lazasAproximacionComentarioController =
-      TextEditingController();
-  final TextEditingController _fundacionesComentarioController =
-      TextEditingController();
+  final TextEditingController _lazasAproximacionComentarioController = TextEditingController();
+  final TextEditingController _fundacionesComentarioController = TextEditingController();
 
 // Sección de limpieza y drenaje
-  final TextEditingController _limpiezaPerimetroComentarioController =
-      TextEditingController();
-  final TextEditingController _fosaHumedadComentarioController =
-      TextEditingController();
-  final TextEditingController _drenajeComentarioController =
-      TextEditingController();
-  final TextEditingController _bombaSumideroComentarioController =
-      TextEditingController();
+  final TextEditingController _limpiezaPerimetroComentarioController = TextEditingController();
+  final TextEditingController _fosaHumedadComentarioController = TextEditingController();
+  final TextEditingController _drenajeComentarioController = TextEditingController();
+  final TextEditingController _bombaSumideroComentarioController = TextEditingController();
 
 // Sección de Chequeo
-  final TextEditingController _corrosionComentarioController =
-      TextEditingController();
-  final TextEditingController _grietasComentarioController =
-      TextEditingController();
-  final TextEditingController _tapasPernosComentarioController =
-      TextEditingController();
-  final TextEditingController _desgasteEstresComentarioController =
-      TextEditingController();
-  final TextEditingController _escombrosComentarioController =
-      TextEditingController();
-  final TextEditingController _rielesLateralesComentarioController =
-      TextEditingController();
-  final TextEditingController _paragolpesLongitudinalesComentarioController =
-      TextEditingController();
-  final TextEditingController _paragolpesTransversalesComentarioController =
-      TextEditingController();
+  final TextEditingController _corrosionComentarioController = TextEditingController();
+  final TextEditingController _grietasComentarioController = TextEditingController();
+  final TextEditingController _tapasPernosComentarioController = TextEditingController();
+  final TextEditingController _desgasteEstresComentarioController = TextEditingController();
+  final TextEditingController _escombrosComentarioController = TextEditingController();
+  final TextEditingController _rielesLateralesComentarioController = TextEditingController();
+  final TextEditingController _paragolpesLongitudinalesComentarioController = TextEditingController();
+  final TextEditingController _paragolpesTransversalesComentarioController = TextEditingController();
 
 // Sección de Verificaciones eléctricas
-  final TextEditingController _cableHomeRunComentarioController =
-      TextEditingController();
-  final TextEditingController _cableCeldaCeldaComentarioController =
-      TextEditingController();
-  final TextEditingController _cablesConectadosComentarioController =
-      TextEditingController();
-  final TextEditingController _conexionCeldasComentarioController =
-      TextEditingController();
-  final TextEditingController _fundaConectorComentarioController =
-      TextEditingController();
-  final TextEditingController _conectorTerminacionComentarioController =
-      TextEditingController();
+  final TextEditingController _cableHomeRunComentarioController = TextEditingController();
+  final TextEditingController _cableCeldaCeldaComentarioController = TextEditingController();
+  final TextEditingController _cablesConectadosComentarioController = TextEditingController();
+  final TextEditingController _conexionCeldasComentarioController = TextEditingController();
+  final TextEditingController _fundaConectorComentarioController = TextEditingController();
+  final TextEditingController _conectorTerminacionComentarioController = TextEditingController();
 
 // Sección de protección contra rayos
-  final TextEditingController _proteccionRayosComentarioController =
-      TextEditingController();
-  final TextEditingController _correaTierraComentarioController =
-      TextEditingController();
-  final TextEditingController _tensionNeutroTierraComentarioController =
-      TextEditingController();
-  final TextEditingController _impresoraShieldComentarioController =
-      TextEditingController();
+  final TextEditingController _proteccionRayosComentarioController = TextEditingController();
+  final TextEditingController _correaTierraComentarioController = TextEditingController();
+  final TextEditingController _tensionNeutroTierraComentarioController = TextEditingController();
+  final TextEditingController _impresoraShieldComentarioController = TextEditingController();
 
 // Sección de Terminal
-  final TextEditingController _terminalCarcasaComentarioController =
-      TextEditingController();
-  final TextEditingController _terminalBateriaComentarioController =
-      TextEditingController();
-  final TextEditingController _terminalTecladoComentarioController =
-      TextEditingController();
-  final TextEditingController _terminalPantallaComentarioController =
-      TextEditingController();
-  final TextEditingController _terminalRegistrosComentarioController =
-      TextEditingController();
-  final TextEditingController _terminalServicioComentarioController =
-      TextEditingController();
-  final TextEditingController _terminalBackupComentarioController =
-      TextEditingController();
-  final TextEditingController _terminalOperativoComentarioController =
-      TextEditingController();
+  final TextEditingController _terminalCarcasaComentarioController = TextEditingController();
+  final TextEditingController _terminalBateriaComentarioController = TextEditingController();
+  final TextEditingController _terminalTecladoComentarioController = TextEditingController();
+  final TextEditingController _terminalPantallaComentarioController = TextEditingController();
+  final TextEditingController _terminalRegistrosComentarioController = TextEditingController();
+  final TextEditingController _terminalServicioComentarioController = TextEditingController();
+  final TextEditingController _terminalBackupComentarioController = TextEditingController();
+  final TextEditingController _terminalOperativoComentarioController = TextEditingController();
 
 // Sección de Calibración
-  final TextEditingController _calibracionComentarioController =
-      TextEditingController();
+  final TextEditingController _calibracionComentarioController = TextEditingController();
 
   @override
   void initState() {
@@ -316,7 +287,7 @@ class _StacMntPrvRegularStacScreenState
 
         final uint8ListData = Uint8List.fromList(zipData);
         final zipFileName =
-            '${widget.otValue}_${widget.codMetrica}_relevamiento_de_datos_fotos.zip';
+            '${widget.secaValue}_${widget.codMetrica}_relevamiento_de_datos_fotos.zip';
 
         final params = SaveFileDialogParams(
           data: uint8ListData,
@@ -370,18 +341,20 @@ class _StacMntPrvRegularStacScreenState
 
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // ✅ USAR DatabaseHelperSop en lugar de abrir BD manualmente
+      final dbHelper = DatabaseHelperSop();
 
       String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
+        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
       }
 
       // Convertir todos los datos a un mapa para la base de datos
       final Map<String, dynamic> dbData = {
+        // ✅ AGREGAR estos 3 campos PRIMERO
+        'session_id': widget.sessionId,
+        'otst': widget.secaValue,
+
         'tipo_servicio': 'mnt prv regular stac',
-        'cod_metrica': widget.codMetrica,
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
         'comentario_general': _comentarioGeneralController.text,
@@ -766,28 +739,9 @@ class _StacMntPrvRegularStacScreenState
             'Calibración de balanza realiza y dentro de tolerancia'),
       };
 
-      // Verificar si ya existe un registro
-      final existing = await db.query(
-        'mnt_prv_regular_stac',
-        where: 'cod_metrica = ?',
-        whereArgs: [widget.codMetrica],
-      );
+      // ✅ USAR upsertRegistro en lugar de verificar y actualizar/insertar manualmente
+      await dbHelper.upsertRegistro('mnt_prv_regular_stac', dbData);
 
-      if (existing.isNotEmpty) {
-        await db.update(
-          'mnt_prv_regular_stac',
-          dbData,
-          where: 'cod_metrica = ?',
-          whereArgs: [widget.codMetrica],
-        );
-      } else {
-        await db.insert(
-          'mnt_prv_regular_stac',
-          dbData,
-        );
-      }
-
-      await db.close();
       _showSnackBar(
         context,
         'Datos guardados exitosamente',
@@ -800,8 +754,7 @@ class _StacMntPrvRegularStacScreenState
       _showSnackBar(
           context, 'Error al guardar pruebas metrológicas: ${e.toString()}');
       debugPrint('Error al guardar pruebas metrológicas: $e');
-      _isDataSaved.value =
-          false; // Asegurarse de mantenerlo en false si hay error
+      _isDataSaved.value = false;
     }
   }
 
@@ -1022,7 +975,7 @@ class _StacMntPrvRegularStacScreenState
               ),
               const SizedBox(height: 5),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -1556,25 +1509,20 @@ class _StacMntPrvRegularStacScreenState
                     builder: (context, isSaved, child) {
                       return Expanded(
                         child: ElevatedButton(
-                          onPressed: isSaved
-                              ? () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          FinServicioMntPrvStacScreen(
-                                        dbName: widget.dbName,
-                                        dbPath: widget.dbPath,
-                                        otValue: widget.otValue,
-                                        selectedCliente: widget.selectedCliente,
-                                        selectedPlantaNombre:
-                                            widget.selectedPlantaNombre,
-                                        codMetrica: widget.codMetrica,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              : null,
+                          onPressed: isSaved ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FinServicioMntPrvStacScreen(
+                                  sessionId: widget.sessionId,
+                                  secaValue: widget.secaValue,
+                                  codMetrica: widget.codMetrica,
+                                  nReca: widget.nReca,
+                                ),
+                              ),
+                            );
+                          }
+                          : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                             isSaved ? const Color(0xFF167D1D) : Colors.grey,

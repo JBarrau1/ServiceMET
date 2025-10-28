@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +8,6 @@ import 'package:service_met/provider/balanza_provider.dart';
 import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/fin_servicio_stil.dart';
 import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/estado_general_widget.dart';
 import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/pruebas_metrologicas_widget.dart';
-
 import 'controllers/mnt_prv_regular_stil_controller.dart';
 import 'models/mnt_prv_regular_stil_model.dart';
 
@@ -32,8 +30,7 @@ class StilMntPrvRegularStacScreen extends StatefulWidget {
       _StilMntPrvRegularStacScreenState();
 }
 
-class _StilMntPrvRegularStacScreenState
-    extends State<StilMntPrvRegularStacScreen> {
+class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScreen> {
   late MntPrvRegularStilModel _model;
   late MntPrvRegularStilController _controller;
   final _formKey = GlobalKey<FormState>();
@@ -90,12 +87,10 @@ class _StilMntPrvRegularStacScreenState
     };
 
     _model = MntPrvRegularStilModel(
-      dbName: widget.dbName,
-      dbPath: widget.dbPath,
-      otValue: widget.otValue,
-      selectedCliente: widget.selectedCliente,
-      selectedPlantaNombre: widget.selectedPlantaNombre,
+      // ❌ ELIMINAR: dbName, dbPath, otValue, selectedCliente, selectedPlantaNombre
       codMetrica: widget.codMetrica,
+      sessionId: widget.sessionId, // ✅ AGREGAR
+      secaValue: widget.secaValue, // ✅ AGREGAR
       camposEstado: camposEstado,
       pruebasIniciales: PruebasMetrologicas(),
       pruebasFinales: PruebasMetrologicas(),
@@ -129,11 +124,18 @@ class _StilMntPrvRegularStacScreenState
 
   Future<double> _getD1FromDatabase() async {
     try {
-      final balanza = Provider.of<BalanzaProvider>(context, listen: false)
-          .selectedBalanza;
-      return balanza?.d1 ?? 0.1;
+      // ✅ PRIMERO intentar con el controller
+      return await _controller.getD1FromDatabase();
     } catch (e) {
-      return 0.1;
+      // ✅ FALLBACK: intentar con el provider de balanza
+      try {
+        final balanza = Provider.of<BalanzaProvider>(context, listen: false)
+            .selectedBalanza;
+        return balanza?.d1 ?? 0.1;
+      } catch (e) {
+        debugPrint('Error al obtener d1 del provider: $e');
+        return 0.1;
+      }
     }
   }
 
@@ -207,7 +209,7 @@ class _StilMntPrvRegularStacScreenState
               ),
               const SizedBox(height: 5),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -581,12 +583,10 @@ class _StilMntPrvRegularStacScreenState
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => FinServicioMntPrvStilScreen(
-                                            dbName: widget.dbName,
-                                            dbPath: widget.dbPath,
-                                            otValue: widget.otValue,
-                                            selectedCliente: widget.selectedCliente,
-                                            selectedPlantaNombre: widget.selectedPlantaNombre,
+                                            sessionId: widget.sessionId,
+                                            secaValue: widget.secaValue,
                                             codMetrica: widget.codMetrica,
+                                            nReca: widget.nReca,
                                           ),
                                         ),
                                       );

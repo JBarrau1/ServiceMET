@@ -1358,10 +1358,10 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => FinServicioScreen(
-                                    sessionId: widget.sessionId,        // ✅ AGREGAR
-                                    secaValue: widget.secaValue,        // ✅ AGREGAR
+                                    sessionId: widget.sessionId,
+                                    secaValue: widget.secaValue,
                                     codMetrica: widget.codMetrica,
-                                    nReca: widget.nReca,                // ✅ AGREGAR
+                                    nReca: widget.nReca,
                                   ),
                                 ),
                               );

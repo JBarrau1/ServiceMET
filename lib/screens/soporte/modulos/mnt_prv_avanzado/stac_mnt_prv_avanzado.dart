@@ -13,6 +13,8 @@ import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../database/app_database_sop.dart';
+
 class StacMntPrvAvanzadoStacScreen extends StatefulWidget {
   final String nReca;
   final String secaValue;
@@ -347,7 +349,7 @@ class _StacMntPrvAvanzadoStacScreenState
 
         final uint8ListData = Uint8List.fromList(zipData);
         final zipFileName =
-            '${widget.otValue}_${widget.codMetrica}_relevamiento_de_datos_fotos.zip';
+            '${widget.secaValue}_${widget.codMetrica}_relevamiento_de_datos_fotos.zip';
 
         final params = SaveFileDialogParams(
           data: uint8ListData,
@@ -401,12 +403,11 @@ class _StacMntPrvAvanzadoStacScreenState
 
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+
+      final dbHelper = DatabaseHelperSop();
 
       String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
+        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
       }
 
       // Convertir todos los datos a un mapa para la base de datos
@@ -426,71 +427,42 @@ class _StacMntPrvAvanzadoStacScreenState
         ..._convertTestDataToDbFormat(_finalTestsData, 'final'),
 
         // Retorno a Cero
-        'retorno_cero_inicial_valoracion':
-            _fieldData['Retorno a cero']?['initial_value'] ?? '',
-        'retorno_cero_inicial_carga':
-            _fieldData['Retorno a cero']?['initial_load'] ?? '',
-        'retorno_cero_inicial_unidad':
-            _fieldData['Retorno a cero']?['initial_unit'] ?? '',
-        'retorno_cero_final_valoracion':
-            _fieldData['Retorno a cero']?['solution_value'] ?? '',
-        'retorno_cero_final_carga':
-            _fieldData['Retorno a cero']?['final_load'] ?? '',
-        'retorno_cero_final_unidad':
-            _fieldData['Retorno a cero']?['final_unit'] ?? '',
+        'retorno_cero_inicial_valoracion': _fieldData['Retorno a cero']?['initial_value'] ?? '',
+        'retorno_cero_inicial_carga': _fieldData['Retorno a cero']?['initial_load'] ?? '',
+        'retorno_cero_inicial_unidad': _fieldData['Retorno a cero']?['initial_unit'] ?? '',
+        'retorno_cero_final_valoracion': _fieldData['Retorno a cero']?['solution_value'] ?? '',
+        'retorno_cero_final_carga': _fieldData['Retorno a cero']?['final_load'] ?? '',
+        'retorno_cero_final_unidad': _fieldData['Retorno a cero']?['final_unit'] ?? '',
 
         // Sección Estructural
-        'losas_aproximacion_estado':
-            _fieldData['Losas de aproximación (daños o grietas)']
-                    ?['initial_value'] ??
-                '',
-        'losas_aproximacion_solucion':
-            _fieldData['Losas de aproximación (daños o grietas)']
-                    ?['solution_value'] ??
-                '',
-        'losas_aproximacion_comentario':
-            _lazasAproximacionComentarioController.text,
-        'losas_aproximacion_foto':
-            getFotosString('Losas de aproximación (daños o grietas)'),
+        'losas_aproximacion_estado': _fieldData['Losas de aproximación (daños o grietas)']?['initial_value'] ?? '',
+        'losas_aproximacion_solucion': _fieldData['Losas de aproximación (daños o grietas)']?['solution_value'] ?? '',
+        'losas_aproximacion_comentario': _lazasAproximacionComentarioController.text,
+        'losas_aproximacion_foto': getFotosString('Losas de aproximación (daños o grietas)'),
 
-        'fundaciones_estado':
-            _fieldData['Fundaciones (daños o grietas)']?['initial_value'] ?? '',
-        'fundaciones_solucion': _fieldData['Fundaciones (daños o grietas)']
-                ?['solution_value'] ??
-            '',
+        'fundaciones_estado': _fieldData['Fundaciones (daños o grietas)']?['initial_value'] ?? '',
+        'fundaciones_solucion': _fieldData['Fundaciones (daños o grietas)']?['solution_value'] ?? '',
         'fundaciones_comentario': _fundacionesComentarioController.text,
         'fundaciones_foto': getFotosString('Fundaciones (daños o grietas)'),
 
         // Sección de limpieza y drenaje
-        'limpieza_perimetro_estado':
-            _fieldData['Limpieza de perímetro de balanza']?['initial_value'] ??
-                '',
-        'limpieza_perimetro_solucion':
-            _fieldData['Limpieza de perímetro de balanza']?['solution_value'] ??
-                '',
-        'limpieza_perimetro_comentario':
-            _limpiezaPerimetroComentarioController.text,
-        'limpieza_perimetro_foto':
-            getFotosString('Limpieza de perímetro de balanza'),
+        'limpieza_perimetro_estado': _fieldData['Limpieza de perímetro de balanza']?['initial_value'] ?? '',
+        'limpieza_perimetro_solucion': _fieldData['Limpieza de perímetro de balanza']?['solution_value'] ??'',
+        'limpieza_perimetro_comentario': _limpiezaPerimetroComentarioController.text,
+        'limpieza_perimetro_foto': getFotosString('Limpieza de perímetro de balanza'),
 
-        'fosa_humedad_estado':
-            _fieldData['Fosa libre de humedad']?['initial_value'] ?? '',
-        'fosa_humedad_solucion':
-            _fieldData['Fosa libre de humedad']?['solution_value'] ?? '',
+        'fosa_humedad_estado': _fieldData['Fosa libre de humedad']?['initial_value'] ?? '',
+        'fosa_humedad_solucion': _fieldData['Fosa libre de humedad']?['solution_value'] ?? '',
         'fosa_humedad_comentario': _fosaHumedadComentarioController.text,
         'fosa_humedad_foto': getFotosString('Fosa libre de humedad'),
 
-        'drenaje_libre_estado':
-            _fieldData['Drenaje libre']?['initial_value'] ?? '',
-        'drenaje_libre_solucion':
-            _fieldData['Drenaje libre']?['solution_value'] ?? '',
+        'drenaje_libre_estado': _fieldData['Drenaje libre']?['initial_value'] ?? '',
+        'drenaje_libre_solucion': _fieldData['Drenaje libre']?['solution_value'] ?? '',
         'drenaje_libre_comentario': _drenajeComentarioController.text,
         'drenaje_libre_foto': getFotosString('Drenaje libre'),
 
-        'bomba_sumidero_estado':
-            _fieldData['Bomba de sumidero funcional']?['initial_value'] ?? '',
-        'bomba_sumidero_solucion':
-            _fieldData['Bomba de sumidero funcional']?['solution_value'] ?? '',
+        'bomba_sumidero_estado': _fieldData['Bomba de sumidero funcional']?['initial_value'] ?? '',
+        'bomba_sumidero_solucion': _fieldData['Bomba de sumidero funcional']?['solution_value'] ?? '',
         'bomba_sumidero_comentario': _bombaSumideroComentarioController.text,
         'bomba_sumidero_foto': getFotosString('Bomba de sumidero funcional'),
 
@@ -505,400 +477,174 @@ class _StacMntPrvAvanzadoStacScreenState
         'grietas_comentario': _grietasComentarioController.text,
         'grietas_foto': getFotosString('Grietas'),
 
-        'tapas_pernos_estado':
-            _fieldData['Tapas superiores y pernos']?['initial_value'] ?? '',
-        'tapas_pernos_solucion':
-            _fieldData['Tapas superiores y pernos']?['solution_value'] ?? '',
+        'tapas_pernos_estado': _fieldData['Tapas superiores y pernos']?['initial_value'] ?? '',
+        'tapas_pernos_solucion': _fieldData['Tapas superiores y pernos']?['solution_value'] ?? '',
         'tapas_pernos_comentario': _tapasPernosComentarioController.text,
         'tapas_pernos_foto': getFotosString('Tapas superiores y pernos'),
 
-        'desgaste_estres_estado':
-            _fieldData['Desgaste y estrés']?['initial_value'] ?? '',
-        'desgaste_estres_solucion':
-            _fieldData['Desgaste y estrés']?['solution_value'] ?? '',
+        'desgaste_estres_estado': _fieldData['Desgaste y estrés']?['initial_value'] ?? '',
+        'desgaste_estres_solucion': _fieldData['Desgaste y estrés']?['solution_value'] ?? '',
         'desgaste_estres_comentario': _desgasteEstresComentarioController.text,
         'desgaste_estres_foto': getFotosString('Desgaste y estrés'),
 
-        'escombros_estado':
-            _fieldData['Acumulación de escombros o materiales externos']
-                    ?['initial_value'] ??
-                '',
-        'escombros_solucion':
-            _fieldData['Acumulación de escombros o materiales externos']
-                    ?['solution_value'] ??
-                '',
+        'escombros_estado': _fieldData['Acumulación de escombros o materiales externos']?['initial_value'] ?? '',
+        'escombros_solucion': _fieldData['Acumulación de escombros o materiales externos']?['solution_value'] ?? '',
         'escombros_comentario': _escombrosComentarioController.text,
-        'escombros_foto':
-            getFotosString('Acumulación de escombros o materiales externos'),
+        'escombros_foto': getFotosString('Acumulación de escombros o materiales externos'),
 
-        'rieles_laterales_estado':
-            _fieldData['Verificación de rieles laterales']?['initial_value'] ??
-                '',
-        'rieles_laterales_solucion':
-            _fieldData['Verificación de rieles laterales']?['solution_value'] ??
-                '',
-        'rieles_laterales_comentario':
-            _rielesLateralesComentarioController.text,
-        'rieles_laterales_foto':
-            getFotosString('Verificación de rieles laterales'),
+        'rieles_laterales_estado': _fieldData['Verificación de rieles laterales']?['initial_value'] ?? '',
+        'rieles_laterales_solucion': _fieldData['Verificación de rieles laterales']?['solution_value'] ?? '',
+        'rieles_laterales_comentario': _rielesLateralesComentarioController.text,
+        'rieles_laterales_foto': getFotosString('Verificación de rieles laterales'),
 
-        'paragolpes_long_estado':
-            _fieldData['Verificación de paragolpes longitudinales']
-                    ?['initial_value'] ??
-                '',
-        'paragolpes_long_solucion':
-            _fieldData['Verificación de paragolpes longitudinales']
-                    ?['solution_value'] ??
-                '',
-        'paragolpes_long_comentario':
-            _paragolpesLongitudinalesComentarioController.text,
-        'paragolpes_long_foto':
-            getFotosString('Verificación de paragolpes longitudinales'),
+        'paragolpes_long_estado': _fieldData['Verificación de paragolpes longitudinales']?['initial_value'] ?? '',
+        'paragolpes_long_solucion': _fieldData['Verificación de paragolpes longitudinales']?['solution_value'] ?? '',
+        'paragolpes_long_comentario': _paragolpesLongitudinalesComentarioController.text,
+        'paragolpes_long_foto': getFotosString('Verificación de paragolpes longitudinales'),
 
-        'paragolpes_transv_estado':
-            _fieldData['Verificación de paragolpes transversales']
-                    ?['initial_value'] ??
-                '',
-        'paragolpes_transv_solucion':
-            _fieldData['Verificación de paragolpes transversales']
-                    ?['solution_value'] ??
-                '',
-        'paragolpes_transv_comentario':
-            _paragolpesTransversalesComentarioController.text,
-        'paragolpes_transv_foto':
-            getFotosString('Verificación de paragolpes transversales'),
+        'paragolpes_transv_estado': _fieldData['Verificación de paragolpes transversales']?['initial_value'] ?? '',
+        'paragolpes_transv_solucion': _fieldData['Verificación de paragolpes transversales']?['solution_value'] ?? '',
+        'paragolpes_transv_comentario': _paragolpesTransversalesComentarioController.text,
+        'paragolpes_transv_foto': getFotosString('Verificación de paragolpes transversales'),
 
         // Sección de Verificaciones eléctricas
-        'cable_homerun_estado': _fieldData['Condición de cable de Home Run']
-                ?['initial_value'] ??
-            '',
-        'cable_homerun_solucion': _fieldData['Condición de cable de Home Run']
-                ?['solution_value'] ??
-            '',
+        'cable_homerun_estado': _fieldData['Condición de cable de Home Run']?['initial_value'] ?? '',
+        'cable_homerun_solucion': _fieldData['Condición de cable de Home Run']?['solution_value'] ?? '',
         'cable_homerun_comentario': _cableHomeRunComentarioController.text,
         'cable_homerun_foto': getFotosString('Condición de cable de Home Run'),
 
-        'cable_celda_celda_estado':
-            _fieldData['Condición de cable de célula a célula']
-                    ?['initial_value'] ??
-                '',
-        'cable_celda_celda_solucion':
-            _fieldData['Condición de cable de célula a célula']
-                    ?['solution_value'] ??
-                '',
-        'cable_celda_celda_comentario':
-            _cableCeldaCeldaComentarioController.text,
-        'cable_celda_celda_foto':
-            getFotosString('Condición de cable de célula a célula'),
+        'cable_celda_celda_estado': _fieldData['Condición de cable de célula a célula']?['initial_value'] ?? '',
+        'cable_celda_celda_solucion': _fieldData['Condición de cable de célula a célula']?['solution_value'] ?? '',
+        'cable_celda_celda_comentario': _cableCeldaCeldaComentarioController.text,
+        'cable_celda_celda_foto': getFotosString('Condición de cable de célula a célula'),
 
-        'conexion_celdas_estado':
-            _fieldData['Conexión segura a celdas de carga']?['initial_value'] ??
-                '',
-        'conexion_celdas_solucion':
-            _fieldData['Conexión segura a celdas de carga']
-                    ?['solution_value'] ??
-                '',
+        'conexion_celdas_estado': _fieldData['Conexión segura a celdas de carga']?['initial_value'] ?? '',
+        'conexion_celdas_solucion': _fieldData['Conexión segura a celdas de carga']?['solution_value'] ?? '',
         'conexion_celdas_comentario': _conexionCeldasComentarioController.text,
-        'conexion_celdas_foto':
-            getFotosString('Conexión segura a celdas de carga'),
+        'conexion_celdas_foto': getFotosString('Conexión segura a celdas de carga'),
 
-        'cables_conectados_estado':
-            _fieldData['Cables correctamente conectados y asegurados']
-                    ?['initial_value'] ??
-                '',
-        'cables_conectados_solucion':
-            _fieldData['Cables correctamente conectados y asegurados']
-                    ?['solution_value'] ??
-                '',
-        'cables_conectados_comentario':
-            _cablesConectadosComentarioController.text,
-        'cables_conectados_foto':
-            getFotosString('Cables correctamente conectados y asegurados'),
+        'cables_conectados_estado': _fieldData['Cables correctamente conectados y asegurados']?['initial_value'] ?? '',
+        'cables_conectados_solucion': _fieldData['Cables correctamente conectados y asegurados']?['solution_value'] ?? '',
+        'cables_conectados_comentario': _cablesConectadosComentarioController.text,
+        'cables_conectados_foto': getFotosString('Cables correctamente conectados y asegurados'),
 
-        'funda_conector_estado':
-            _fieldData['Funda de goma y conector ajustados']
-                    ?['initial_value'] ??
-                '',
-        'funda_conector_solucion':
-            _fieldData['Funda de goma y conector ajustados']
-                    ?['solution_value'] ??
-                '',
+        'funda_conector_estado': _fieldData['Funda de goma y conector ajustados']?['initial_value'] ?? '',
+        'funda_conector_solucion': _fieldData['Funda de goma y conector ajustados']?['solution_value'] ?? '',
         'funda_conector_comentario': _fundaConectorComentarioController.text,
-        'funda_conector_foto':
-            getFotosString('Funda de goma y conector ajustados'),
+        'funda_conector_foto': getFotosString('Funda de goma y conector ajustados'),
 
-        'conector_terminacion_estado':
-            _fieldData['Conector de terminación ajustado']?['initial_value'] ??
-                '',
-        'conector_terminacion_solucion':
-            _fieldData['Conector de terminación ajustado']?['solution_value'] ??
-                '',
-        'conector_terminacion_comentario':
-            _conectorTerminacionComentarioController.text,
-        'conector_terminacion_foto':
-            getFotosString('Conector de terminación ajustado'),
+        'conector_terminacion_estado': _fieldData['Conector de terminación ajustado']?['initial_value'] ?? '',
+        'conector_terminacion_solucion': _fieldData['Conector de terminación ajustado']?['solution_value'] ?? '',
+        'conector_terminacion_comentario': _conectorTerminacionComentarioController.text,
+        'conector_terminacion_foto': getFotosString('Conector de terminación ajustado'),
 
         // Sección de protección contra rayos
-        'proteccion_rayos_estado':
-            _fieldData['Sistema de protección contra rayos conectado a tierra']
-                    ?['initial_value'] ??
-                '',
-        'proteccion_rayos_solucion':
-            _fieldData['Sistema de protección contra rayos conectado a tierra']
-                    ?['solution_value'] ??
-                '',
-        'proteccion_rayos_comentario':
-            _proteccionRayosComentarioController.text,
-        'proteccion_rayos_foto': getFotosString(
-            'Sistema de protección contra rayos conectado a tierra'),
+        'proteccion_rayos_estado': _fieldData['Sistema de protección contra rayos conectado a tierra']?['initial_value'] ?? '',
+        'proteccion_rayos_solucion': _fieldData['Sistema de protección contra rayos conectado a tierra']?['solution_value'] ?? '',
+        'proteccion_rayos_comentario': _proteccionRayosComentarioController.text,
+        'proteccion_rayos_foto': getFotosString('Sistema de protección contra rayos conectado a tierra'),
 
-        'conexion_tierra_estado':
-            _fieldData['Conexión de la correa de tierra del Strike shield']
-                    ?['initial_value'] ??
-                '',
-        'conexion_tierra_solucion':
-            _fieldData['Conexión de la correa de tierra del Strike shield']
-                    ?['solution_value'] ??
-                '',
+        'conexion_tierra_estado': _fieldData['Conexión de la correa de tierra del Strike shield']?['initial_value'] ?? '',
+        'conexion_tierra_solucion': _fieldData['Conexión de la correa de tierra del Strike shield']?['solution_value'] ?? '',
         'conexion_tierra_comentario': _correaTierraComentarioController.text,
-        'conexion_tierra_foto':
-            getFotosString('Conexión de la correa de tierra del Strike shield'),
+        'conexion_tierra_foto': getFotosString('Conexión de la correa de tierra del Strike shield'),
 
-        'tension_neutro_estado':
-            _fieldData['Tensión entre neutro y tierra adecuada']
-                    ?['initial_value'] ??
-                '',
-        'tension_neutro_solucion':
-            _fieldData['Tensión entre neutro y tierra adecuada']
-                    ?['solution_value'] ??
-                '',
-        'tension_neutro_comentario':
-            _tensionNeutroTierraComentarioController.text,
-        'tension_neutro_foto':
-            getFotosString('Tensión entre neutro y tierra adecuada'),
+        'tension_neutro_estado': _fieldData['Tensión entre neutro y tierra adecuada']?['initial_value'] ?? '',
+        'tension_neutro_solucion': _fieldData['Tensión entre neutro y tierra adecuada']?['solution_value'] ?? '',
+        'tension_neutro_comentario': _tensionNeutroTierraComentarioController.text,
+        'tension_neutro_foto': getFotosString('Tensión entre neutro y tierra adecuada'),
 
-        'impresion_conectada_estado':
-            _fieldData['Impresora conectada al mismo Strike Shield']
-                    ?['initial_value'] ??
-                '',
-        'impresion_conectada_solucion':
-            _fieldData['Impresora conectada al mismo Strike Shield']
-                    ?['solution_value'] ??
-                '',
-        'impresion_conectada_comentario':
-            _impresoraShieldComentarioController.text,
-        'impresion_conectada_foto':
-            getFotosString('Impresora conectada al mismo Strike Shield'),
+        'impresion_conectada_estado': _fieldData['Impresora conectada al mismo Strike Shield']?['initial_value'] ?? '',
+        'impresion_conectada_solucion': _fieldData['Impresora conectada al mismo Strike Shield']?['solution_value'] ?? '',
+        'impresion_conectada_comentario': _impresoraShieldComentarioController.text,
+        'impresion_conectada_foto': getFotosString('Impresora conectada al mismo Strike Shield'),
 
         // Sección de Terminal
-        'carcasa_limpia_estado': _fieldData[
-                    'Carcasa, lente y el teclado estan limpios, sin daños y sellados']
-                ?['initial_value'] ??
-            '',
-        'carcasa_limpia_solucion': _fieldData[
-                    'Carcasa, lente y el teclado estan limpios, sin daños y sellados']
-                ?['solution_value'] ??
-            '',
+        'carcasa_limpia_estado': _fieldData['Carcasa, lente y el teclado estan limpios, sin daños y sellados']?['initial_value'] ?? '',
+        'carcasa_limpia_solucion': _fieldData['Carcasa, lente y el teclado estan limpios, sin daños y sellados']?['solution_value'] ?? '',
         'carcasa_limpia_comentario': _terminalCarcasaComentarioController.text,
-        'carcasa_limpia_foto': getFotosString(
-            'Carcasa, lente y el teclado estan limpios, sin daños y sellados'),
+        'carcasa_limpia_foto': getFotosString('Carcasa, lente y el teclado estan limpios, sin daños y sellados'),
 
-        'voltaje_bateria_estado':
-            _fieldData['Voltaje de la batería es adecuado']?['initial_value'] ??
-                '',
-        'voltaje_bateria_solucion':
-            _fieldData['Voltaje de la batería es adecuado']
-                    ?['solution_value'] ??
-                '',
+        'voltaje_bateria_estado': _fieldData['Voltaje de la batería es adecuado']?['initial_value'] ?? '',
+        'voltaje_bateria_solucion': _fieldData['Voltaje de la batería es adecuado']?['solution_value'] ?? '',
         'voltaje_bateria_comentario': _terminalBateriaComentarioController.text,
-        'voltaje_bateria_foto':
-            getFotosString('Voltaje de la batería es adecuado'),
+        'voltaje_bateria_foto': getFotosString('Voltaje de la batería es adecuado'),
 
-        'teclado_funcional_estado':
-            _fieldData['Teclado operativo correctamente']?['initial_value'] ??
-                '',
-        'teclado_funcional_solucion':
-            _fieldData['Teclado operativo correctamente']?['solution_value'] ??
-                '',
-        'teclado_funcional_comentario':
-            _terminalTecladoComentarioController.text,
-        'teclado_funcional_foto':
-            getFotosString('Teclado operativo correctamente'),
+        'teclado_funcional_estado': _fieldData['Teclado operativo correctamente']?['initial_value'] ?? '',
+        'teclado_funcional_solucion': _fieldData['Teclado operativo correctamente']?['solution_value'] ?? '',
+        'teclado_funcional_comentario': _terminalTecladoComentarioController.text,
+        'teclado_funcional_foto': getFotosString('Teclado operativo correctamente'),
 
-        'brillo_pantalla_estado':
-            _fieldData['Brillo de pantalla adecuado']?['initial_value'] ?? '',
-        'brillo_pantalla_solucion':
-            _fieldData['Brillo de pantalla adecuado']?['solution_value'] ?? '',
-        'brillo_pantalla_comentario':
-            _terminalPantallaComentarioController.text,
+        'brillo_pantalla_estado': _fieldData['Brillo de pantalla adecuado']?['initial_value'] ?? '',
+        'brillo_pantalla_solucion': _fieldData['Brillo de pantalla adecuado']?['solution_value'] ?? '',
+        'brillo_pantalla_comentario': _terminalPantallaComentarioController.text,
         'brillo_pantalla_foto': getFotosString('Brillo de pantalla adecuado'),
 
-        'registro_rendimiento_estado':
-            _fieldData['Registros de rendimiento de cambio PDX OK']
-                    ?['initial_value'] ??
-                '',
-        'registro_rendimiento_solucion':
-            _fieldData['Registros de rendimiento de cambio PDX OK']
-                    ?['solution_value'] ??
-                '',
-        'registro_rendimiento_comentario':
-            _terminalRegistrosComentarioController.text,
-        'registro_rendimiento_foto':
-            getFotosString('Registros de rendimiento de cambio PDX OK'),
+        'registro_rendimiento_estado': _fieldData['Registros de rendimiento de cambio PDX OK']?['initial_value'] ?? '',
+        'registro_rendimiento_solucion': _fieldData['Registros de rendimiento de cambio PDX OK']?['solution_value'] ?? '',
+        'registro_rendimiento_comentario': _terminalRegistrosComentarioController.text,
+        'registro_rendimiento_foto': getFotosString('Registros de rendimiento de cambio PDX OK'),
 
-        'pantallas_mt_estado':
-            _fieldData['Pantallas de servicio de MT indican operación normal']
-                    ?['initial_value'] ??
-                '',
-        'pantallas_mt_solucion':
-            _fieldData['Pantallas de servicio de MT indican operación normal']
-                    ?['solution_value'] ??
-                '',
+        'pantallas_mt_estado': _fieldData['Pantallas de servicio de MT indican operación normal']?['initial_value'] ?? '',
+        'pantallas_mt_solucion': _fieldData['Pantallas de servicio de MT indican operación normal']?['solution_value'] ?? '',
         'pantallas_mt_comentario': _terminalServicioComentarioController.text,
-        'pantallas_mt_foto': getFotosString(
-            'Pantallas de servicio de MT indican operación normal'),
+        'pantallas_mt_foto': getFotosString('Pantallas de servicio de MT indican operación normal'),
 
-        'backup_insite_estado':
-            _fieldData['Archivos de configuración respaldados con InSite']
-                    ?['initial_value'] ??
-                '',
-        'backup_insite_solucion':
-            _fieldData['Archivos de configuración respaldados con InSite']
-                    ?['solution_value'] ??
-                '',
+        'backup_insite_estado': _fieldData['Archivos de configuración respaldados con InSite']?['initial_value'] ?? '',
+        'backup_insite_solucion': _fieldData['Archivos de configuración respaldados con InSite']?['solution_value'] ?? '',
         'backup_insite_comentario': _terminalBackupComentarioController.text,
-        'backup_insite_foto':
-            getFotosString('Archivos de configuración respaldados con InSite'),
+        'backup_insite_foto': getFotosString('Archivos de configuración respaldados con InSite'),
 
-        'terminal_operativo_estado':
-            _fieldData['Terminal devuelto a la disponibilidad operativo']
-                    ?['initial_value'] ??
-                '',
-        'terminal_operativo_solucion':
-            _fieldData['Terminal devuelto a la disponibilidad operativo']
-                    ?['solution_value'] ??
-                '',
-        'terminal_operativo_comentario':
-            _terminalOperativoComentarioController.text,
-        'terminal_operativo_foto':
-            getFotosString('Terminal devuelto a la disponibilidad operativo'),
+        'terminal_operativo_estado': _fieldData['Terminal devuelto a la disponibilidad operativo']?['initial_value'] ?? '',
+        'terminal_operativo_solucion': _fieldData['Terminal devuelto a la disponibilidad operativo']?['solution_value'] ?? '',
+        'terminal_operativo_comentario': _terminalOperativoComentarioController.text,
+        'terminal_operativo_foto': getFotosString('Terminal devuelto a la disponibilidad operativo'),
 
         // Nueva sección
-        'elevado_puente_estado': _fieldData[
-                    'Elevado del puente de pesaje y retiro de las celdas de carga']
-                ?['initial_value'] ??
-            '',
-        'elevado_puente_solucion': _fieldData[
-                    'Elevado del puente de pesaje y retiro de las celdas de carga']
-                ?['solution_value'] ??
-            '',
+        'elevado_puente_estado': _fieldData['Elevado del puente de pesaje y retiro de las celdas de carga']?['initial_value'] ?? '',
+        'elevado_puente_solucion': _fieldData['Elevado del puente de pesaje y retiro de las celdas de carga']?['solution_value'] ?? '',
         'elevado_puente_comentario': _elevadoPuenteComentarioController.text,
-        'elevado_puente_foto': getFotosString(
-            'Elevado del puente de pesaje y retiro de las celdas de carga'),
+        'elevado_puente_foto': getFotosString('Elevado del puente de pesaje y retiro de las celdas de carga'),
 
-        'limpieza_estructura_estado': _fieldData[
-                    'Limpieza e inspección de superficies de acoplamiento de la estructura']
-                ?['initial_value'] ??
-            '',
-        'limpieza_estructura_solucion': _fieldData[
-                    'Limpieza e inspección de superficies de acoplamiento de la estructura']
-                ?['solution_value'] ??
-            '',
-        'limpieza_estructura_comentario':
-            _limpiezaEstructuraComentarioController.text,
-        'limpieza_estructura_foto': getFotosString(
-            'Limpieza e inspección de superficies de acoplamiento de la estructura'),
+        'limpieza_estructura_estado': _fieldData['Limpieza e inspección de superficies de acoplamiento de la estructura']?['initial_value'] ?? '',
+        'limpieza_estructura_solucion': _fieldData['Limpieza e inspección de superficies de acoplamiento de la estructura']?['solution_value'] ?? '',
+        'limpieza_estructura_comentario': _limpiezaEstructuraComentarioController.text,
+        'limpieza_estructura_foto': getFotosString('Limpieza e inspección de superficies de acoplamiento de la estructura'),
 
-        'bearing_cups_estado':
-            _fieldData['Limpieza e inspeccion de bearnign cups']
-                    ?['initial_value'] ??
-                '',
-        'bearing_cups_solucion':
-            _fieldData['Limpieza e inspeccion de bearnign cups']
-                    ?['solution_value'] ??
-                '',
+        'bearing_cups_estado': _fieldData['Limpieza e inspeccion de bearnign cups']?['initial_value'] ?? '',
+        'bearing_cups_solucion': _fieldData['Limpieza e inspeccion de bearnign cups']?['solution_value'] ?? '',
         'bearing_cups_comentario': _bearingCupsComentarioController.text,
-        'bearing_cups_foto':
-            getFotosString('Limpieza e inspeccion de bearnign cups'),
+        'bearing_cups_foto': getFotosString('Limpieza e inspeccion de bearnign cups'),
 
-        'celdas_carga_estado':
-            _fieldData['Limpieza e inspección de celdas de carga']
-                    ?['initial_value'] ??
-                '',
-        'celdas_carga_solucion':
-            _fieldData['Limpieza e inspección de celdas de carga']
-                    ?['solution_value'] ??
-                '',
+        'celdas_carga_estado': _fieldData['Limpieza e inspección de celdas de carga']?['initial_value'] ?? '',
+        'celdas_carga_solucion': _fieldData['Limpieza e inspección de celdas de carga']?['solution_value'] ?? '',
         'celdas_carga_comentario': _celdasCargaComentarioController.text,
-        'celdas_carga_foto':
-            getFotosString('Limpieza e inspección de celdas de carga'),
+        'celdas_carga_foto': getFotosString('Limpieza e inspección de celdas de carga'),
 
-        'lubricacion_cabezas_estado':
-            _fieldData['Lubricación de cabezas de celdas de carga']
-                    ?['initial_value'] ??
-                '',
-        'lubricacion_cabezas_solucion':
-            _fieldData['Lubricación de cabezas de celdas de carga']
-                    ?['solution_value'] ??
-                '',
-        'lubricacion_cabezas_comentario':
-            _lubricacionCabezasComentarioController.text,
-        'lubricacion_cabezas_foto':
-            getFotosString('Lubricación de cabezas de celdas de carga'),
+        'lubricacion_cabezas_estado': _fieldData['Lubricación de cabezas de celdas de carga']?['initial_value'] ?? '',
+        'lubricacion_cabezas_solucion': _fieldData['Lubricación de cabezas de celdas de carga']?['solution_value'] ?? '',
+        'lubricacion_cabezas_comentario': _lubricacionCabezasComentarioController.text,
+        'lubricacion_cabezas_foto': getFotosString('Lubricación de cabezas de celdas de carga'),
 
-        'engrasado_bearing_estado':
-            _fieldData['Engrasado de bearing cups']?['initial_value'] ?? '',
-        'engrasado_bearing_solucion':
-            _fieldData['Engrasado de bearing cups']?['solution_value'] ?? '',
-        'engrasado_bearing_comentario':
-            _engrasadoBearingComentarioController.text,
+        'engrasado_bearing_estado': _fieldData['Engrasado de bearing cups']?['initial_value'] ?? '',
+        'engrasado_bearing_solucion': _fieldData['Engrasado de bearing cups']?['solution_value'] ?? '',
+        'engrasado_bearing_comentario': _engrasadoBearingComentarioController.text,
         'engrasado_bearing_foto': getFotosString('Engrasado de bearing cups'),
 
-        'lainas_botas_estado': _fieldData['Lainas, botas de goma colocadas']
-                ?['initial_value'] ??
-            '',
-        'lainas_botas_solucion': _fieldData['Lainas, botas de goma colocadas']
-                ?['solution_value'] ??
-            '',
+        'lainas_botas_estado': _fieldData['Lainas, botas de goma colocadas']?['initial_value'] ?? '',
+        'lainas_botas_solucion': _fieldData['Lainas, botas de goma colocadas']?['solution_value'] ?? '',
         'lainas_botas_comentario': _lainasBotasComentarioController.text,
         'lainas_botas_foto': getFotosString('Lainas, botas de goma colocadas'),
 
         // Sección de Calibración
-        'calibracion_estado':
-            _fieldData['Calibración de balanza realiza y dentro de tolerancia']
-                    ?['initial_value'] ??
-                '',
-        'calibracion_solucion':
-            _fieldData['Calibración de balanza realiza y dentro de tolerancia']
-                    ?['solution_value'] ??
-                '',
+        'calibracion_estado': _fieldData['Calibración de balanza realiza y dentro de tolerancia']?['initial_value'] ?? '',
+        'calibracion_solucion': _fieldData['Calibración de balanza realiza y dentro de tolerancia']?['solution_value'] ?? '',
         'calibracion_comentario': _calibracionComentarioController.text,
-        'calibracion_foto': getFotosString(
-            'Calibración de balanza realiza y dentro de tolerancia'),
+        'calibracion_foto': getFotosString('Calibración de balanza realiza y dentro de tolerancia'),
       };
 
-      // Verificar si ya existe un registro
-      final existing = await db.query(
-        'mnt_prv_avanzado_stac',
-        where: 'cod_metrica = ?',
-        whereArgs: [widget.codMetrica],
-      );
+      await dbHelper.upsertRegistro('mnt_prv_avanzado_stac', dbData);
 
-      if (existing.isNotEmpty) {
-        await db.update(
-          'mnt_prv_avanzado_stac',
-          dbData,
-          where: 'cod_metrica = ?',
-          whereArgs: [widget.codMetrica],
-        );
-      } else {
-        await db.insert(
-          'mnt_prv_avanzado_stac',
-          dbData,
-        );
-      }
-
-      await db.close();
       _showSnackBar(
           context, 'Datos de pruebas metrológicas guardados exitosamente');
 
@@ -907,8 +653,7 @@ class _StacMntPrvAvanzadoStacScreenState
       _showSnackBar(
           context, 'Error al guardar pruebas metrológicas: ${e.toString()}');
       debugPrint('Error al guardar pruebas metrológicas: $e');
-      _isDataSaved.value =
-          false; // Asegurarse de mantenerlo en false si hay error
+      _isDataSaved.value = false;
     }
   }
 
@@ -1129,7 +874,7 @@ class _StacMntPrvAvanzadoStacScreenState
               ),
               const SizedBox(height: 5),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -1713,25 +1458,20 @@ class _StacMntPrvAvanzadoStacScreenState
                     builder: (context, isSaved, child) {
                       return Expanded(
                         child: ElevatedButton(
-                          onPressed: isSaved
-                              ? () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          FinServicioMntAvaStacScreen(
-                                        dbName: widget.dbName,
-                                        dbPath: widget.dbPath,
-                                        otValue: widget.otValue,
-                                        selectedCliente: widget.selectedCliente,
-                                        selectedPlantaNombre:
-                                            widget.selectedPlantaNombre,
-                                        codMetrica: widget.codMetrica,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              : null,
+                          onPressed: isSaved ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FinServicioMntAvaStacScreen(
+                                  sessionId: widget.sessionId,
+                                  secaValue: widget.secaValue,
+                                  codMetrica: widget.codMetrica,
+                                  nReca: widget.nReca,
+                                ),
+                              ),
+                            );
+                          }
+                          : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                             isSaved ? const Color(0xFF167D1D) : Colors.grey,

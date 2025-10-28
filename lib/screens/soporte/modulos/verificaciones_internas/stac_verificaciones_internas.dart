@@ -13,6 +13,8 @@ import 'package:service_met/provider/balanza_provider.dart';
 import 'package:service_met/screens/soporte/modulos/verificaciones_internas/fin_servicio_vinternas.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../database/app_database_sop.dart';
+
 class StacVerificacionesInternasScreen extends StatefulWidget {
   final String nReca;
   final String secaValue;
@@ -213,7 +215,7 @@ class _StacVerificacionesInternasScreenState
 
         final uint8ListData = Uint8List.fromList(zipData);
         final zipFileName =
-            '${widget.otValue}_${widget.codMetrica}_diagnostico.zip';
+            '${widget.secaValue}_${widget.codMetrica}_diagnostico.zip';
 
         final params = SaveFileDialogParams(
           data: uint8ListData,
@@ -267,12 +269,11 @@ class _StacVerificacionesInternasScreenState
 
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
-      final path = join(widget.dbPath, '${widget.dbName}.db');
-      final db = await openDatabase(path);
+      // ✅ USAR DatabaseHelperSop en lugar de abrir BD manualmente
+      final dbHelper = DatabaseHelperSop();
 
       String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
+        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
       }
 
       final Map<String, dynamic> comentariosData = {};
@@ -311,33 +312,15 @@ class _StacVerificacionesInternasScreenState
       };
 
       // Verificar si ya existe un registro
-      final existing = await db.query(
-        'verificaciones_internas',
-        where: 'cod_metrica = ?',
-        whereArgs: [widget.codMetrica],
-      );
+      await dbHelper.upsertRegistro('verificaciones_internas', dbData);
 
-      if (existing.isNotEmpty) {
-        await db.update(
-          'verificaciones_internas',
-          dbData,
-          where: 'cod_metrica = ?',
-          whereArgs: [widget.codMetrica],
-        );
-      } else {
-        await db.insert(
-          'verificaciones_internas',
-          dbData,
-        );
-      }
-
-      await db.close();
       _showSnackBar(
         context,
         'Datos guardados exitosamente',
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
+
       _isDataSaved.value = true;
     } catch (e) {
       _showSnackBar(
@@ -347,8 +330,7 @@ class _StacVerificacionesInternasScreenState
         textColor: Colors.white,
       );
       debugPrint('Error al guardar: $e');
-      _isDataSaved.value =
-          false; // Asegurarse de mantenerlo en false si hay error
+      _isDataSaved.value = false;
     }
   }
 
@@ -583,11 +565,9 @@ class _StacVerificacionesInternasScreenState
                   context,
                   MaterialPageRoute(
                     builder: (context) => FinServicioVinternasScreen(
-                      dbName: widget.dbName,
-                      dbPath: widget.dbPath,
-                      otValue: widget.otValue,
-                      selectedCliente: widget.selectedCliente,
-                      selectedPlantaNombre: widget.selectedPlantaNombre,
+                      sessionId: widget.sessionId,
+                      secaValue: widget.secaValue,
+                      nReca: widget.nReca,
                       codMetrica: widget.codMetrica,
                     ),
                   ),
@@ -625,7 +605,7 @@ class _StacVerificacionesInternasScreenState
               ),
               const SizedBox(height: 5),
               Text(
-                'CLIENTE: ${widget.selectedPlantaNombre}\nCÓDIGO: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
