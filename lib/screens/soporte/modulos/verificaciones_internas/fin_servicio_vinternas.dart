@@ -6,13 +6,10 @@ import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_controller.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:service_met/bdb/calibracion_bd.dart';
+import 'package:service_met/home_screen.dart';
 
 import '../../../../database/app_database_sop.dart';
 
@@ -28,7 +25,6 @@ class FinServicioVinternasScreen extends StatefulWidget {
     required this.secaValue,
     required this.nReca,
     required this.codMetrica,
-
   });
 
   @override
@@ -39,19 +35,23 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
   String? errorMessage;
   bool _isExporting = false;
 
-
-  void _showSnackBar(BuildContext context, String message,
-      {bool isError = false, int duration = 4}) {
-    ScaffoldMessenger.of(context).showSnackBar(
+  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+        ),
         backgroundColor: isError ? Colors.red : Colors.green,
         behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: duration),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
+  /// Exporta CSV desde la tabla relevamiento_de_datos
   Future<void> _exportToCSV(BuildContext context) async {
     if (_isExporting) return;
     _isExporting = true;
@@ -74,13 +74,13 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
         );
       }
 
-      // ✅ Obtener datos desde BD interna
+      // Obtener datos desde BD interna
       final dbHelper = DatabaseHelperSop();
       final db = await dbHelper.database;
 
-      // ✅ Consultar SOLO la tabla verificaciones_internas por session_id
+      // Consultar SOLO la tabla relevamiento_de_datos por session_id
       final List<Map<String, dynamic>> registros = await db.query(
-        'verificaciones_internas',
+        'relevamiento_de_datos',
         where: 'session_id = ?',
         whereArgs: [widget.sessionId],
       );
@@ -93,10 +93,10 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
         return;
       }
 
-      // ✅ Obtener headers de las columnas
+      // Obtener headers de las columnas
       final headers = registros.first.keys.toList();
 
-      // ✅ Construir matriz CSV
+      // Construir matriz CSV
       final matrix = <List<dynamic>>[
         headers,
         ...registros.map((reg) {
@@ -107,7 +107,7 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
         })
       ];
 
-      // ✅ Convertir a CSV con punto y coma
+      // Convertir a CSV con punto y coma
       final csvString = const ListToCsvConverter(
         fieldDelimiter: ';',
         textDelimiter: '"',
@@ -115,11 +115,11 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
 
       final csvBytes = utf8.encode(csvString);
 
-      // ✅ Nombre del archivo
+      // Nombre del archivo
       final now = DateTime.now();
-      final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_verificaciones_internas.csv';
+      final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_relevamiento_de_datos.csv';
 
-      // ✅ Pedir al usuario dónde guardar
+      // Pedir al usuario dónde guardar
       if (mounted) Navigator.of(context).pop();
 
       final directoryPath = await FilePicker.platform.getDirectoryPath(
@@ -149,6 +149,7 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
     }
   }
 
+  /// ✅ MÉTODO CORREGIDO: Carga datos existentes y navega al paso de balanza
   Future<void> _confirmarSeleccionOtraBalanza(BuildContext context) async {
     final bool? confirmado = await showDialog<bool>(
       context: context,
@@ -195,35 +196,134 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
     if (confirmado != true) return;
 
     try {
-      // ✅ Obtener el controlador actual de precarga
-      final controller = Provider.of<PrecargaControllerSop>(context, listen: false);
+      // ✅ Mostrar indicador de carga
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 20),
+                Text('Cargando datos...'),
+              ],
+            ),
+          ),
+        );
+      }
 
-      // ✅ Ir al paso 3 (Balanza)
+      // ✅ Obtener los datos existentes de la BD
+      final dbHelper = DatabaseHelperSop();
+      final registro = await dbHelper.getRegistroBySeca(
+        widget.secaValue,
+        widget.sessionId,
+      );
+
+      if (mounted) Navigator.of(context).pop(); // Cerrar diálogo de carga
+
+      if (registro == null) {
+        if (mounted) {
+          _showSnackBar(
+            context,
+            'No se encontraron datos de la sesión',
+            isError: true,
+          );
+        }
+        return;
+      }
+
+      // ✅ Obtener el userName desde el registro
+      final userName = registro['tec_responsable']?.toString() ?? 'Usuario';
+      final tipoServicio = registro['tipo_servicio']?.toString();
+
+      // ✅ Mapear el tipo de servicio al valor interno
+      String? tipoServicioInterno;
+      if (tipoServicio != null) {
+        tipoServicioInterno = _mapTipoServicioToInternal(tipoServicio);
+      }
+
+      // ✅ Crear un nuevo controlador con los datos existentes
+      final controller = PrecargaControllerSop();
+
+      // ✅ PASO 1: Establecer tipo de servicio si existe
+      if (tipoServicioInterno != null) {
+        controller.selectTipoServicio(tipoServicioInterno, null);
+      }
+
+      // ✅ PASO 2: Cargar clientes
+      await controller.fetchClientes();
+
+      // ✅ PASO 3: Establecer los datos internos (esto configura sessionId, seca, cliente, planta)
+      controller.setInternalValues(
+        sessionId: widget.sessionId,
+        seca: widget.secaValue,
+        clienteName: registro['cliente']?.toString(),
+        clienteRazonSocial: registro['razon_social']?.toString(),
+        plantaDir: registro['direccion_planta']?.toString(),
+        plantaDep: registro['dep_planta']?.toString(),
+        plantaCodigo: _extractPlantaCodigoFromSeca(widget.secaValue),
+      );
+
+      // ✅ PASO 4: Ir directamente al paso 3 (Balanza)
       controller.setCurrentStep(3);
 
-      // ✅ Navegar a la pantalla de precarga
+      // ✅ PASO 5: Navegar con el controlador configurado
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (BuildContext context) => PrecargaScreenSop(
-              userName: 'Usuario', // ⚠️ Pasar el userName real si lo tienes
-              initialStep: 3,
-              sessionId: widget.sessionId,
-              secaValue: widget.secaValue,
+            builder: (BuildContext context) => ChangeNotifierProvider.value(
+              value: controller,
+              child: PrecargaScreenSop(
+                userName: userName,
+                initialStep: 3, // Ir directo al paso de balanza
+                sessionId: widget.sessionId,
+                secaValue: widget.secaValue,
+              ),
             ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        Navigator.of(context).pop(); // Cerrar diálogo si está abierto
         _showSnackBar(
           context,
-          'Error al navegar: ${e.toString()}',
+          'Error al cargar datos: ${e.toString()}',
           isError: true,
         );
       }
+      debugPrint('Error en _confirmarSeleccionOtraBalanza: $e');
     }
+  }
+
+  /// ✅ NUEVO: Mapea el label del tipo de servicio al valor interno
+  String _mapTipoServicioToInternal(String tipoServicioLabel) {
+    final map = {
+      'Relevamiento de Datos': 'relevamiento_de_datos',
+      'Ajustes Metrológicos': 'ajustes_metrologicos',
+      'Diagnóstico': 'diagnostico',
+      'Mantenimiento Preventivo Regular - STAC': 'mnt_prv_regular_stac',
+      'Mantenimiento Preventivo Regular - STIL': 'mnt_prv_regular_stil',
+      'Mantenimiento Preventivo Avanzado - STAC': 'mnt_prv_avanzado_stac',
+      'Mantenimiento Preventivo Avanzado - STIL': 'mnt_prv_avanzado_stil',
+      'Mantenimiento Correctivo': 'mnt_correctivo',
+      'Instalación': 'instalacion',
+      'Verificaciones Internas': 'verificaciones_internas',
+    };
+
+    return map[tipoServicioLabel] ?? 'relevamiento_de_datos';
+  }
+
+  /// ✅ NUEVO: Extrae el código de planta del SECA (formato: YY-CODIGO-S01)
+  String _extractPlantaCodigoFromSeca(String seca) {
+    final parts = seca.split('-');
+    if (parts.length >= 2) {
+      return parts[1]; // Retorna CODIGO de YY-CODIGO-S01
+    }
+    return '';
   }
 
   @override
@@ -244,10 +344,10 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
-                color: isDarkMode ? Colors.white : Colors.black,
+                color: textColor,
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 5.0),
             Text(
               'CÓDIGO MET: ${widget.codMetrica}',
               style: TextStyle(
@@ -262,102 +362,100 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(color: Colors.black.withOpacity(0.4)),
-                ),
-              )
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(color: Colors.black.withOpacity(0.4)),
+          ),
+        )
             : null,
+        iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-          left: 16.0, // Tu padding horizontal original
-          right: 16.0, // Tu padding horizontal original
-          bottom: 16.0, // Tu padding inferior original
+          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40,
+          left: 16.0,
+          right: 16.0,
+          bottom: 16.0,
         ),
-        physics: const BouncingScrollPhysics(),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 40.0),
-              _buildInfoSection(
-                'EXPORTAR DATOS A CSV',
-                'Al dar clic se generará el archivo CSV con todos los datos registrados. Verifique el SECA para confirmar si ha finalizado con el servicio de todas las balanzas.',
-                textColor,
-              ),
-              _buildActionCard(
-                'images/tarjetas/t4.png',
-                'EXPORTAR CSV',
-                () => _exportToCSV(context),
-                textColor,
-                cardOpacity,
-              ),
-              const SizedBox(height: 40),
-              _buildInfoSection(
-                'SELECCIONAR OTRA BALANZA',
-                'Al dar clic se volverá a la pantalla de identificación de balanza para seleccionar otra balanza del cliente seleccionado.',
-                textColor,
-              ),
-              _buildActionCard(
-                'images/tarjetas/t7.png',
-                'SELECCIONAR OTRA BALANZA',
-                () => _confirmarSeleccionOtraBalanza(context),
-                textColor,
-                cardOpacity,
-              ),
-              const SizedBox(height: 20.0),
-              ElevatedButton(
-                onPressed: () async {
-                  // ✅ Exportar CSV antes de finalizar
-                  await _exportToCSV(context);
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildInfoSection(
+              'EXPORTAR',
+              'Generará un archivo CSV con todos los datos del relevamiento. '
+                  'El archivo se guardará con separador punto y coma (;).',
+              textColor,
+            ),
+            _buildActionCard(
+              'images/tarjetas/t4.png',
+              'EXPORTAR',
+                  () => _exportToCSV(context),
+              textColor,
+              cardOpacity,
+            ),
+            const SizedBox(height: 40),
+            _buildInfoSection(
+              'SELECCIONAR OTRA BALANZA',
+              'Volverá a la pantalla de identificación para seleccionar otra balanza. '
+                  'Los datos actuales se mantendrán guardados en la sesión.',
+              textColor,
+            ),
+            _buildActionCard(
+              'images/tarjetas/t7.png',
+              'SELECCIONAR OTRA BALANZA',
+                  () => _confirmarSeleccionOtraBalanza(context),
+              textColor,
+              cardOpacity,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                // Exportar CSV antes de finalizar
+                await _exportToCSV(context);
 
-                  if (!mounted) return;
+                if (!mounted) return;
 
-                  // ✅ Volver al home
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                        (route) => false,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFdf0000),
-                ),
-                child: const Text('FINALIZAR SERVICIO'),
+                // Volver al home
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      (route) => false,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFdf0000),
               ),
-              const SizedBox(height: 40),
-            ],
-          ),
+              child: const Text('FINALIZAR SERVICIO'),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildInfoSection(String title, String description, Color textColor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.info_outline, color: textColor),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: textColor,
-                ),
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, color: textColor),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: textColor,
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
             description,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -365,70 +463,67 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
               color: textColor,
             ),
           ),
-          const SizedBox(height: 20),
-        ],
-      ),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 
   Widget _buildActionCard(
-    String imagePath,
-    String title,
-    VoidCallback onTap,
-    Color textColor,
-    double opacity,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20.0),
-          child: Container(
-            width: double.infinity,
-            height: 180,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            child: Stack(
-              children: [
-                Container(
+      String imagePath,
+      String title,
+      VoidCallback onTap,
+      Color textColor,
+      double opacity,
+      ) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          width: 350,
+          height: 200,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20.0)),
+          child: Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20.0),
+                  image: DecorationImage(
+                    image: AssetImage(imagePath),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20.0),
-                    image: DecorationImage(
-                      image: AssetImage(imagePath),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20.0),
-                      color: Colors.black.withOpacity(opacity),
-                    ),
+                    color: Colors.black.withOpacity(opacity),
                   ),
                 ),
-                Center(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          offset: const Offset(0, 1),
-                          blurRadius: 6.0,
-                          color: Colors.black.withOpacity(0.6),
-                        ),
-                      ],
+              ),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: const Offset(0, 1),
+                            blurRadius: 6.0,
+                            color: Colors.black.withOpacity(0.7),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

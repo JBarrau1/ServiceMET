@@ -118,6 +118,44 @@ class DatabaseHelperSop {
     }
   }
 
+  Future<Map<String, dynamic>?> getRegistroBySeca(String seca, String sessionId) async {
+    final db = await database;
+
+    // Buscar en todas las tablas posibles
+    final tablas = [
+      'relevamiento_de_datos',
+      'ajustes_metrologicos',
+      'diagnostico',
+      'mnt_prv_regular_stac',
+      'mnt_prv_regular_stil',
+      'mnt_prv_avanzado_stac',
+      'mnt_prv_avanzado_stil',
+      'mnt_correctivo',
+      'instalacion',
+      'verificaciones_internas',
+    ];
+
+    for (final tabla in tablas) {
+      try {
+        final registros = await db.query(
+          tabla,
+          where: 'otst = ? AND session_id = ?',
+          whereArgs: [seca, sessionId],
+          limit: 1,
+        );
+
+        if (registros.isNotEmpty) {
+          return registros.first;
+        }
+      } catch (e) {
+        // Tabla no existe o error, continuar con la siguiente
+        continue;
+      }
+    }
+
+    return null;
+  }
+
   //=== FUNCIONES ESPECÍFICAS PARA CADA TABLA ===//
 
   // Para inf_cliente_balanza

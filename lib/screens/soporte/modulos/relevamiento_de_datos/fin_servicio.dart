@@ -10,7 +10,9 @@ import 'package:provider/provider.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_controller.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 import 'package:service_met/home_screen.dart';
-import '../../../../bdb/soporte_tecnico_bd.dart';
+
+import '../../../../database/app_database_sop.dart';
+
 
 class FinServicioScreen extends StatefulWidget {
   final String sessionId;
@@ -216,7 +218,11 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
+      // Loguea error y stack trace en la consola
+      debugPrint('Error al navegar: $e');
+      debugPrint(st.toString());
+
       if (mounted) {
         _showSnackBar(
           context,

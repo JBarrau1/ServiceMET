@@ -634,10 +634,12 @@ class _PlantaStepState extends State<PlantaStep> {
 
   void _updatePlantaData(PrecargaControllerSop controller) {
     controller.setPlantaManualData(
-      _plantaDirController.text,
-      _plantaDepController.text,
-      _codigoPlantaController.text,
-      _nombrePlantaController.text,
+      direccion: _plantaDirController.text,
+      departamento: _plantaDepController.text,
+      codigo: _codigoPlantaController.text,
+      nombrePlanta: _nombrePlantaController.text.isNotEmpty
+          ? _nombrePlantaController.text
+          : null,
     );
   }
 }

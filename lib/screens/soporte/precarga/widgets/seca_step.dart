@@ -57,7 +57,7 @@ class _SecaStepState extends State<SecaStep> {
     if (parts.length >= 4) {
       return parts[3];
     }
-    return 'C01';
+    return 'S01';
   }
 
   @override
@@ -294,7 +294,7 @@ class _SecaStepState extends State<SecaStep> {
                         ),
                         contentPadding:
                         const EdgeInsets.symmetric(vertical: 8),
-                        hintText: 'C01',
+                        hintText: 'S01',
                         hintStyle: GoogleFonts.robotoMono(
                           fontSize: 20,
                           color: Colors.blue[300],
@@ -309,11 +309,19 @@ class _SecaStepState extends State<SecaStep> {
                             maxLength}) =>
                       null,
                       onChanged: (value) {
-                        if (value.isEmpty) {
+                        if (value.isEmpty) return;
+
+                        // Forzar que empiece con 'S'
+                        if (!value.startsWith('S')) {
+                          _cotizacionController.text = 'S';
+                          _cotizacionController.selection = TextSelection.fromPosition(
+                            TextPosition(offset: 1),
+                          );
                           return;
                         }
 
-                        if (!RegExp(r'^C\d{0,2}$').hasMatch(value)) {
+                        // Solo permitir S seguido de dígitos
+                        if (value.length > 1 && !RegExp(r'^S\d{0,2}$').hasMatch(value)) {
                           final previousText = _cotizacionController.text;
                           if (previousText.isNotEmpty) {
                             _cotizacionController.text = previousText.substring(0, previousText.length - 1);
@@ -324,16 +332,43 @@ class _SecaStepState extends State<SecaStep> {
                           return;
                         }
 
-                        if (RegExp(r'^C\d{2}$').hasMatch(value)) {
+                        // Si se completó el formato S##, actualizar el OTST
+                        if (RegExp(r'^S\d{2}$').hasMatch(value)) {
+                          final numero = int.tryParse(value.substring(1));
+
+                          if (numero == null || numero < 1 || numero > 99) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('El número debe estar entre 01 y 99'),
+                                backgroundColor: Colors.orange,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+
                           try {
                             final ctrl = Provider.of<PrecargaControllerSop>(
                               context,
                               listen: false,
                             );
                             ctrl.updateNumeroCotizacion(value);
-                            debugPrint('OTST actualizado a: ${ctrl.generatedSeca}');
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('OTST actualizado: ${ctrl.generatedSeca}'),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
                           } catch (e) {
-                            debugPrint('Error al actualizar cotización: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
                           }
                         }
                       },
@@ -451,7 +486,7 @@ class _SecaStepState extends State<SecaStep> {
                     Text(
                       'El código se genera automáticamente usando:\n'
                           '• Código de planta seleccionado\n'
-                          '• Numeración correlativa (C01, C02...)\n'
+                          '• Numeración correlativa (S01, S02...)\n'
                           '• Año actual (${DateTime.now().year.toString().substring(2)})',
                       style: GoogleFonts.inter(
                         fontSize: 12,

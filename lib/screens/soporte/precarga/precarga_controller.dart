@@ -13,6 +13,11 @@ class PrecargaControllerSop extends ChangeNotifier {
   String? _baseFotoPath;
   String? get baseFotoPath => _baseFotoPath;
 
+  set baseFotoPath(String? path) {
+    _baseFotoPath = path;
+    notifyListeners();
+  }
+
   // Tipo de Servicio
   String? _selectedTipoServicio;
   String? _selectedTipoServicioLabel;
@@ -164,6 +169,13 @@ class PrecargaControllerSop extends ChangeNotifier {
       case 3: // Balanza
         if (_selectedBalanza == null) {
           return 'Debe seleccionar una balanza';
+        }
+        return null;
+
+      case 4: // Confirmación final
+        for (int i = -1; i < 4; i++) {
+          final error = validateStep(i);
+          if (error != null) return 'Complete los pasos anteriores';
         }
         return null;
 
@@ -426,11 +438,16 @@ class PrecargaControllerSop extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPlantaManualData(String direccion, String departamento, String codigo, dynamic controller, {String? nombrePlanta}) {
+  void setPlantaManualData({
+    required String direccion,
+    required String departamento,
+    required String codigo,
+    String? nombrePlanta,
+  }) {
     _selectedPlantaDir = direccion;
     _selectedPlantaDep = departamento;
     _selectedPlantaCodigo = codigo;
-    _selectedPlantaNombre = nombrePlanta ?? 'Planta ${controller.selectedClienteName}'; // Nombre por defecto
+    _selectedPlantaNombre = nombrePlanta ?? 'Planta sin nombre';
 
     generateSugestedSeca();
     updateStepErrors();
@@ -445,7 +462,7 @@ class PrecargaControllerSop extends ChangeNotifier {
 
       // Solo generar si NO existe un SECA o si NO está confirmado
       if (_generatedSeca == null || !_secaConfirmed) {
-        _generatedSeca = '$year-$_selectedPlantaCodigo-C01';
+        _generatedSeca = '$year-$_selectedPlantaCodigo-S01';
         notifyListeners();
       }
     }
@@ -456,9 +473,9 @@ class PrecargaControllerSop extends ChangeNotifier {
       return; // No hacer nada si está vacío
     }
 
-    final regex = RegExp(r'^C\d{2}$');
+    final regex = RegExp(r'^S\d{2}$');
     if (!regex.hasMatch(nuevoNumero)) {
-      throw Exception('Formato inválido. Use C01 a C99');
+      throw Exception('Formato inválido. Use S01 a S99');
     }
 
     if (_generatedSeca != null) {
@@ -796,7 +813,7 @@ class PrecargaControllerSop extends ChangeNotifier {
   }
 
   void reset() {
-    _currentStep = 0;
+    _currentStep = -1; // ✅ Asegurar que empiece en -1
     _isDataSaved = false;
     _generatedSessionId = null;
     _generatedSeca = null;
@@ -814,6 +831,7 @@ class PrecargaControllerSop extends ChangeNotifier {
     _selectedPlantaDir = null;
     _selectedPlantaDep = null;
     _selectedPlantaCodigo = null;
+    _selectedPlantaNombre = null; // ✅ Agregar esto
 
     _balanzas = [];
     _selectedBalanza = null;
@@ -825,8 +843,9 @@ class PrecargaControllerSop extends ChangeNotifier {
 
     _balanzaPhotos.clear();
     _fotosTomadas = false;
+    _baseFotoPath = null; // ✅ Agregar esto
 
-    _stepErrors = {0: null, 1: null, 2: null, 3: null, 4: null};
+    _stepErrors = {-1: null, 0: null, 1: null, 2: null, 3: null, 4: null};
 
     _selectedTipoServicio = null;
     _selectedTipoServicioLabel = null;

@@ -140,19 +140,19 @@ class TipoServicioStep extends StatelessWidget {
         }
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12), // Reducido de 16 a 12
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? const Color(0xFF2E2E2E) : Colors.white, // Color 2E2E2E cuando está seleccionado
+          borderRadius: BorderRadius.circular(12), // Aumentado de 16 a 12 (más cuadrado pero con buen border radius)
           border: Border.all(
-            color: isSelected ? color : Colors.grey[300]!,
-            width: isSelected ? 3 : 1,
+            color: isSelected ? const Color(0xFF2E2E2E) : Colors.grey[300]!,
+            width: isSelected ? 2 : 1, // Reducido de 3 a 2 para hacerlo más pequeño
           ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              blurRadius: 6, // Reducido de 8 a 6
+              offset: const Offset(0, 3), // Reducido de 4 a 3
             ),
           ],
         ),
@@ -160,24 +160,24 @@ class TipoServicioStep extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10), // Reducido de 12 a 10
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: isSelected ? Colors.white : const Color(0xFF2E2E2E).withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                size: 32,
-                color: color,
+                size: 28, // Reducido de 32 a 28
+                color: isSelected ? const Color(0xFF2E2E2E) : color,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10), // Reducido de 12 a 10
             Text(
               label,
               style: GoogleFonts.poppins(
-                fontSize: 13,
+                fontSize: 12, // Reducido de 13 a 12
                 fontWeight: FontWeight.bold,
-                color: isSelected ? color : Colors.grey[800],
+                color: isSelected ? Colors.white : Colors.grey[800], // Texto blanco cuando está seleccionado
               ),
               textAlign: TextAlign.center,
             ),
@@ -186,7 +186,7 @@ class TipoServicioStep extends StatelessWidget {
                 margin: const EdgeInsets.only(top: 4),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.3),
+                  color: isSelected ? Colors.white.withOpacity(0.3) : const Color(0xFF2E2E2E).withOpacity(0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -194,17 +194,17 @@ class TipoServicioStep extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: color,
+                    color: isSelected ? Colors.white : const Color(0xFF2E2E2E),
                   ),
                 ),
               ),
             if (isSelected)
               Container(
-                margin: const EdgeInsets.only(top: 8),
+                margin: const EdgeInsets.only(top: 6), // Reducido de 8 a 6
                 child: Icon(
                   Icons.check_circle,
-                  color: color,
-                  size: 20,
+                  color: Colors.white, // Icono blanco para contrastar con el fondo oscuro
+                  size: 18, // Reducido de 20 a 18
                 ),
               ),
           ],
@@ -275,10 +275,6 @@ class TipoServicioStep extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
         ),
         child: Text(
           label,
