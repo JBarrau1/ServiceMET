@@ -16,17 +16,23 @@ import '../../../../database/app_database_sop.dart';
 import 'fin_servicio_mntcorrectivo.dart';
 
 class StacMntCorrectivoScreen extends StatefulWidget {
-  final String nReca;
-  final String secaValue;
   final String sessionId;
+  final String secaValue;
+  final String nReca;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
 
   const StacMntCorrectivoScreen({
     super.key,
-    required this.nReca,
-    required this.secaValue,
     required this.sessionId,
+    required this.secaValue,
+    required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
   });
 
   @override
@@ -816,6 +822,10 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
                       secaValue: widget.secaValue,
                       sessionId: widget.sessionId,
                       codMetrica: widget.codMetrica,
+                      userName: widget.userName,
+                      clienteId: widget.clienteId,
+                      plantaCodigo: widget.plantaCodigo,
+                      tableName: 'mnt_correctivo',
                     ),
                   ),
                 );

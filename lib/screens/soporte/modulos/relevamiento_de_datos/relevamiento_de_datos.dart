@@ -12,22 +12,27 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 import '../../../../database/app_database_sop.dart';
 import '../../componentes/test_container.dart';
 
 class RelevamientoDeDatosScreen extends StatefulWidget {
+  final String sessionId;
+  final String secaValue;
   final String nReca;
   final String codMetrica;
-  final String secaValue;
-  final String sessionId;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
 
   const RelevamientoDeDatosScreen({
     super.key,
-    required this.secaValue,
     required this.sessionId,
+    required this.secaValue,
     required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
   });
 
   @override
@@ -1358,10 +1363,14 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => FinServicioScreen(
+                                    userName: widget.userName,
+                                    clienteId: widget.clienteId,
+                                    plantaCodigo: widget.plantaCodigo,
                                     sessionId: widget.sessionId,
                                     secaValue: widget.secaValue,
                                     codMetrica: widget.codMetrica,
                                     nReca: widget.nReca,
+                                    tableName: 'relevamiento_de_datos',
                                   ),
                                 ),
                               );

@@ -7,12 +7,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:service_met/home_screen.dart';
-import 'package:service_met/screens/soporte/precarga/precarga_controller.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import 'package:sqflite/sqflite.dart';
-
 import '../../../../database/app_database_sop.dart';
 
 class FinServicioMntcorrectivoScreen extends StatefulWidget {
@@ -20,6 +16,10 @@ class FinServicioMntcorrectivoScreen extends StatefulWidget {
   final String secaValue;
   final String sessionId;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
+  final String? tableName; // ✅ AGREGAR
 
   const FinServicioMntcorrectivoScreen({
     super.key,
@@ -27,6 +27,10 @@ class FinServicioMntcorrectivoScreen extends StatefulWidget {
     required this.secaValue,
     required this.sessionId,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
+    required this.tableName, // ✅ AGREGAR
   });
 
   @override
@@ -49,37 +53,6 @@ class _FinServicioMntcorrectivoScreenState
         duration: Duration(seconds: duration),
       ),
     );
-  }
-
-  Future<List<Map<String, dynamic>>> _depurarDatos(
-      List<Map<String, dynamic>> registros) async {
-    // 1. Eliminar filas completamente vacías
-    registros.removeWhere((registro) =>
-        registro.values.every((value) => value == null || value == ''));
-
-    // 2. Eliminar duplicados conservando el más reciente (por fecha/hora si existe)
-    final Map<String, Map<String, dynamic>> registrosUnicos = {};
-    final hasFechaField = registros.isNotEmpty &&
-        registros.first.keys.any((k) => k.toLowerCase().contains('fecha'));
-
-    for (var registro in registros) {
-      final String claveUnica = '${registro['cod_metrica']}_${registro['id']}';
-      final String fechaActual = hasFechaField
-          ? registro['fecha']?.toString() ??
-          registro['hora_fin']?.toString() ??
-          ''
-          : '';
-
-      if (!registrosUnicos.containsKey(claveUnica) ||
-          (hasFechaField &&
-              (registrosUnicos[claveUnica]?['fecha']?.toString() ?? '')
-                  .compareTo(fechaActual) <
-                  0)) {
-        registrosUnicos[claveUnica] = registro;
-      }
-    }
-
-    return registrosUnicos.values.toList();
   }
 
   Future<void> _exportDataToCSV(BuildContext context) async {
@@ -156,6 +129,9 @@ class _FinServicioMntcorrectivoScreenState
       final now = DateTime.now();
       final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_mnt_correctivo.csv';
 
+      // ✅ Crear respaldo automático
+      await _crearRespaldoAutomatico(csvBytes, csvName);
+
       // ✅ Cerrar diálogo de carga
       if (mounted) Navigator.of(context).pop();
 
@@ -184,6 +160,24 @@ class _FinServicioMntcorrectivoScreenState
       debugPrint('Error exportando CSV: $e');
     } finally {
       _isExporting = false;
+    }
+  }
+
+  Future<void> _crearRespaldoAutomatico(
+      List<int> csvBytes, String fileName) async {
+    try {
+      final externalDir = await getExternalStorageDirectory();
+      if (externalDir != null) {
+        final backupDir =
+        Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+        }
+        final backupFile = File('${backupDir.path}/$fileName');
+        await backupFile.writeAsBytes(csvBytes);
+      }
+    } catch (e) {
+      debugPrint('Error al crear respaldo automático: $e');
     }
   }
 
@@ -233,28 +227,73 @@ class _FinServicioMntcorrectivoScreenState
     if (confirmado != true) return;
 
     try {
-      // ✅ Obtener el controlador actual de precarga
-      final controller = Provider.of<PrecargaControllerSop>(context, listen: false);
+      // ✅ Obtener datos existentes de la BD
+      final dbHelper = DatabaseHelperSop();
+      final db = await dbHelper.database;
 
-      // ✅ Los datos de cliente, planta y SECA ya están en el controlador
-      // Solo necesitamos ir al paso 3 (Balanza)
-      controller.setCurrentStep(3);
+      // ✅ Buscar el último registro con este SECA en mnt_correctivo
+      final List<Map<String, dynamic>> rows = await db.query(
+        widget.tableName ?? 'mnt_correctivo', // Usar la tabla correcta
+        where: 'otst = ?',
+        whereArgs: [widget.secaValue],
+        orderBy: 'session_id DESC',
+        limit: 1,
+      );
 
-      // ✅ Navegar a la pantalla de precarga en el paso correcto
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => PrecargaScreenSop(
-              userName: 'Usuario', // ⚠️ Necesitas pasar el userName desde algún lugar
-              initialStep: 3, // Ir directo al paso de balanza
-              sessionId: widget.sessionId,
-              secaValue: widget.secaValue,
-            ),
-          ),
-        );
+      if (rows.isEmpty) {
+        throw Exception('No se encontraron datos del SECA actual en mantenimiento correctivo');
       }
-    } catch (e) {
+
+      final registroActual = rows.first;
+
+      // ✅ Generar nuevo session_id
+      final nuevoSessionId = await dbHelper.generateSessionId(
+        widget.codMetrica,
+        widget.tableName ?? 'mnt_correctivo',
+      );
+
+      // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
+      final nuevoRegistro = {
+        'session_id': nuevoSessionId,
+        'otst': widget.secaValue,
+        'tipo_servicio': registroActual['tipo_servicio'],
+        'fecha_servicio': registroActual['fecha_servicio'],
+        'tec_responsable': registroActual['tec_responsable'],
+        'cliente': registroActual['cliente'],
+        'razon_social': registroActual['razon_social'],
+        'planta': registroActual['planta'],
+        'dep_planta': registroActual['dep_planta'],
+        'direccion_planta': registroActual['direccion_planta'],
+        'cod_metrica': '', // Vacío para nueva balanza
+        // Agrega otros campos específicos de mnt_correctivo si es necesario
+      };
+
+      // ✅ Insertar nuevo registro
+      await dbHelper.upsertRegistro(
+        widget.tableName ?? 'mnt_correctivo',
+        nuevoRegistro,
+      );
+
+      if (!mounted) return;
+
+      // ✅ Navegar a PrecargaScreenSop con initialStep = 3 (balanza)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) => PrecargaScreenSop(
+            userName: widget.userName,
+            clienteId: widget.clienteId,
+            plantaCodigo: widget.plantaCodigo,
+            initialStep: 3, // ✅ IR DIRECTO A BALANZA
+            sessionId: nuevoSessionId,
+            secaValue: widget.secaValue,
+          ),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('Error al navegar: $e');
+      debugPrint(st.toString());
+
       if (mounted) {
         _showSnackBar(
           context,
@@ -311,10 +350,10 @@ class _FinServicioMntcorrectivoScreenState
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-          left: 16.0, // Tu padding horizontal original
-          right: 16.0, // Tu padding horizontal original
-          bottom: 16.0, // Tu padding inferior original
+          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40,
+          left: 16.0,
+          right: 16.0,
+          bottom: 16.0,
         ),
         physics: const BouncingScrollPhysics(),
         child: Center(

@@ -16,17 +16,23 @@ import 'package:sqflite/sqflite.dart';
 import '../../../../database/app_database_sop.dart';
 
 class StacMntPrvAvanzadoStacScreen extends StatefulWidget {
-  final String nReca;
-  final String secaValue;
   final String sessionId;
+  final String secaValue;
+  final String nReca;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
 
   const StacMntPrvAvanzadoStacScreen({
     super.key,
-    required this.nReca,
-    required this.secaValue,
     required this.sessionId,
+    required this.secaValue,
+    required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
   });
 
   @override
@@ -1467,6 +1473,10 @@ class _StacMntPrvAvanzadoStacScreenState
                                   secaValue: widget.secaValue,
                                   codMetrica: widget.codMetrica,
                                   nReca: widget.nReca,
+                                  userName: widget.userName,
+                                  clienteId: widget.clienteId,
+                                  plantaCodigo: widget.plantaCodigo,
+                                  tableName: 'mnt_prv_avanzado_stac',
                                 ),
                               ),
                             );

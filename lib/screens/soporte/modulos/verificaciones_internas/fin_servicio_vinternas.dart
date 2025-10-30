@@ -6,11 +6,9 @@ import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
-import 'package:provider/provider.dart';
-import 'package:service_met/screens/soporte/precarga/precarga_controller.dart';
-import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
-
+import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 import '../../../../database/app_database_sop.dart';
 
 class FinServicioVinternasScreen extends StatefulWidget {
@@ -18,6 +16,10 @@ class FinServicioVinternasScreen extends StatefulWidget {
   final String secaValue;
   final String nReca;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
+  final String? tableName; // ✅ AGREGAR
 
   const FinServicioVinternasScreen({
     super.key,
@@ -25,6 +27,10 @@ class FinServicioVinternasScreen extends StatefulWidget {
     required this.secaValue,
     required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
+    required this.tableName, // ✅ AGREGAR
   });
 
   @override
@@ -51,7 +57,7 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
     );
   }
 
-  /// Exporta CSV desde la tabla relevamiento_de_datos
+  /// Exporta CSV desde la tabla verificaciones_internas
   Future<void> _exportToCSV(BuildContext context) async {
     if (_isExporting) return;
     _isExporting = true;
@@ -74,13 +80,13 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
         );
       }
 
-      // Obtener datos desde BD interna
+      // ✅ Obtener datos desde BD interna
       final dbHelper = DatabaseHelperSop();
       final db = await dbHelper.database;
 
-      // Consultar SOLO la tabla relevamiento_de_datos por session_id
+      // ✅ Consultar SOLO la tabla verificaciones_internas por session_id
       final List<Map<String, dynamic>> registros = await db.query(
-        'relevamiento_de_datos',
+        'verificaciones_internas',
         where: 'session_id = ?',
         whereArgs: [widget.sessionId],
       );
@@ -93,10 +99,10 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
         return;
       }
 
-      // Obtener headers de las columnas
+      // ✅ Obtener headers de las columnas
       final headers = registros.first.keys.toList();
 
-      // Construir matriz CSV
+      // ✅ Construir matriz CSV
       final matrix = <List<dynamic>>[
         headers,
         ...registros.map((reg) {
@@ -107,7 +113,7 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
         })
       ];
 
-      // Convertir a CSV con punto y coma
+      // ✅ Convertir a CSV con punto y coma
       final csvString = const ListToCsvConverter(
         fieldDelimiter: ';',
         textDelimiter: '"',
@@ -115,13 +121,17 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
 
       final csvBytes = utf8.encode(csvString);
 
-      // Nombre del archivo
+      // ✅ Nombre del archivo
       final now = DateTime.now();
-      final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_relevamiento_de_datos.csv';
+      final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_verificaciones_internas.csv';
 
-      // Pedir al usuario dónde guardar
+      // ✅ Crear respaldo automático
+      await _crearRespaldoAutomatico(csvBytes, csvName);
+
+      // ✅ Cerrar diálogo de carga
       if (mounted) Navigator.of(context).pop();
 
+      // ✅ Pedir al usuario dónde guardar
       final directoryPath = await FilePicker.platform.getDirectoryPath(
         dialogTitle: 'Seleccione carpeta para guardar el CSV',
       );
@@ -149,7 +159,25 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
     }
   }
 
-  /// ✅ MÉTODO CORREGIDO: Carga datos existentes y navega al paso de balanza
+  Future<void> _crearRespaldoAutomatico(
+      List<int> csvBytes, String fileName) async {
+    try {
+      final externalDir = await getExternalStorageDirectory();
+      if (externalDir != null) {
+        final backupDir =
+        Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+        }
+        final backupFile = File('${backupDir.path}/$fileName');
+        await backupFile.writeAsBytes(csvBytes);
+      }
+    } catch (e) {
+      debugPrint('Error al crear respaldo automático: $e');
+    }
+  }
+
+  /// ✅ MÉTODO MEJORADO: Usa la misma lógica que las otras pantallas
   Future<void> _confirmarSeleccionOtraBalanza(BuildContext context) async {
     final bool? confirmado = await showDialog<bool>(
       context: context,
@@ -196,134 +224,81 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
     if (confirmado != true) return;
 
     try {
-      // ✅ Mostrar indicador de carga
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 20),
-                Text('Cargando datos...'),
-              ],
-            ),
-          ),
-        );
-      }
-
-      // ✅ Obtener los datos existentes de la BD
+      // ✅ Obtener datos existentes de la BD
       final dbHelper = DatabaseHelperSop();
-      final registro = await dbHelper.getRegistroBySeca(
-        widget.secaValue,
-        widget.sessionId,
+      final db = await dbHelper.database;
+
+      // ✅ Buscar el último registro con este SECA en verificaciones_internas
+      final List<Map<String, dynamic>> rows = await db.query(
+        widget.tableName ?? 'verificaciones_internas', // Usar la tabla correcta
+        where: 'otst = ?',
+        whereArgs: [widget.secaValue],
+        orderBy: 'session_id DESC',
+        limit: 1,
       );
 
-      if (mounted) Navigator.of(context).pop(); // Cerrar diálogo de carga
-
-      if (registro == null) {
-        if (mounted) {
-          _showSnackBar(
-            context,
-            'No se encontraron datos de la sesión',
-            isError: true,
-          );
-        }
-        return;
+      if (rows.isEmpty) {
+        throw Exception('No se encontraron datos del SECA actual en verificaciones internas');
       }
 
-      // ✅ Obtener el userName desde el registro
-      final userName = registro['tec_responsable']?.toString() ?? 'Usuario';
-      final tipoServicio = registro['tipo_servicio']?.toString();
+      final registroActual = rows.first;
 
-      // ✅ Mapear el tipo de servicio al valor interno
-      String? tipoServicioInterno;
-      if (tipoServicio != null) {
-        tipoServicioInterno = _mapTipoServicioToInternal(tipoServicio);
-      }
-
-      // ✅ Crear un nuevo controlador con los datos existentes
-      final controller = PrecargaControllerSop();
-
-      // ✅ PASO 1: Establecer tipo de servicio si existe
-      if (tipoServicioInterno != null) {
-        controller.selectTipoServicio(tipoServicioInterno, null);
-      }
-
-      // ✅ PASO 2: Cargar clientes
-      await controller.fetchClientes();
-
-      // ✅ PASO 3: Establecer los datos internos (esto configura sessionId, seca, cliente, planta)
-      controller.setInternalValues(
-        sessionId: widget.sessionId,
-        seca: widget.secaValue,
-        clienteName: registro['cliente']?.toString(),
-        clienteRazonSocial: registro['razon_social']?.toString(),
-        plantaDir: registro['direccion_planta']?.toString(),
-        plantaDep: registro['dep_planta']?.toString(),
-        plantaCodigo: _extractPlantaCodigoFromSeca(widget.secaValue),
+      // ✅ Generar nuevo session_id
+      final nuevoSessionId = await dbHelper.generateSessionId(
+        widget.codMetrica,
+        widget.tableName ?? 'verificaciones_internas',
       );
 
-      // ✅ PASO 4: Ir directamente al paso 3 (Balanza)
-      controller.setCurrentStep(3);
+      // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
+      final nuevoRegistro = {
+        'session_id': nuevoSessionId,
+        'otst': widget.secaValue,
+        'tipo_servicio': registroActual['tipo_servicio'],
+        'fecha_servicio': registroActual['fecha_servicio'],
+        'tec_responsable': registroActual['tec_responsable'],
+        'cliente': registroActual['cliente'],
+        'razon_social': registroActual['razon_social'],
+        'planta': registroActual['planta'],
+        'dep_planta': registroActual['dep_planta'],
+        'direccion_planta': registroActual['direccion_planta'],
+        'cod_metrica': '', // Vacío para nueva balanza
+        // Agrega otros campos específicos de verificaciones_internas si es necesario
+      };
 
-      // ✅ PASO 5: Navegar con el controlador configurado
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => ChangeNotifierProvider.value(
-              value: controller,
-              child: PrecargaScreenSop(
-                userName: userName,
-                initialStep: 3, // Ir directo al paso de balanza
-                sessionId: widget.sessionId,
-                secaValue: widget.secaValue,
-              ),
-            ),
+      // ✅ Insertar nuevo registro
+      await dbHelper.upsertRegistro(
+        widget.tableName ?? 'verificaciones_internas',
+        nuevoRegistro,
+      );
+
+      if (!mounted) return;
+
+      // ✅ Navegar a PrecargaScreenSop con initialStep = 3 (balanza)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) => PrecargaScreenSop(
+            userName: widget.userName,
+            clienteId: widget.clienteId,
+            plantaCodigo: widget.plantaCodigo,
+            initialStep: 3, // ✅ IR DIRECTO A BALANZA
+            sessionId: nuevoSessionId,
+            secaValue: widget.secaValue,
           ),
-        );
-      }
-    } catch (e) {
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('Error al navegar: $e');
+      debugPrint(st.toString());
+
       if (mounted) {
-        Navigator.of(context).pop(); // Cerrar diálogo si está abierto
         _showSnackBar(
           context,
-          'Error al cargar datos: ${e.toString()}',
+          'Error al navegar: ${e.toString()}',
           isError: true,
         );
       }
-      debugPrint('Error en _confirmarSeleccionOtraBalanza: $e');
     }
-  }
-
-  /// ✅ NUEVO: Mapea el label del tipo de servicio al valor interno
-  String _mapTipoServicioToInternal(String tipoServicioLabel) {
-    final map = {
-      'Relevamiento de Datos': 'relevamiento_de_datos',
-      'Ajustes Metrológicos': 'ajustes_metrologicos',
-      'Diagnóstico': 'diagnostico',
-      'Mantenimiento Preventivo Regular - STAC': 'mnt_prv_regular_stac',
-      'Mantenimiento Preventivo Regular - STIL': 'mnt_prv_regular_stil',
-      'Mantenimiento Preventivo Avanzado - STAC': 'mnt_prv_avanzado_stac',
-      'Mantenimiento Preventivo Avanzado - STIL': 'mnt_prv_avanzado_stil',
-      'Mantenimiento Correctivo': 'mnt_correctivo',
-      'Instalación': 'instalacion',
-      'Verificaciones Internas': 'verificaciones_internas',
-    };
-
-    return map[tipoServicioLabel] ?? 'relevamiento_de_datos';
-  }
-
-  /// ✅ NUEVO: Extrae el código de planta del SECA (formato: YY-CODIGO-S01)
-  String _extractPlantaCodigoFromSeca(String seca) {
-    final parts = seca.split('-');
-    if (parts.length >= 2) {
-      return parts[1]; // Retorna CODIGO de YY-CODIGO-S01
-    }
-    return '';
   }
 
   @override
@@ -383,7 +358,7 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
           children: [
             _buildInfoSection(
               'EXPORTAR',
-              'Generará un archivo CSV con todos los datos del relevamiento. '
+              'Generará un archivo CSV con todos los datos de verificaciones internas. '
                   'El archivo se guardará con separador punto y coma (;).',
               textColor,
             ),
@@ -411,12 +386,12 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
-                // Exportar CSV antes de finalizar
+                // ✅ Exportar CSV antes de finalizar
                 await _exportToCSV(context);
 
                 if (!mounted) return;
 
-                // Volver al home
+                // ✅ Volver al home
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const HomeScreen()),

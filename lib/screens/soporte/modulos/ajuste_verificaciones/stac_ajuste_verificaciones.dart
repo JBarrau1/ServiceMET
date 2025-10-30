@@ -16,17 +16,23 @@ import '../../../../database/app_database_sop.dart';
 import 'fin_servicio_ajustes_verificaciones.dart';
 
 class StacAjusteVerificacionesScreen extends StatefulWidget {
-  final String nReca;
-  final String secaValue;
   final String sessionId;
+  final String secaValue;
+  final String nReca;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
 
   const StacAjusteVerificacionesScreen({
     super.key,
-    required this.nReca,
-    required this.secaValue,
     required this.sessionId,
+    required this.secaValue,
+    required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
   });
 
   @override
@@ -742,12 +748,15 @@ class _StacAjusteVerificacionesScreenState
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          FinServicioAjustesVerificacionesScreen(
+                                      builder: (context) => FinServicioAjustesVerificacionesScreen(
                                         nReca: widget.nReca,
                                         secaValue: widget.secaValue,
                                         sessionId: widget.sessionId,
                                         codMetrica: widget.codMetrica,
+                                        userName: widget.userName,
+                                        clienteId: widget.clienteId,
+                                        plantaCodigo: widget.plantaCodigo,
+                                        tableName: 'ajustes_verificaciones',
                                       ),
                                     ),
                                   );

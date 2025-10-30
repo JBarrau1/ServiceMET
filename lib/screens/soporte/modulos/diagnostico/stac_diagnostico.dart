@@ -17,17 +17,23 @@ import '../mnt_correctivo/stac_mnt_correctivo.dart';
 import 'fin_servicio_diagnostico.dart';
 
 class StacDiagnosticoScreen extends StatefulWidget {
-  final String nReca;
-  final String secaValue;
   final String sessionId;
+  final String secaValue;
+  final String nReca;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
 
   const StacDiagnosticoScreen({
     super.key,
-    required this.nReca,
-    required this.secaValue,
     required this.sessionId,
+    required this.secaValue,
+    required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
   });
 
   @override
@@ -494,7 +500,7 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
                       nReca: widget.nReca,
                       secaValue: widget.secaValue,
                       sessionId: widget.sessionId,
-                      codMetrica: widget.codMetrica,
+                      codMetrica: widget.codMetrica, userName: '', clienteId: '', plantaCodigo: '',
                     ),
                   ),
                 );
@@ -514,6 +520,10 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
                       secaValue: widget.secaValue,
                       sessionId: widget.sessionId,
                       codMetrica: widget.codMetrica,
+                      userName: widget.userName,
+                      clienteId: widget.clienteId,
+                      plantaCodigo: widget.plantaCodigo,
+                      tableName: 'diagnostico',
                     ),
                   ),
                 );

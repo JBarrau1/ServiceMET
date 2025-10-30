@@ -7,13 +7,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:service_met/home_screen.dart';
-import 'package:service_met/screens/soporte/precarga/precarga_controller.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:service_met/bdb/calibracion_bd.dart';
-
 import '../../../../database/app_database_sop.dart';
 
 class FinServicioAjustesVerificacionesScreen extends StatefulWidget {
@@ -21,6 +16,10 @@ class FinServicioAjustesVerificacionesScreen extends StatefulWidget {
   final String secaValue;
   final String sessionId;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
+  final String? tableName; // ✅ AGREGAR
 
   const FinServicioAjustesVerificacionesScreen({
     super.key,
@@ -28,6 +27,10 @@ class FinServicioAjustesVerificacionesScreen extends StatefulWidget {
     required this.secaValue,
     required this.sessionId,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
+    required this.tableName, // ✅ AGREGAR
   });
 
   @override
@@ -57,7 +60,6 @@ class _FinServicioAjustesVerificacionesScreenState
     _isExporting = true;
 
     try {
-      // Mostrar indicador de carga
       if (mounted) {
         showDialog(
           context: context,
@@ -75,11 +77,9 @@ class _FinServicioAjustesVerificacionesScreenState
         );
       }
 
-      // ✅ Obtener datos desde BD interna usando el helper
       final dbHelper = DatabaseHelperSop();
       final db = await dbHelper.database;
 
-      // ✅ Consultar SOLO la tabla ajustes_metrológicos por session_id
       final List<Map<String, dynamic>> registros = await db.query(
         'ajustes_metrológicos',
         where: 'session_id = ?',
@@ -94,10 +94,7 @@ class _FinServicioAjustesVerificacionesScreenState
         return;
       }
 
-      // ✅ Obtener headers de las columnas
       final headers = registros.first.keys.toList();
-
-      // ✅ Construir matriz CSV
       final matrix = <List<dynamic>>[
         headers,
         ...registros.map((reg) {
@@ -108,7 +105,6 @@ class _FinServicioAjustesVerificacionesScreenState
         })
       ];
 
-      // ✅ Convertir a CSV con punto y coma
       final csvString = const ListToCsvConverter(
         fieldDelimiter: ';',
         textDelimiter: '"',
@@ -116,14 +112,14 @@ class _FinServicioAjustesVerificacionesScreenState
 
       final csvBytes = utf8.encode(csvString);
 
-      // ✅ Nombre del archivo
       final now = DateTime.now();
-      final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_ajustes_verificaciones.csv';
+      final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_ajustes_metrologicos.csv';
 
-      // ✅ Cerrar diálogo de carga
+      // ✅ Crear respaldo automático
+      await _crearRespaldoAutomatico(csvBytes, csvName);
+
       if (mounted) Navigator.of(context).pop();
 
-      // ✅ Pedir al usuario dónde guardar
       final directoryPath = await FilePicker.platform.getDirectoryPath(
         dialogTitle: 'Seleccione carpeta para guardar el CSV',
       );
@@ -215,28 +211,65 @@ class _FinServicioAjustesVerificacionesScreenState
     if (confirmado != true) return;
 
     try {
-      // ✅ Obtener el controlador actual de precarga
-      final controller = Provider.of<PrecargaControllerSop>(context, listen: false);
+      final dbHelper = DatabaseHelperSop();
+      final db = await dbHelper.database;
 
-      // ✅ Los datos de cliente, planta y SECA ya están en el controlador
-      // Solo necesitamos ir al paso 3 (Balanza)
-      controller.setCurrentStep(3);
+      final List<Map<String, dynamic>> rows = await db.query(
+        widget.tableName ?? 'ajustes_metrológicos',
+        where: 'otst = ?',
+        whereArgs: [widget.secaValue],
+        orderBy: 'session_id DESC',
+        limit: 1,
+      );
 
-      // ✅ Navegar a la pantalla de precarga en el paso correcto
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => PrecargaScreenSop(
-              userName: 'Usuario', // ⚠️ Necesitas pasar el userName desde algún lugar
-              initialStep: 3, // Ir directo al paso de balanza
-              sessionId: widget.sessionId,
-              secaValue: widget.secaValue,
-            ),
-          ),
-        );
+      if (rows.isEmpty) {
+        throw Exception('No se encontraron datos del SECA actual en ajustes metrológicos');
       }
-    } catch (e) {
+
+      final registroActual = rows.first;
+      final nuevoSessionId = await dbHelper.generateSessionId(
+        widget.codMetrica,
+        widget.tableName ?? 'ajustes_metrológicos',
+      );
+
+      final nuevoRegistro = {
+        'session_id': nuevoSessionId,
+        'otst': widget.secaValue,
+        'tipo_servicio': registroActual['tipo_servicio'],
+        'fecha_servicio': registroActual['fecha_servicio'],
+        'tec_responsable': registroActual['tec_responsable'],
+        'cliente': registroActual['cliente'],
+        'razon_social': registroActual['razon_social'],
+        'planta': registroActual['planta'],
+        'dep_planta': registroActual['dep_planta'],
+        'direccion_planta': registroActual['direccion_planta'],
+        'cod_metrica': '', // Vacío para nueva balanza
+      };
+
+      await dbHelper.upsertRegistro(
+        widget.tableName ?? 'ajustes_metrológicos',
+        nuevoRegistro,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) => PrecargaScreenSop(
+            userName: widget.userName,
+            clienteId: widget.clienteId,
+            plantaCodigo: widget.plantaCodigo,
+            initialStep: 3,
+            sessionId: nuevoSessionId,
+            secaValue: widget.secaValue,
+          ),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('Error al navegar: $e');
+      debugPrint(st.toString());
+
       if (mounted) {
         _showSnackBar(
           context,
@@ -293,10 +326,10 @@ class _FinServicioAjustesVerificacionesScreenState
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-          left: 16.0, // Tu padding horizontal original
-          right: 16.0, // Tu padding horizontal original
-          bottom: 16.0, // Tu padding inferior original
+          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40,
+          left: 16.0,
+          right: 16.0,
+          bottom: 16.0,
         ),
         physics: const BouncingScrollPhysics(),
         child: Center(
@@ -334,12 +367,8 @@ class _FinServicioAjustesVerificacionesScreenState
               const SizedBox(height: 20.0),
               ElevatedButton(
                 onPressed: () async {
-                  // ✅ Exportar CSV antes de finalizar
                   await _exportDataToCSV(context);
-
                   if (!mounted) return;
-
-                  // ✅ Volver al home
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => const HomeScreen()),

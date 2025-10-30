@@ -6,17 +6,20 @@ import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
-import 'package:service_met/database/app_database_sop.dart'; // ✅ AGREGAR
-import 'package:service_met/screens/soporte/precarga/precarga_controller.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import 'package:provider/provider.dart';
+import 'package:service_met/database/app_database_sop.dart';
 
 class FinServicioMntPrvStilScreen extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final String nReca;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
+  final String? tableName; // ✅ AGREGAR
 
   const FinServicioMntPrvStilScreen({
     super.key,
@@ -24,6 +27,10 @@ class FinServicioMntPrvStilScreen extends StatefulWidget {
     required this.secaValue,
     required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
+    required this.tableName, // ✅ AGREGAR
   });
 
   @override
@@ -121,9 +128,13 @@ class _FinServicioMntPrvStilScreenState
       final now = DateTime.now();
       final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_mnt_prv_regular_stil.csv';
 
-      // ✅ Pedir al usuario dónde guardar
+      // ✅ Crear respaldo automático
+      await _crearRespaldoAutomatico(csvBytes, csvName);
+
+      // ✅ Cerrar diálogo de carga
       if (mounted) Navigator.of(context).pop();
 
+      // ✅ Pedir al usuario dónde guardar
       final directoryPath = await FilePicker.platform.getDirectoryPath(
         dialogTitle: 'Seleccione carpeta para guardar el CSV',
       );
@@ -148,6 +159,24 @@ class _FinServicioMntPrvStilScreenState
       debugPrint('Error exportando CSV: $e');
     } finally {
       _isExporting = false;
+    }
+  }
+
+  Future<void> _crearRespaldoAutomatico(
+      List<int> csvBytes, String fileName) async {
+    try {
+      final externalDir = await getExternalStorageDirectory();
+      if (externalDir != null) {
+        final backupDir =
+        Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+        }
+        final backupFile = File('${backupDir.path}/$fileName');
+        await backupFile.writeAsBytes(csvBytes);
+      }
+    } catch (e) {
+      debugPrint('Error al crear respaldo automático: $e');
     }
   }
 
@@ -197,27 +226,73 @@ class _FinServicioMntPrvStilScreenState
     if (confirmado != true) return;
 
     try {
-      // ✅ Obtener el controlador actual de precarga
-      final controller = Provider.of<PrecargaControllerSop>(context, listen: false);
+      // ✅ Obtener datos existentes de la BD
+      final dbHelper = DatabaseHelperSop();
+      final db = await dbHelper.database;
 
-      // ✅ Ir al paso 3 (Balanza)
-      controller.setCurrentStep(3);
+      // ✅ Buscar el último registro con este SECA en mnt_prv_regular_stil
+      final List<Map<String, dynamic>> rows = await db.query(
+        widget.tableName ?? 'mnt_prv_regular_stil', // Usar la tabla correcta
+        where: 'otst = ?',
+        whereArgs: [widget.secaValue],
+        orderBy: 'session_id DESC',
+        limit: 1,
+      );
 
-      // ✅ Navegar a la pantalla de precarga en el paso correcto
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => PrecargaScreenSop(
-              userName: 'Usuario', // ⚠️ Pasar el userName desde donde corresponda
-              initialStep: 3, // Ir directo al paso de balanza
-              sessionId: widget.sessionId,
-              secaValue: widget.secaValue,
-            ),
-          ),
-        );
+      if (rows.isEmpty) {
+        throw Exception('No se encontraron datos del SECA actual en mantenimiento preventivo regular STIL');
       }
-    } catch (e) {
+
+      final registroActual = rows.first;
+
+      // ✅ Generar nuevo session_id
+      final nuevoSessionId = await dbHelper.generateSessionId(
+        widget.codMetrica,
+        widget.tableName ?? 'mnt_prv_regular_stil',
+      );
+
+      // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
+      final nuevoRegistro = {
+        'session_id': nuevoSessionId,
+        'otst': widget.secaValue,
+        'tipo_servicio': registroActual['tipo_servicio'],
+        'fecha_servicio': registroActual['fecha_servicio'],
+        'tec_responsable': registroActual['tec_responsable'],
+        'cliente': registroActual['cliente'],
+        'razon_social': registroActual['razon_social'],
+        'planta': registroActual['planta'],
+        'dep_planta': registroActual['dep_planta'],
+        'direccion_planta': registroActual['direccion_planta'],
+        'cod_metrica': '', // Vacío para nueva balanza
+        // Agrega otros campos específicos de mnt_prv_regular_stil si es necesario
+      };
+
+      // ✅ Insertar nuevo registro
+      await dbHelper.upsertRegistro(
+        widget.tableName ?? 'mnt_prv_regular_stil',
+        nuevoRegistro,
+      );
+
+      if (!mounted) return;
+
+      // ✅ Navegar a PrecargaScreenSop con initialStep = 3 (balanza)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) => PrecargaScreenSop(
+            userName: widget.userName,
+            clienteId: widget.clienteId,
+            plantaCodigo: widget.plantaCodigo,
+            initialStep: 3, // ✅ IR DIRECTO A BALANZA
+            sessionId: nuevoSessionId,
+            secaValue: widget.secaValue,
+          ),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('Error al navegar: $e');
+      debugPrint(st.toString());
+
       if (mounted) {
         _showSnackBar(
           context,

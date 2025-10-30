@@ -19,7 +19,10 @@ class FinServicioScreen extends StatefulWidget {
   final String secaValue;
   final String nReca;
   final String codMetrica;
-
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
+  final String? tableName; // NUEVO: Nombre de la tabla (opcional)
 
   const FinServicioScreen({
     super.key,
@@ -27,6 +30,10 @@ class FinServicioScreen extends StatefulWidget {
     required this.secaValue,
     required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
+    required this.tableName, // NUEVO: Nombre de la tabla (opcional)
   });
 
   @override
@@ -197,29 +204,69 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     if (confirmado != true) return;
 
     try {
-      // ✅ Obtener el controlador actual de precarga
-      final controller = Provider.of<PrecargaControllerSop>(context, listen: false);
+      // ✅ Obtener datos existentes de la BD
+      final dbHelper = DatabaseHelperSop();
+      final db = await dbHelper.database;
 
-      // ✅ Los datos de cliente, planta y SECA ya están en el controlador
-      // Solo necesitamos ir al paso 3 (Balanza)
-      controller.setCurrentStep(3);
+      // ✅ Buscar el último registro con este SECA
+      final List<Map<String, dynamic>> rows = await db.query(
+        widget.tableName ?? 'relevamiento_de_datos', // Usar la tabla correcta
+        where: 'otst = ?',
+        whereArgs: [widget.secaValue],
+        orderBy: 'session_id DESC',
+        limit: 1,
+      );
 
-      // ✅ Navegar a la pantalla de precarga en el paso correcto
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => PrecargaScreenSop(
-              userName: 'Usuario', // ⚠️ Necesitas pasar el userName desde algún lugar
-              initialStep: 3, // Ir directo al paso de balanza
-              sessionId: widget.sessionId,
-              secaValue: widget.secaValue,
-            ),
-          ),
-        );
+      if (rows.isEmpty) {
+        throw Exception('No se encontraron datos del SECA actual');
       }
+
+      final registroActual = rows.first;
+
+      // ✅ Generar nuevo session_id
+      final nuevoSessionId = await dbHelper.generateSessionId(
+        widget.codMetrica,
+        widget.tableName ?? 'relevamiento_de_datos',
+      );
+
+      // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
+      final nuevoRegistro = {
+        'session_id': nuevoSessionId,
+        'otst': widget.secaValue,
+        'tipo_servicio': registroActual['tipo_servicio'],
+        'fecha_servicio': registroActual['fecha_servicio'],
+        'tec_responsable': registroActual['tec_responsable'],
+        'cliente': registroActual['cliente'],
+        'razon_social': registroActual['razon_social'],
+        'planta': registroActual['planta'],
+        'dep_planta': registroActual['dep_planta'],
+        'direccion_planta': registroActual['direccion_planta'],
+        'cod_metrica': '', // Vacío para nueva balanza
+      };
+
+      // ✅ Insertar nuevo registro
+      await dbHelper.upsertRegistro(
+        widget.tableName ?? 'relevamiento_de_datos',
+        nuevoRegistro,
+      );
+
+      if (!mounted) return;
+
+      // ✅ Navegar a PrecargaScreenSop con initialStep = 3 (balanza)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) => PrecargaScreenSop(
+            userName: widget.userName,
+            clienteId: widget.clienteId,
+            plantaCodigo: widget.plantaCodigo,
+            initialStep: 3, // ✅ IR DIRECTO A BALANZA
+            sessionId: nuevoSessionId,
+            secaValue: widget.secaValue,
+          ),
+        ),
+      );
     } catch (e, st) {
-      // Loguea error y stack trace en la consola
       debugPrint('Error al navegar: $e');
       debugPrint(st.toString());
 

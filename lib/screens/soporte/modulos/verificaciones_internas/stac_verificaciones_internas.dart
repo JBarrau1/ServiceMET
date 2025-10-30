@@ -16,17 +16,23 @@ import 'package:sqflite/sqflite.dart';
 import '../../../../database/app_database_sop.dart';
 
 class StacVerificacionesInternasScreen extends StatefulWidget {
-  final String nReca;
-  final String secaValue;
   final String sessionId;
+  final String secaValue;
+  final String nReca;
   final String codMetrica;
+  final String userName; // ✅ AGREGAR
+  final String clienteId; // ✅ AGREGAR
+  final String plantaCodigo; // ✅ AGREGAR
 
   const StacVerificacionesInternasScreen({
     super.key,
-    required this.nReca,
-    required this.secaValue,
     required this.sessionId,
+    required this.secaValue,
+    required this.nReca,
     required this.codMetrica,
+    required this.userName, // ✅ AGREGAR
+    required this.clienteId, // ✅ AGREGAR
+    required this.plantaCodigo, // ✅ AGREGAR
   });
 
   @override
@@ -569,6 +575,10 @@ class _StacVerificacionesInternasScreenState
                       secaValue: widget.secaValue,
                       nReca: widget.nReca,
                       codMetrica: widget.codMetrica,
+                      userName: widget.userName,
+                      clienteId: widget.clienteId,
+                      plantaCodigo: widget.plantaCodigo,
+                      tableName: 'verificaciones_internas',
                     ),
                   ),
                 );

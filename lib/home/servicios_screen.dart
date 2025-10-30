@@ -70,7 +70,7 @@ class ServiciosScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => PrecargaScreenSop(userName: userName)),
+                      builder: (context) => PrecargaScreenSop(userName: userName, clienteId: '', plantaCodigo: '',)),
                 );
               },
               color: const Color(0xFF89B2CC),
