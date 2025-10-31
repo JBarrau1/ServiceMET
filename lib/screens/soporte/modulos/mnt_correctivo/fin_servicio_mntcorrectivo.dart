@@ -281,6 +281,7 @@ class _FinServicioMntcorrectivoScreenState
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => PrecargaScreenSop(
+            tableName: widget.tableName ?? 'mnt_correctivo',
             userName: widget.userName,
             clienteId: widget.clienteId,
             plantaCodigo: widget.plantaCodigo,

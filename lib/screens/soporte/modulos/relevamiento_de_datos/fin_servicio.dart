@@ -204,13 +204,11 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     if (confirmado != true) return;
 
     try {
-      // ✅ Obtener datos existentes de la BD
       final dbHelper = DatabaseHelperSop();
       final db = await dbHelper.database;
 
-      // ✅ Buscar el último registro con este SECA
       final List<Map<String, dynamic>> rows = await db.query(
-        widget.tableName ?? 'relevamiento_de_datos', // Usar la tabla correcta
+        widget.tableName ?? 'relevamiento_de_datos',
         where: 'otst = ?',
         whereArgs: [widget.secaValue],
         orderBy: 'session_id DESC',
@@ -223,28 +221,43 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       final registroActual = rows.first;
 
-      // ✅ Generar nuevo session_id
+      String? codigoPlanta;
+
+      // Opción 1: Si existe en la BD
+      codigoPlanta = registroActual['cod_planta']?.toString();
+
+      // Opción 2: Si no existe, extraer del OTST (formato: 25-1234-S01)
+      if (codigoPlanta == null || codigoPlanta.isEmpty) {
+        final partesSeca = widget.secaValue.split('-');
+        if (partesSeca.length >= 2) {
+          codigoPlanta = partesSeca[1]; // Extrae "1234"
+        }
+      }
+
+      if (codigoPlanta == null || codigoPlanta.isEmpty) {
+        throw Exception('No se pudo determinar el código de planta');
+      }
+
       final nuevoSessionId = await dbHelper.generateSessionId(
         widget.codMetrica,
         widget.tableName ?? 'relevamiento_de_datos',
       );
 
-      // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
       final nuevoRegistro = {
         'session_id': nuevoSessionId,
         'otst': widget.secaValue,
         'tipo_servicio': registroActual['tipo_servicio'],
         'fecha_servicio': registroActual['fecha_servicio'],
-        'tec_responsable': registroActual['tec_responsable'],
+        'personal': registroActual['personal'],
         'cliente': registroActual['cliente'],
         'razon_social': registroActual['razon_social'],
         'planta': registroActual['planta'],
         'dep_planta': registroActual['dep_planta'],
-        'direccion_planta': registroActual['direccion_planta'],
+        'dir_planta': registroActual['dir_planta'],
+        'cod_planta': codigoPlanta,
         'cod_metrica': '', // Vacío para nueva balanza
       };
 
-      // ✅ Insertar nuevo registro
       await dbHelper.upsertRegistro(
         widget.tableName ?? 'relevamiento_de_datos',
         nuevoRegistro,
@@ -252,30 +265,24 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       if (!mounted) return;
 
-      // ✅ Navegar a PrecargaScreenSop con initialStep = 3 (balanza)
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => PrecargaScreenSop(
+            tableName: widget.tableName ?? 'relevamiento_de_datos', // NUEVO: Nombre de la tabla
             userName: widget.userName,
             clienteId: widget.clienteId,
-            plantaCodigo: widget.plantaCodigo,
-            initialStep: 3, // ✅ IR DIRECTO A BALANZA
+            plantaCodigo: codigoPlanta!,
+            initialStep: 3,
             sessionId: nuevoSessionId,
             secaValue: widget.secaValue,
           ),
         ),
       );
     } catch (e, st) {
-      debugPrint('Error al navegar: $e');
-      debugPrint(st.toString());
-
+      debugPrint('Error: $e\n$st');
       if (mounted) {
-        _showSnackBar(
-          context,
-          'Error al navegar: ${e.toString()}',
-          isError: true,
-        );
+        _showSnackBar(context, 'Error: ${e.toString()}', isError: true);
       }
     }
   }
@@ -365,12 +372,12 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
-                // ✅ Exportar CSV antes de finalizar
+
                 await _exportToCSV(context);
 
                 if (!mounted) return;
 
-                // ✅ Volver al home
+
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const HomeScreen()),

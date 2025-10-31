@@ -275,6 +275,7 @@ class _FinServicioDiagnosticoScreenState
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => PrecargaScreenSop(
+            tableName: widget.tableName ?? 'diagnostico',
             userName: widget.userName,
             clienteId: widget.clienteId,
             plantaCodigo: widget.plantaCodigo,

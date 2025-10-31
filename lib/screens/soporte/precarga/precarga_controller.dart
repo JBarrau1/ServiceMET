@@ -158,6 +158,9 @@ class PrecargaControllerSop extends ChangeNotifier {
         if (_selectedPlantaDep == null || _selectedPlantaDep!.isEmpty) {
           return 'El departamento es requerido';
         }
+        if (_selectedPlantaNombre == null || _selectedPlantaNombre!.isEmpty) {
+          return 'El nombre de planta es requerido';
+        }
         return null;
 
       case 2: // SECA
@@ -185,14 +188,15 @@ class PrecargaControllerSop extends ChangeNotifier {
   }
 
   void updateStepErrors() {
-    for (int i = 0; i <= _currentStep && i <= 4; i++) {
+    for (int i = -1; i <= _currentStep && i <= 4; i++) {
       _stepErrors[i] = validateStep(i);
     }
     notifyListeners();
   }
 
-  bool canProceedToStep(int step) {
-    final error = validateStep(step);
+  bool canProceedToStep(int targetStep) {
+
+    final error = validateStep(targetStep);
     return error == null;
   }
 
@@ -214,6 +218,12 @@ class PrecargaControllerSop extends ChangeNotifier {
   }
 
   void goToStep(int step) {
+
+    if (!canProceedToStep(step)) {
+      debugPrint('No se puede saltar al paso $step: pasos anteriores incompletos');
+      return;
+    }
+
     _currentStep = step;
     updateStepErrors();
     notifyListeners();
@@ -283,6 +293,7 @@ class PrecargaControllerSop extends ChangeNotifier {
     String? plantaDir,
     String? plantaDep,
     String? plantaCodigo,
+    String? plantaNombre,
   }) {
     _generatedSessionId = sessionId;
     _generatedSeca = seca;
@@ -292,6 +303,7 @@ class PrecargaControllerSop extends ChangeNotifier {
     if (clienteRazonSocial != null) _selectedClienteRazonSocial = clienteRazonSocial;
     if (plantaDir != null) _selectedPlantaDir = plantaDir;
     if (plantaDep != null) _selectedPlantaDep = plantaDep;
+    if (plantaNombre != null) _selectedPlantaNombre = plantaNombre;
     if (plantaCodigo != null) {
       _selectedPlantaCodigo = plantaCodigo;
       fetchBalanzas(plantaCodigo);
@@ -537,12 +549,12 @@ class PrecargaControllerSop extends ChangeNotifier {
         'tipo_servicio': _selectedTipoServicioLabel ?? _selectedTipoServicio,
         'otst': _generatedSeca!,
         'fecha_servicio': fechaServicio,
-        'tec_responsable': userName,
+        'personal': userName,
         'cliente': _selectedClienteName ?? 'No especificado',
         'razon_social': _selectedClienteRazonSocial ?? 'No especificado',
         'planta': _selectedPlantaNombre ?? 'No especificado',
+        'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
-        'direccion_planta': _selectedPlantaDir ?? 'No especificado',
         'cod_metrica': '', // Se llenará en paso de balanza
       };
 
@@ -578,6 +590,14 @@ class PrecargaControllerSop extends ChangeNotifier {
   // MÉTODOS DE BALANZA
   Future<void> fetchBalanzas(String plantaCodigo) async {
     try {
+      // ✅ Validar que exista tipo de servicio antes de buscar balanzas
+      if (_tableName == null) {
+        debugPrint('⚠️ No se puede buscar balanzas sin tipo de servicio seleccionado');
+        _balanzas = [];
+        notifyListeners();
+        return;
+      }
+
       String path = join(await getDatabasesPath(), 'precarga_database.db');
       final db = await openDatabase(path);
 
@@ -598,6 +618,7 @@ class PrecargaControllerSop extends ChangeNotifier {
           whereArgs: [codMetrica],
         );
 
+        // ✅ Ahora usará la tabla correcta según _tableName
         final estadoCalibacion = await _verificarEstadoCalibacion(codMetrica);
 
         Map<String, dynamic> balanzaCompleta = {
@@ -620,17 +641,24 @@ class PrecargaControllerSop extends ChangeNotifier {
       await db.close();
       notifyListeners();
     } catch (e) {
+      debugPrint('Error al cargar balanzas: $e');
       throw Exception('Error al cargar balanzas: $e');
     }
   }
 
   Future<Map<String, dynamic>> _verificarEstadoCalibacion(String codMetrica) async {
     try {
+      // ✅ Validar que exista un tipo de servicio seleccionado
+      if (_tableName == null || _tableName!.isEmpty) {
+        return {'estado': 'sin_tabla', 'tiene_registro': false};
+      }
+
       final dbHelper = DatabaseHelperSop();
       final db = await dbHelper.database;
 
+      // ✅ Buscar en la tabla correspondiente al tipo de servicio
       final List<Map<String, dynamic>> registros = await db.query(
-        'registros_calibracion',
+        _tableName!, // 👈 Usar la tabla dinámica según el tipo de servicio
         where: 'cod_metrica = ?',
         whereArgs: [codMetrica],
         orderBy: 'fecha_servicio DESC',
@@ -641,6 +669,7 @@ class PrecargaControllerSop extends ChangeNotifier {
         return {'estado': 'sin_registro', 'tiene_registro': false};
       }
 
+      // ✅ Verificar el estado del servicio (puede variar según la tabla)
       final estadoServicio = registros.first['estado_servicio_bal']?.toString() ?? '';
 
       if (estadoServicio == 'Balanza Calibrada') {
@@ -649,6 +678,7 @@ class PrecargaControllerSop extends ChangeNotifier {
         return {'estado': 'no_calibrada', 'tiene_registro': true};
       }
     } catch (e) {
+      debugPrint('Error al verificar estado de calibración: $e');
       return {'estado': 'error', 'tiene_registro': false};
     }
   }
@@ -786,12 +816,12 @@ class PrecargaControllerSop extends ChangeNotifier {
         'tipo_servicio': _selectedTipoServicioLabel ?? _selectedTipoServicio,
         'otst': _generatedSeca!,
         'fecha_servicio': fechaServicio,
-        'tec_responsable': userName,
+        'personal': userName,
         'cliente': _selectedClienteName ?? 'No especificado',
         'razon_social': _selectedClienteRazonSocial ?? 'No especificado',
         'planta': _selectedPlantaNombre ?? 'No especificado',
+        'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
-        'direccion_planta': _selectedPlantaDir ?? 'No especificado',
         'foto_balanza': _fotosTomadas ? '1' : '0',
         // Campos adicionales según tu necesidad
         ...balanzaData,

@@ -229,7 +229,7 @@ class AppDatabase {
 
   Future<void> _onCreate(Database db, int version) async {
     try {
-      debugPrint('🔧 Creando tabla registros_calibracion...');
+      debugPrint('Creando tabla registros_calibracion...');
 
       await db.execute('''
       CREATE TABLE registros_calibracion (

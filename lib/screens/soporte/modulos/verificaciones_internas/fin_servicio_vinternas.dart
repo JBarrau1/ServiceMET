@@ -278,6 +278,7 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => PrecargaScreenSop(
+            tableName: widget.tableName ?? 'verificaciones_internas',
             userName: widget.userName,
             clienteId: widget.clienteId,
             plantaCodigo: widget.plantaCodigo,

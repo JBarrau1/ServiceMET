@@ -272,6 +272,7 @@ class _FinServicioMntPrvStacScreenState extends State<FinServicioMntPrvStacScree
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => PrecargaScreenSop(
+            tableName: widget.tableName ?? 'mnt_prv_regular_stac',
             userName: widget.userName,
             clienteId: widget.clienteId,
             plantaCodigo: widget.plantaCodigo,

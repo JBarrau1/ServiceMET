@@ -351,22 +351,24 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE relevamiento_de_datos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        tipo_servicio TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
         cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
@@ -374,7 +376,6 @@ class DatabaseHelperSop {
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -387,9 +388,9 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
         
         --DATOS SERVICIO ENTORNO
+        fecha_servicio TEXT DEFAULT '',
         hora_inicio TEXT DEFAULT '',
         hora_fin TEXT DEFAULT '',
         comentario_general TEXT DEFAULT '',
@@ -716,30 +717,31 @@ class DatabaseHelperSop {
     await db.execute('''
     CREATE TABLE ajustes_metrológicos (  
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        tipo_servicio TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -752,9 +754,12 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
         
         --DATOS SERVICIO 
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
+        
         --Comentarios
         comentario_1 TEXT DEFAULT '',
         comentario_2 TEXT DEFAULT '',
@@ -1193,29 +1198,31 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE diagnostico (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -1228,7 +1235,11 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '', 
+        
+        --DATOS SERVICIO
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
         
         --Comentarios
         comentario_1 TEXT DEFAULT '',
@@ -1460,29 +1471,31 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_prv_regular_stac (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -1495,7 +1508,11 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
+        
+        --DATOS DE SERVICIO
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
         
         -- Comentarios y Recomendaciones
         comentario_general TEXT DEFAULT '',
@@ -2131,29 +2148,31 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_prv_regular_stil (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -2166,7 +2185,11 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
+        
+        --DATOS DE SERVICIO
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
         
         -- Inspección Visual
         comentario_general TEXT DEFAULT '',
@@ -2766,29 +2789,31 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_prv_avanzado_stac (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -2801,7 +2826,11 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
+        
+        --DATOS DE SERVICIO
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
         
         -- Inspección Visual
         comentario_general TEXT DEFAULT '',
@@ -3473,29 +3502,31 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_prv_avanzado_stil (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -3508,7 +3539,12 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
+        
+        --DATOS DE SERVICIO
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
+        
         
         -- Inspección Visual
         comentario_general TEXT DEFAULT '',
@@ -3970,29 +4006,31 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE mnt_correctivo (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -4005,7 +4043,11 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
+        
+        --DATOS DE SERVICIO
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
         
         -- Inspección Visual
         reporte TEXT DEFAULT '',
@@ -4625,29 +4667,31 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE instalacion (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -4660,8 +4704,12 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
-
+        
+        --DATOS DE SERVICIO
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
+        
         --INSTALACION
         entorno_valor TEXT DEFAULT '',
         entorno_comentario TEXT DEFAULT '',
@@ -4903,29 +4951,31 @@ class DatabaseHelperSop {
     await db.execute('''
       CREATE TABLE verificaciones_internas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT DEFAULT '',
-        otst TEXT DEFAULT '',
-        fecha_servicio TEXT DEFAULT '',
-        tec_responsable TEXT DEFAULT '',
-        --CLIENTE
+        --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
+        dir_planta TEXT DEFAULT '',
         dep_planta TEXT DEFAULT '',
-        direccion_planta TEXT DEFAULT '',
-        --BALANZA
-        cod_metrica TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
-        instrumento TEXT DEFAULT '',
+        cod_planta TEXT DEFAULT '',
+        personal TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
+        session_id TEXT DEFAULT '',
+        n_reca TEXT DEFAULT '',
+        sticker TEXT DEFAULT '',
+        
+        --INF BALANZA
+        foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',
-        cod_interno TEXT DEFAULT '',
+        cod_metrica TEXT DEFAULT '',
+        cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
         marca TEXT DEFAULT '',
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
-        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -4938,7 +4988,11 @@ class DatabaseHelperSop {
         d3 REAL DEFAULT '',
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
-        foto_balanza TEXT DEFAULT '',
+        
+        --DATOS DE SERVICIO
+        fecha_servicio TEXT DEFAULT '',
+        hora_inicio TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
         
         --apartados
         reporte TEXT DEFAULT '',

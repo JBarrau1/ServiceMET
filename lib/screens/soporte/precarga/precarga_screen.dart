@@ -27,9 +27,9 @@ import 'widgets/seca_step.dart';
 import 'widgets/balanza_step.dart';
 import 'widgets/tipo_servicio_step.dart';
 
-
 class PrecargaScreenSop extends StatefulWidget {
-  final String clienteId;    // <-- agregado
+  final String tableName;
+  final String clienteId; // <-- agregado
   final String plantaCodigo; // <-- agregado
   final String userName;
   final int initialStep;
@@ -38,6 +38,7 @@ class PrecargaScreenSop extends StatefulWidget {
 
   const PrecargaScreenSop({
     super.key,
+    required this.tableName,
     required this.clienteId,
     required this.plantaCodigo,
     required this.userName,
@@ -97,7 +98,6 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
     });
   }
 
-
   Future<void> _initializeData() async {
     try {
       await controller.fetchClientes();
@@ -105,8 +105,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
       if (widget.sessionId != null && widget.secaValue != null) {
         await _loadExistingSession();
       } else {
-        // AGREGAR ESTA LÍNEA:
-        controller.setCurrentStep(-1); // Iniciar en selección de tipo de servicio
+        controller.setCurrentStep(-1);
       }
 
       controller.updateStepErrors();
@@ -117,43 +116,52 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
   Future<void> _loadExistingSession() async {
     try {
-      final dbHelper = DatabaseHelperSop(); // ✅ Cambiar a DatabaseHelperSop
-      final tableName = controller.tableName ?? 'relevamiento_de_datos';
-
+      final dbHelper = DatabaseHelperSop();
       final db = await dbHelper.database;
 
-      // ✅ Buscar en la tabla correspondiente
-      final List<Map<String, dynamic>> registros = await db.query(
-        tableName,
+      final String tablaAUsar = widget.tableName;
+
+      final List<Map<String, dynamic>> rows = await db.query(
+        tablaAUsar,
         where: 'otst = ? AND session_id = ?',
         whereArgs: [widget.secaValue, widget.sessionId],
+        orderBy: 'session_id DESC',
         limit: 1,
       );
 
-      if (registros.isEmpty) {
+      if (rows.isEmpty) {
         debugPrint('No se encontró registro con SECA: ${widget.secaValue}');
         return;
       }
 
-      final registro = registros.first;
+      final registroActual = rows.first;
+
+      final tipoServicio = registroActual['tipo_servicio']?.toString() ?? '';
+      controller.selectTipoServicio(tablaAUsar, null);
 
       controller.setInternalValues(
         sessionId: widget.sessionId!,
         seca: widget.secaValue!,
-        clienteName: registro['cliente']?.toString(),
-        clienteRazonSocial: registro['razon_social']?.toString(),
-        plantaDir: registro['direccion_planta']?.toString(),
-        plantaDep: registro['dep_planta']?.toString(),
-        plantaCodigo: registro['cod_planta']?.toString(),
+        clienteName: registroActual['cliente']?.toString(),
+        clienteRazonSocial: registroActual['razon_social']?.toString(),
+        plantaDir: registroActual['dir_planta']?.toString(),
+        plantaDep: registroActual['dep_planta']?.toString(),
+        plantaCodigo: registroActual['cod_planta']?.toString(),
+        plantaNombre: registroActual['planta']?.toString(),
       );
+
+      final plantaCodigo = registroActual['cod_planta']?.toString();
+      if (plantaCodigo != null && plantaCodigo.isNotEmpty) {
+        await controller.fetchBalanzas(plantaCodigo);
+        debugPrint('Balanzas cargadas: ${controller.balanzas.length}');
+      }
 
       await Future.delayed(const Duration(milliseconds: 200));
 
-      // ✅ IMPORTANTE: Establecer el paso DESPUÉS de cargar los datos
       if (widget.initialStep >= -1 && widget.initialStep <= 4) {
         controller.setCurrentStep(widget.initialStep);
       } else {
-        controller.setCurrentStep(4); // Confirmación por defecto
+        controller.setCurrentStep(4);
       }
     } catch (e, st) {
       debugPrint('Error al cargar sesión existente: $e');
@@ -203,7 +211,8 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red[700], size: 24),
+                        Icon(Icons.error_outline,
+                            color: Colors.red[700], size: 24),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -287,8 +296,8 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
           loadFromSharedPreferences: false,
         );
       case 4: // MODIFICAR ESTE CASE
-      // En soporte técnico no hay selección de equipos
-      // Mostrar pantalla de confirmación final
+        // En soporte técnico no hay selección de equipos
+        // Mostrar pantalla de confirmación final
         return _buildFinalConfirmationStep(controller);
       default:
         return const SizedBox();
@@ -308,9 +317,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
                 : const Color(0xFF2C3E50),
           ),
         ).animate().fadeIn(duration: 600.ms),
-
         const SizedBox(height: 30),
-
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -337,19 +344,19 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
-
-              _buildSummaryRow('Tipo de Servicio', controller.selectedTipoServicioLabel ?? 'N/A'),
+              _buildSummaryRow('Tipo de Servicio',
+                  controller.selectedTipoServicioLabel ?? 'N/A'),
               _buildSummaryRow('OTST', controller.generatedSeca ?? 'N/A'),
-              _buildSummaryRow('Cliente', controller.selectedClienteName ?? 'N/A'),
-              _buildSummaryRow('Planta', controller.selectedPlantaNombre ?? 'N/A'),
-              _buildSummaryRow('Código Métrica', _balanzaControllers['cod_metrica']?.text ?? 'N/A'),
+              _buildSummaryRow(
+                  'Cliente', controller.selectedClienteName ?? 'N/A'),
+              _buildSummaryRow(
+                  'Planta', controller.selectedPlantaNombre ?? 'N/A'),
+              _buildSummaryRow('Código Métrica',
+                  _balanzaControllers['cod_metrica']?.text ?? 'N/A'),
               _buildSummaryRow('Técnico', widget.userName),
               _buildSummaryRow('Fecha', _fechaController.text),
-
               const SizedBox(height: 20),
-
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -426,8 +433,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
       ),
       child: Row(
         children: [
-          // Botón Anterior
-          if (controller.currentStep > -1) // CAMBIAR DE 0 A -1
+          if (controller.currentStep > -1)
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () => controller.previousStep(),
@@ -439,10 +445,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
                 ),
               ),
             ),
-
           if (controller.currentStep > -1) const SizedBox(width: 16),
-
-          // Botón Siguiente/Finalizar
           Expanded(
             child: ElevatedButton.icon(
               onPressed: _getNextButtonAction(controller),
@@ -487,9 +490,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
             : null;
 
       case 4: // Confirmación Final
-        return controller.canProceedToStep(4)
-            ? () => _saveAndNavigate()
-            : null;
+        return controller.canProceedToStep(4) ? () => _saveAndNavigate() : null;
 
       default:
         return null;
@@ -510,7 +511,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
   String _getNextButtonText(PrecargaControllerSop controller) {
     switch (controller.currentStep) {
       case 2:
-        return controller.secaConfirmed ? 'Siguiente' : 'Confirmar SECA';
+        return controller.secaConfirmed ? 'Siguiente' : 'Confirmar OTST';
       case 4:
         return 'Finalizar y Continuar';
       default:
@@ -521,7 +522,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
   Color _getNextButtonColor(PrecargaControllerSop controller) {
     switch (controller.currentStep) {
       case 2:
-        return controller.secaConfirmed ? const Color(0xFF667EEA) : Colors.green;
+        return controller.secaConfirmed
+            ? const Color(0xFF667EEA)
+            : Colors.green;
       case 4:
         return Colors.green;
       default:
@@ -532,12 +535,12 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
   Future<void> _confirmSeca() async {
     try {
       await controller.confirmSeca(widget.userName, _fechaController.text);
-      _showSnackBar('SECA confirmado: ${controller.generatedSeca}');
+      _showSnackBar('OTST confirmado: ${controller.generatedSeca}');
     } catch (e) {
       if (e is SecaExistsException) {
         _showExistingSecaDialog(e.fechaUltimoServicio);
       } else {
-        _showSnackBar('Error al confirmar SECA: $e', isError: true);
+        _showSnackBar('Error al confirmar OTST: $e', isError: true);
       }
     }
   }
@@ -548,7 +551,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(
-            'SECA Ya Registrado',
+            'OTST Ya Registrado',
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -558,11 +561,12 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('El SECA "${controller.generatedSeca}" ya tiene registros anteriores.'),
+              Text(
+                  'El OTST "${controller.generatedSeca}" ya tiene registros anteriores.'),
               const SizedBox(height: 10),
               Text('Fecha del último servicio: $fechaServicio'),
               const SizedBox(height: 10),
-              const Text('¿Desea crear una NUEVA sesión para este SECA?'),
+              const Text('¿Desea crear una NUEVA sesión para este OTST?'),
               const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -599,11 +603,10 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
               onPressed: () async {
                 try {
                   await controller.createNewSecaSession(
-                      widget.userName,
-                      _fechaController.text
-                  );
+                      widget.userName, _fechaController.text);
                   Navigator.of(dialogContext).pop();
-                  _showSnackBar('Nueva sesión creada: ${controller.generatedSessionId}');
+                  _showSnackBar(
+                      'Nueva sesión creada: ${controller.generatedSessionId}');
                 } catch (e) {
                   Navigator.of(dialogContext).pop();
                   _showSnackBar('Error al crear sesión: $e', isError: true);
@@ -638,7 +641,8 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       // Mostrar confirmación de guardado de fotos
       if (controller.fotosTomadas && controller.baseFotoPath != null) {
-        final photoCount = controller.balanzaPhotos['identificacion']?.length ?? 0;
+        final photoCount =
+            controller.balanzaPhotos['identificacion']?.length ?? 0;
 
         await _showPhotosSavedDialog(
           photoCount: photoCount,
@@ -682,9 +686,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
     switch (controller.selectedTipoServicio) {
       case 'relevamiento_de_datos':
         return RelevamientoDeDatosScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -693,9 +697,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'ajustes_metrologicos':
         return StacAjusteVerificacionesScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -704,9 +708,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'diagnostico':
         return StacDiagnosticoScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -715,9 +719,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'instalacion':
         return StacInstalacionScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -726,9 +730,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'mnt_correctivo':
         return StacMntCorrectivoScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -737,9 +741,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'mnt_prv_avanzado_stac':
         return StacMntPrvAvanzadoStacScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -748,9 +752,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'mnt_prv_avanzado_stil':
         return StilMntPrvAvanzadoStacScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -759,9 +763,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'mnt_prv_regular_stac':
         return StacMntPrvRegularStacScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -770,9 +774,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'mnt_prv_regular_stil':
         return StilMntPrvRegularStacScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -781,9 +785,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       case 'verificaciones_internas':
         return StacVerificacionesInternasScreen(
-          userName: widget.userName,              // ✅ AGREGAR
-          clienteId: controller.selectedClienteId ?? '', // ✅ AGREGAR
-          plantaCodigo: controller.selectedPlantaCodigo ?? '', // ✅ AGREGAR
+          userName: widget.userName,
+          clienteId: controller.selectedClienteId ?? '',
+          plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
           secaValue: secaValue,
@@ -791,7 +795,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
         );
 
       default:
-      // Fallback a ServicioScreen
+        // Fallback a ServicioScreen
         return ServicioScreen(
           codMetrica: codMetrica,
           nReca: nReca,
@@ -854,7 +858,8 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(Icons.folder_open,
+                        Icon(
+                          Icons.folder_open,
                           color: Colors.green[600],
                           size: 20,
                         ),
