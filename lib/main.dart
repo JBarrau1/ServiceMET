@@ -5,7 +5,16 @@ import 'package:service_met/home_screen.dart';
 import 'package:service_met/providers/calibration_provider.dart';
 import 'package:service_met/repositories/calibration_repository.dart';
 import 'database/app_database.dart';
-import 'database/app_database_sop.dart';
+import 'database/soporte_tecnico/database_helper_ajustes.dart';
+import 'database/soporte_tecnico/database_helper_diagnostico.dart';
+import 'database/soporte_tecnico/database_helper_instalacion.dart';
+import 'database/soporte_tecnico/database_helper_mnt_correctivo.dart';
+import 'database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
+import 'database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
+import 'database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
+import 'database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
+import 'database/soporte_tecnico/database_helper_relevamiento.dart';
+import 'database/soporte_tecnico/database_helper_verificaciones.dart';
 import 'login_screen.dart';
 import 'package:service_met/screens/calibracion/selec_cliente.dart';
 import 'package:service_met/provider/balanza_provider.dart';
@@ -16,7 +25,16 @@ void main() async {
   await Firebase.initializeApp();
   // Inicializa la base de datos local
   await AppDatabase().database; // Esta línea creará la BD si no existe
-  await DatabaseHelperSop().database;
+  await DatabaseHelperAjustes().database;
+  await DatabaseHelperDiagnostico().database;
+  await DatabaseHelperInstalacion().database;
+  await DatabaseHelperMntCorrectivo().database;
+  await DatabaseHelperMntPrvAvanzadoStac().database;
+  await DatabaseHelperMntPrvAvanzadoStil().database;
+  await DatabaseHelperMntPrvRegularStac().database;
+  await DatabaseHelperMntPrvRegularStil().database;
+  await DatabaseHelperRelevamiento().database;
+  await DatabaseHelperVerificaciones().database;
 
   runApp(
     MultiProvider(

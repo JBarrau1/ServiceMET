@@ -6,20 +6,20 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 
-class AppDatabase {
-  static final AppDatabase _instance = AppDatabase._internal();
-  factory AppDatabase() => _instance;
+class DatabaseHelperRelevamiento {
+  static final DatabaseHelperRelevamiento _instance = DatabaseHelperRelevamiento._internal();
+  factory DatabaseHelperRelevamiento() => _instance;
   static Database? _database;
   static bool _isInitializing = false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
 
-  AppDatabase._internal();
+  DatabaseHelperRelevamiento._internal();
 
   Future<Map<String, dynamic>?> getRegistroByCodMetrica(String codMetrica) async {
     try {
       final db = await database;
 
       final List<Map<String, dynamic>> result = await db.query(
-        'registros_calibracion',
+        'relevamiento_de_datos',
         where: 'cod_metrica = ?',
         whereArgs: [codMetrica],
         orderBy: 'id DESC',
@@ -34,36 +34,36 @@ class AppDatabase {
     }
   }
 
-  Future<Map<String, dynamic>?> getUltimoRegistroPorSeca(String seca) async {
+  Future<Map<String, dynamic>?> getUltimoRegistroPorSeca(String otst) async {
     try {
       final db = await database;
       final result = await db.query(
-        'registros_calibracion',
-        where: 'seca = ?',
-        whereArgs: [seca],
+        'relevamiento_de_datos',
+        where: 'otst = ?',
+        whereArgs: [otst],
         orderBy: 'id DESC',
         limit: 1,
       );
       return result.isNotEmpty ? result.first : null;
     } catch (e) {
-      debugPrint('Error al obtener último registro por SECA: $e');
+      debugPrint('Error al obtener último registro por OTST: $e');
       return null;
     }
   }
 
   // REEMPLAZAR ESTE MÉTODO COMPLETO
-  Future<String> generateSessionId(String seca) async {
+  Future<String> generateSessionId(String otst) async {
     try {
       final db = await database;
 
       // Buscar el último session_id para este SECA
       final result = await db.rawQuery('''
       SELECT session_id 
-      FROM registros_calibracion 
-      WHERE seca = ? 
+      FROM relevamiento_de_datos 
+      WHERE otst = ? 
       ORDER BY session_id DESC 
       LIMIT 1
-    ''', [seca]);
+    ''', [otst]);
 
       if (result.isEmpty) {
         // Primera sesión para este SECA
@@ -87,10 +87,10 @@ class AppDatabase {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAllRegistrosCalibracion() async {
+  Future<List<Map<String, dynamic>>> getAllRegistrosRelevamiento() async {
     try {
       final db = await database;
-      return await db.query('registros_calibracion', orderBy: 'fecha_servicio DESC');
+      return await db.query('relevamiento_de_datos', orderBy: 'fecha_servicio DESC');
     } catch (e) {
       debugPrint('Error al obtener todos los registros: $e');
       return [];
@@ -101,14 +101,14 @@ class AppDatabase {
     try {
       final db = await database;
       final result = await db.query(
-        'registros_calibracion',
-        where: 'seca = ?',
+        'relevamiento_de_datos',
+        where: 'otst = ?',
         whereArgs: [seca],
         limit: 1,
       );
       return result.isNotEmpty;
     } catch (e) {
-      debugPrint('Error verificando si SECA existe: $e');
+      debugPrint('Error verificando si OTST existe: $e');
       return false;
     }
   }
@@ -126,43 +126,43 @@ class AppDatabase {
     }
   }
 
-  Future<Map<String, dynamic>?> getRegistroBySeca(String seca, String sessionId) async {
+  Future<Map<String, dynamic>?> getRegistroBySeca(String otst, String sessionId) async {
     try {
       final db = await database;
       final result = await db.query(
-        'registros_calibracion',
-        where: 'seca = ? AND session_id = ?',
-        whereArgs: [seca, sessionId],
+        'relevamiento_de_datos',
+        where: 'otst = ? AND session_id = ?',
+        whereArgs: [otst, sessionId],
         limit: 1,
       );
       return result.isNotEmpty ? result.first : null;
     } catch (e) {
-      debugPrint('Error al obtener registro por SECA y sessionId: $e');
+      debugPrint('Error al obtener registro por OTST y sessionId: $e');
       return null;
     }
   }
 
-  Future<void> upsertRegistroCalibracion(Map<String, dynamic> registro) async {
+  Future<void> upsertRegistroRelevamiento(Map<String, dynamic> registro) async {
     try {
       final db = await database;
 
       final existing = await db.query(
-        'registros_calibracion',
-        where: 'seca = ? AND session_id = ?',
-        whereArgs: [registro['seca'], registro['session_id']],
+        'relevamiento_de_datos',
+        where: 'otst = ? AND session_id = ?',
+        whereArgs: [registro['otst'], registro['session_id']],
       );
 
       if (existing.isNotEmpty) {
         await db.update(
-          'registros_calibracion',
+          'relevamiento_de_datos',
           registro,
-          where: 'seca = ? AND session_id = ?',
-          whereArgs: [registro['seca'], registro['session_id']],
+          where: 'otst = ? AND session_id = ?',
+          whereArgs: [registro['otst'], registro['session_id']],
         );
-        debugPrint('✅ Registro ACTUALIZADO - SECA: ${registro['seca']}, Session: ${registro['session_id']}');
+        debugPrint('Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       } else {
-        await db.insert('registros_calibracion', registro);
-        debugPrint('✅ NUEVO registro INSERTADO - SECA: ${registro['seca']}, Session: ${registro['session_id']}');
+        await db.insert('relevamiento_de_datos', registro);
+        debugPrint('NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       }
     } catch (e) {
       debugPrint('Error en upsertRegistroCalibracion: $e');
@@ -200,7 +200,7 @@ class AppDatabase {
     _isInitializing = true;
 
     try {
-      String path = join(await getDatabasesPath(), 'calibracion.db');
+      String path = join(await getDatabasesPath(), 'relevamiento_de_datos.db');
 
       // Crear directorio si no existe
       final directory = Directory(dirname(path));
@@ -214,13 +214,13 @@ class AppDatabase {
         version: 1,
         onCreate: _onCreate,
         onOpen: (db) {
-          debugPrint('✅ Base de datos abierta correctamente: $path');
+          debugPrint('Base de datos abierta correctamente: $path');
         },
       );
 
       return database;
     } catch (e) {
-      debugPrint('❌ Error inicializando base de datos: $e');
+      debugPrint('Error inicializando base de datos: $e');
       rethrow;
     } finally {
       _isInitializing = false;
@@ -229,12 +229,13 @@ class AppDatabase {
 
   Future<void> _onCreate(Database db, int version) async {
     try {
-      debugPrint('Creando tabla registros_calibracion...');
+      debugPrint('Creando tabla relevamiento_de_datos...');
 
       await db.execute('''
-      CREATE TABLE registros_calibracion (
+      CREATE TABLE relevamiento_de_datos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         --INF CLIENTE Y PERSONAL
+        tipo_servicio TEXT DEFAULT '',   
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
@@ -242,10 +243,8 @@ class AppDatabase {
         dep_planta TEXT DEFAULT '',
         cod_planta TEXT DEFAULT '',
         personal TEXT DEFAULT '',
-        seca TEXT DEFAULT '',
+        otst TEXT DEFAULT '',
         session_id TEXT DEFAULT '',
-        n_reca TEXT DEFAULT '',
-        sticker TEXT DEFAULT '',
         
         --INF BALANZA
         foto_balanza TEXT DEFAULT '',
@@ -271,111 +270,96 @@ class AppDatabase {
         e3 REAL DEFAULT '',
         dec3 REAL DEFAULT '',
         
-        --INF TERMOHIGROMETROS Y PESAS PATRON
-        equipo1 TEXT DEFAULT '',
-        certificado1 TEXT DEFAULT '',
-        ente_calibrador1 TEXT DEFAULT '',
-        estado1 TEXT DEFAULT '',
-        cantidad1 REAL DEFAULT '',
-        equipo2 TEXT DEFAULT '',
-        certificado2 TEXT DEFAULT '',
-        ente_calibrador2 TEXT DEFAULT '',
-        estado2 TEXT DEFAULT '',
-        cantidad2 REAL DEFAULT '',
-        equipo3 TEXT DEFAULT '',
-        certificado3 TEXT DEFAULT '',
-        ente_calibrador3 TEXT DEFAULT '',
-        estado3 TEXT DEFAULT '',
-        cantidad3 REAL DEFAULT '',
-        equipo4 TEXT DEFAULT '',
-        certificado4 TEXT DEFAULT '',
-        ente_calibrador4 TEXT DEFAULT '',
-        estado4 TEXT DEFAULT '',
-        cantidad4 REAL DEFAULT '',
-        equipo5 TEXT DEFAULT '',
-        certificado5 TEXT DEFAULT '',
-        ente_calibrador5 TEXT DEFAULT '',
-        estado5 TEXT DEFAULT '',
-        cantidad5 REAL DEFAULT '',
-        equipo6 TEXT DEFAULT '',
-        certificado6 TEXT DEFAULT '',
-        ente_calibrador6 TEXT DEFAULT '',
-        estado6 TEXT DEFAULT '',
-        cantidad6 REAL DEFAULT '',
-        equipo7 TEXT DEFAULT '',
-        certificado7 TEXT DEFAULT '',
-        ente_calibrador7 TEXT DEFAULT '',
-        estado7 TEXT DEFAULT '',
-        cantidad7 REAL DEFAULT '',
-        
-        --INF SERVICIO
+        --DATOS SERVICIO ENTORNO
         fecha_servicio TEXT DEFAULT '',
         hora_inicio TEXT DEFAULT '',
-        tiempo_estab TEXT DEFAULT '',
-        t_ope_balanza TEXT DEFAULT '',
-        vibracion TEXT DEFAULT '',
-        vibracion_foto TEXT DEFAULT '',
-        vibracion_comentario TEXT DEFAULT '',
-        polvo TEXT DEFAULT '',
-        polvo_foto TEXT DEFAULT '',
-        polvo_comentario TEXT DEFAULT '',
-        temp TEXT DEFAULT '',
-        temp_foto TEXT DEFAULT '',
-        temp_comentario TEXT DEFAULT '',
-        humedad TEXT DEFAULT '',
-        humedad_foto TEXT DEFAULT '',
-        humedad_comentario TEXT DEFAULT '',
-        mesada TEXT DEFAULT '',
-        mesada_foto TEXT DEFAULT '',
-        mesada_comentario TEXT DEFAULT '',
-        iluminacion TEXT DEFAULT '',
-        iluminacion_foto TEXT DEFAULT '',
-        iluminacion_comentario TEXT DEFAULT '',
-        limp_foza TEXT DEFAULT '',
-        limp_foza_foto TEXT DEFAULT '',
-        limp_foza_comentario TEXT DEFAULT '',
-        estado_drenaje TEXT DEFAULT '',
-        estado_drenaje_foto TEXT DEFAULT '',
-        estado_drenaje_comentario TEXT DEFAULT '',
-        limp_general TEXT DEFAULT '',
-        limp_general_foto TEXT DEFAULT '',
-        limp_general_comentario TEXT DEFAULT '',
-        golpes_terminal TEXT DEFAULT '',
-        golpes_terminal_foto TEXT DEFAULT '',
-        golpes_terminal_comentario TEXT DEFAULT '',
-        nivelacion TEXT DEFAULT '',
-        nivelacion_foto TEXT DEFAULT '',
-        nivelacion_comentario TEXT DEFAULT '',
-        limp_recepto TEXT DEFAULT '',
-        limp_recepto_foto TEXT DEFAULT '',
-        limp_recepto_comentario TEXT DEFAULT '',
-        golpes_receptor TEXT DEFAULT '',
-        golpes_receptor_foto TEXT DEFAULT '',
-        golpes_receptor_comentario TEXT DEFAULT '',
-        encendido TEXT DEFAULT '',
-        encendido_foto TEXT DEFAULT '',
-        encendido_comentario TEXT DEFAULT '',
-        precarga1 REAL DEFAULT '',
-        p_indicador1 REAL DEFAULT '',
-        precarga2 REAL DEFAULT '',
-        p_indicador2 REAL DEFAULT '',
-        precarga3 REAL DEFAULT '',
-        p_indicador3 REAL DEFAULT '',
-        precarga4 REAL DEFAULT '',
-        p_indicador4 REAL DEFAULT '',
-        precarga5 REAL DEFAULT '',
-        p_indicador5 REAL DEFAULT '',
-        precarga6 REAL DEFAULT '',
-        p_indicador6 REAL DEFAULT '',
-        ajuste TEXT DEFAULT '',
-        tipo TEXT DEFAULT '',
-        cargas_pesas TEXT DEFAULT '',
-        hora TEXT DEFAULT '',
-        hri TEXT DEFAULT '',
-        ti TEXT DEFAULT '',
-        patmi TEXT DEFAULT '',
+        hora_fin TEXT DEFAULT '',
+        comentario_general TEXT DEFAULT '',
+        recomendaciones TEXT DEFAULT '',
         
-        excentricidad_comentario TEXT DEFAULT '',
+        carcasa TEXT DEFAULT '',
+        carcasa_comentario TEXT DEFAULT '',
+        carcasa_foto TEXT DEFAULT '',
+        
+        conector_cables TEXT DEFAULT '',
+        conector_cables_comentario TEXT DEFAULT '',
+        conector_cables_foto TEXT DEFAULT '',
+        
+        alimentacion TEXT DEFAULT '',
+        alimentacion_comentario TEXT DEFAULT '',
+        alimentacion_foto TEXT DEFAULT '',
+        
+        pantalla TEXT DEFAULT '',
+        pantalla_comentario TEXT DEFAULT '',
+        pantalla_foto TEXT DEFAULT '',
+        
+        teclado TEXT DEFAULT '',
+        teclado_comentario TEXT DEFAULT '',
+        teclado_foto TEXT DEFAULT '',
+        
+        bracket_columna TEXT DEFAULT '',
+        bracket_columna_comentario TEXT DEFAULT '',
+        bracket_columna_foto TEXT DEFAULT '',
+        
+        plato_carga TEXT DEFAULT '',
+        plato_carga_comentario TEXT DEFAULT '',
+        plato_carga_foto TEXT DEFAULT '',
+        
+        estructura TEXT DEFAULT '',
+        estructura_comentario TEXT DEFAULT '',
+        estructura_foto TEXT DEFAULT '',
+        
+        topes_carga TEXT DEFAULT '',
+        topes_carga_comentario TEXT DEFAULT '',
+        topes_carga_foto TEXT DEFAULT '',
+        
+        patas TEXT DEFAULT '',
+        patas_comentario TEXT DEFAULT '',
+        patas_foto TEXT DEFAULT '',
+        
+        limpieza TEXT DEFAULT '',
+        limpieza_comentario TEXT DEFAULT '',
+        limpieza_foto TEXT DEFAULT '',
+        
+        bordes_puntas TEXT DEFAULT '',
+        bordes_puntas_comentario TEXT DEFAULT '',
+        bordes_puntas_foto TEXT DEFAULT '',
+        
+        celulas TEXT DEFAULT '',
+        celulas_comentario TEXT DEFAULT '',
+        celulas_foto TEXT DEFAULT '',
+        
+        cables TEXT DEFAULT '',
+        cables_comentario TEXT DEFAULT '',
+        cables_foto TEXT DEFAULT '',
+        
+        cubierta_silicona TEXT DEFAULT '',
+        cubierta_silicona_comentario TEXT DEFAULT '',
+        cubierta_silicona_foto TEXT DEFAULT '',
+        
+        entorno TEXT DEFAULT '',
+        entorno_comentario TEXT DEFAULT '',
+        entorno_foto TEXT DEFAULT '',
+        
+        nivelacion TEXT DEFAULT '',
+        nivelacion_comentario TEXT DEFAULT '',
+        nivelacion_foto TEXT DEFAULT '',
+        
+        movilizacion TEXT DEFAULT '',
+        movilizacion_comentario TEXT DEFAULT '',
+        movilizacion_foto TEXT DEFAULT '',
+        
+        flujo_pesas TEXT DEFAULT '',
+        flujo_pesas_comentario TEXT DEFAULT '',
+        flujo_pesas_foto TEXT DEFAULT '',
+        
+        otros TEXT DEFAULT '',
+        otros_foto TEXT DEFAULT '',
+        
+        retorno_cero TEXT DEFAULT '',
+        carga_retorno_cero TEXT DEFAULT '',
+        
+        --EXCENTRICIDAD
         tipo_plataforma TEXT DEFAULT '',
         puntos_ind TEXT DEFAULT '',
         carga TEXT DEFAULT '',
@@ -397,8 +381,108 @@ class AppDatabase {
         posicion6 REAL DEFAULT '',
         indicacion6 REAL DEFAULT '',
         retorno6 REAL DEFAULT '',
+
+        --INICIAL
+        excentricidad_inicial_punto1_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto1_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto1_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto2_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto2_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto2_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto3_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto3_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto3_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto4_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto4_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto4_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto5_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto5_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto5_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto6_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto6_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto6_ida_retorno TEXT DEFAULT '',
+
+        -- VUELTA
+        excentricidad_inicial_punto7_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto7_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto7_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto8_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto8_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto8_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto9_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto9_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto9_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto10_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto10_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto10_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto11_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto11_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto11_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_inicial_punto12_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto12_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto12_vuelta_retorno TEXT DEFAULT '',
+
+        -- IDA
+        excentricidad_final_punto1_ida_numero TEXT DEFAULT '',
+        excentricidad_final_punto1_ida_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto1_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto2_ida_numero TEXT DEFAULT '',
+        excentricidad_final_punto2_ida_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto2_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto3_ida_numero TEXT DEFAULT '',
+        excentricidad_final_punto3_ida_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto3_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto4_ida_numero TEXT DEFAULT'',
+        excentricidad_final_punto4_ida_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto4_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto5_ida_numero TEXT DEFAULT '',
+        excentricidad_final_punto5_ida_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto5_ida_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto6_ida_numero TEXT DEFAULT '',
+        excentricidad_final_punto6_ida_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto6_ida_retorno TEXT DEFAULT '',
+
+        -- VUELTA
+        excentricidad_final_punto7_vuelta_numero TEXT DEFAULT '',
+        excentricidad_final_punto7_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto7_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto8_vuelta_numero TEXT DEFAULT '',
+        excentricidad_final_punto8_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto8_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto9_vuelta_numero TEXT DEFAULT '',
+        excentricidad_final_punto9_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto9_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto10_vuelta_numero TEXT DEFAULT '',
+        excentricidad_final_punto10_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto10_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto11_vuelta_numero TEXT DEFAULT '',
+        excentricidad_final_punto11_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto11_vuelta_retorno TEXT DEFAULT '',
+
+        excentricidad_final_punto12_vuelta_numero TEXT DEFAULT '',
+        excentricidad_final_punto12_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_final_punto12_vuelta_retorno TEXT DEFAULT '',
         
-        repetibilidad_comentario TEXT DEFAULT '',
+        -- REPETIBILIDAD
         repetibilidad1 REAL DEFAULT '',
         indicacion1_1 REAL DEFAULT '',
         retorno1_1 REAL DEFAULT '',      
@@ -465,6 +549,7 @@ class AppDatabase {
         indicacion3_10 REAL DEFAULT '',
         retorno3_10 REAL DEFAULT '',
         
+        --LINEALIDAD
         linealidad_comentario TEXT DEFAULT '',
         metodo TEXT DEFAULT '',
         metodo_carga TEXT DEFAULT '',
@@ -504,179 +589,21 @@ class AppDatabase {
         lin12 REAL DEFAULT '',
         ind12 REAL DEFAULT '',
         retorno_lin12 REAL DEFAULT '',
-        lin13 REAL DEFAULT '',
-        ind13 REAL DEFAULT '',
-        retorno_lin13 REAL DEFAULT '',
-        lin14 REAL DEFAULT '',
-        ind14 REAL DEFAULT '',
-        retorno_lin14 REAL DEFAULT '',
-        lin15 REAL DEFAULT '',
-        ind15 REAL DEFAULT '',
-        retorno_lin15 REAL DEFAULT '',
-        lin16 REAL DEFAULT '',
-        ind16 REAL DEFAULT '',
-        retorno_lin16 REAL DEFAULT '',
-        lin17 REAL DEFAULT '',
-        ind17 REAL DEFAULT '',
-        retorno_lin17 REAL DEFAULT '',
-        lin18 REAL DEFAULT '',
-        ind18 REAL DEFAULT '',
-        retorno_lin18 REAL DEFAULT '',
-        lin19 REAL DEFAULT '',
-        ind19 REAL DEFAULT '',
-        retorno_lin19 REAL DEFAULT '',
-        lin20 REAL DEFAULT '',
-        ind20 REAL DEFAULT '',
-        retorno_lin20 REAL DEFAULT '',
-        lin21 REAL DEFAULT '',
-        ind21 REAL DEFAULT '',
-        retorno_lin21 REAL DEFAULT '',
-        lin22 REAL DEFAULT '',
-        ind22 REAL DEFAULT '',
-        retorno_lin22 REAL DEFAULT '',
-        lin23 REAL DEFAULT '',
-        ind23 REAL DEFAULT '',
-        retorno_lin23 REAL DEFAULT '',
-        lin24 REAL DEFAULT '',
-        ind24 REAL DEFAULT '',
-        retorno_lin24 REAL DEFAULT '',
-        lin25 REAL DEFAULT '',
-        ind25 REAL DEFAULT '',
-        retorno_lin25 REAL DEFAULT '',
-        lin26 REAL DEFAULT '',
-        ind26 REAL DEFAULT '',
-        retorno_lin26 REAL DEFAULT '',
-        lin27 REAL DEFAULT '',
-        ind27 REAL DEFAULT '',
-        retorno_lin27 REAL DEFAULT '',
-        lin28 REAL DEFAULT '',
-        ind28 REAL DEFAULT '',
-        retorno_lin28 REAL DEFAULT '',
-        lin29 REAL DEFAULT '',
-        ind29 REAL DEFAULT '',
-        retorno_lin29 REAL DEFAULT '',
-        lin30 REAL DEFAULT '',
-        ind30 REAL DEFAULT '',
-        retorno_lin30 REAL DEFAULT '',
-        lin31 REAL DEFAULT '',
-        ind31 REAL DEFAULT '',
-        retorno_lin31 REAL DEFAULT '',
-        lin32 REAL DEFAULT '',
-        ind32 REAL DEFAULT '',
-        retorno_lin32 REAL DEFAULT '',
-        lin33 REAL DEFAULT '',
-        ind33 REAL DEFAULT '',
-        retorno_lin33 REAL DEFAULT '',
-        lin34 REAL DEFAULT '',
-        ind34 REAL DEFAULT '',
-        retorno_lin34 REAL DEFAULT '',
-        lin35 REAL DEFAULT '',
-        ind35 REAL DEFAULT '',
-        retorno_lin35 REAL DEFAULT '',
-        lin36 REAL DEFAULT '',
-        ind36 REAL DEFAULT '',
-        retorno_lin36 REAL DEFAULT '',
-        lin37 REAL DEFAULT '',
-        ind37 REAL DEFAULT '',
-        retorno_lin37 REAL DEFAULT '',
-        lin38 REAL DEFAULT '',
-        ind38 REAL DEFAULT '',
-        retorno_lin38 REAL DEFAULT '',
-        lin39 REAL DEFAULT '',
-        ind39 REAL DEFAULT '',
-        retorno_lin39 REAL DEFAULT '',
-        lin40 REAL DEFAULT '',
-        ind40 REAL DEFAULT '',
-        retorno_lin40 REAL DEFAULT '',
-        lin41 REAL DEFAULT '',
-        ind41 REAL DEFAULT '',
-        retorno_lin41 REAL DEFAULT '',
-        lin42 REAL DEFAULT '',
-        ind42 REAL DEFAULT '',
-        retorno_lin42 REAL DEFAULT '',
-        lin43 REAL DEFAULT '',
-        ind43 REAL DEFAULT '',
-        retorno_lin43 REAL DEFAULT '',
-        lin44 REAL DEFAULT '',
-        ind44 REAL DEFAULT '',
-        retorno_lin44 REAL DEFAULT '',
-        lin45 REAL DEFAULT '',
-        ind45 REAL DEFAULT '',
-        retorno_lin45 REAL DEFAULT '',
-        lin46 REAL DEFAULT '',
-        ind46 REAL DEFAULT '',
-        retorno_lin46 REAL DEFAULT '',
-        lin47 REAL DEFAULT '',
-        ind47 REAL DEFAULT '',
-        retorno_lin47 REAL DEFAULT '',
-        lin48 REAL DEFAULT '',
-        ind48 REAL DEFAULT '',
-        retorno_lin48 REAL DEFAULT '',
-        lin49 REAL DEFAULT '',
-        ind49 REAL DEFAULT '',
-        retorno_lin49 REAL DEFAULT '',
-        lin50 REAL DEFAULT '',
-        ind50 REAL DEFAULT '',
-        retorno_lin50 REAL DEFAULT '',
-        lin51 REAL DEFAULT '',
-        ind51 REAL DEFAULT '',
-        retorno_lin51 REAL DEFAULT '',
-        lin52 REAL DEFAULT '',
-        ind52 REAL DEFAULT '',
-        retorno_lin52 REAL DEFAULT '',
-        lin53 REAL DEFAULT '',
-        ind53 REAL DEFAULT '',
-        retorno_lin53 REAL DEFAULT '',
-        lin54 REAL DEFAULT '',
-        ind54 REAL DEFAULT '',
-        retorno_lin54 REAL DEFAULT '',
-        lin55 REAL DEFAULT '',
-        ind55 REAL DEFAULT '',
-        retorno_lin55 REAL DEFAULT '',
-        lin56 REAL DEFAULT '',
-        ind56 REAL DEFAULT '',
-        retorno_lin56 REAL DEFAULT '',
-        lin57 REAL DEFAULT '',
-        ind57 REAL DEFAULT '',
-        retorno_lin57 REAL DEFAULT '',
-        lin58 REAL DEFAULT '',
-        ind58 REAL DEFAULT '',
-        retorno_lin58 REAL DEFAULT '',
-        lin59 REAL DEFAULT '',
-        ind59 REAL DEFAULT '',
-        retorno_lin59 REAL DEFAULT '',
-        lin60 REAL DEFAULT '',
-        ind60 REAL DEFAULT '',
-        retorno_lin60 REAL DEFAULT '',
-        
-        ---INF FINAL
-        hora_fin TEXT DEFAULT '',
-        hri_fin TEXT DEFAULT '',
-        ti_fin TEXT DEFAULT '',
-        patmi_fin TEXT DEFAULT '',
-        mant_soporte TEXT DEFAULT '',
-        venta_pesas TEXT DEFAULT '',
-        reemplazo TEXT DEFAULT '',
-        observaciones TEXT DEFAULT '',
-        emp TEXT DEFAULT '',
-        indicar TEXT DEFAULT '',
-        factor TEXT DEFAULT '',
-        regla_aceptacion TEXT DEFAULT '',
-        estado_servicio_bal TEXT DEFAULT ''
+        estado_balanza TEXT DEFAULT ''
       )
       ''');
 
-      debugPrint('Tabla registros_calibracion creada exitosamente');
+      debugPrint('Tabla relevamiento_de_datos creada exitosamente');
     } catch (e) {
       debugPrint('Error creando tabla: $e');
       rethrow;
     }
   }
 
-  Future<int> insertRegistroCalibracion(Map<String, dynamic> registro) async {
+  Future<int> insertRegistroRelevamiento(Map<String, dynamic> registro) async {
     try {
       final db = await database;
-      return await db.insert('registros_calibracion', registro);
+      return await db.insert('relevamiento_de_datos', registro);
     } catch (e) {
       debugPrint('Error insertando registro: $e');
       rethrow;
@@ -687,7 +614,7 @@ class AppDatabase {
     try {
       final db = await database;
       final List<Map<String, dynamic>> registros =
-      await db.query('registros_calibracion');
+      await db.query('relevamiento_de_datos');
 
       if (registros.isEmpty) {
         debugPrint('No hay datos para exportar');
@@ -705,7 +632,7 @@ class AppDatabase {
 
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Guardar archivo CSV',
-        fileName: 'registros_calibracion_${DateTime.now().toIso8601String()}.csv',
+        fileName: 'relevamiento_de_datos${DateTime.now().toIso8601String()}.csv',
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );

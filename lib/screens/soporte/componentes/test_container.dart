@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'eccentricity_test.dart';
 import 'repeatability_test.dart';
 import 'linearity_test.dart';
-import 'return_to_zero_test.dart';
 
 class MetrologicalTestsContainer extends StatefulWidget {
   final String testType; // 'initial' o 'final'
@@ -86,35 +85,13 @@ class _MetrologicalTestsContainerState
         ),
         const SizedBox(height: 20),
 
-        // Prueba de Retorno a Cero (siempre visible)
-        ReturnToZeroTest(
-          testType: widget.testType,
-          initialData:
-              Map<String, dynamic>.from(_testsData['return_to_zero'] ?? {}),
-          onDataChanged: (data) {
-            setState(() {
-              _testsData['return_to_zero'] = Map<String, dynamic>.from(data);
-              _selectedUnit = data['unit'] ?? 'kg';
-              widget.onTestsDataChanged(Map<String, dynamic>.from(_testsData));
-            });
-          },
-          selectedUnit: _selectedUnit,
-          onUnitChanged: (unit) {
-            setState(() {
-              _selectedUnit = unit;
-              widget.onUnitChanged?.call(unit);
-            });
-          },
-        ),
-        const SizedBox(height: 20),
-
         // Prueba de Excentricidad
         SwitchListTile(
           title: Text(
             'PRUEBAS DE EXCENTRICIDAD ${widget.testType.toUpperCase()}',
             style: const TextStyle(
-              fontSize: 15, // Tamaño de fuente 16 px
-              fontWeight: FontWeight.w700,
+              fontSize: 14, // Tamaño de fuente 16 px
+              fontWeight: FontWeight.w500,
             ),
           ),
           value: _testsData['eccentricity'] != null,
@@ -139,8 +116,8 @@ class _MetrologicalTestsContainerState
           title: Text(
             'PRUEBAS DE REPETIBILIDAD ${widget.testType.toUpperCase()}',
             style: const TextStyle(
-              fontSize: 15, // Tamaño de fuente 16 px
-              fontWeight: FontWeight.w700,
+              fontSize: 14, // Tamaño de fuente 16 px
+              fontWeight: FontWeight.w500,
             ),
           ),
           value: _testsData['repeatability'] != null,
@@ -167,8 +144,8 @@ class _MetrologicalTestsContainerState
           title: Text(
             'PRUEBAS DE LINEALIDAD ${widget.testType.toUpperCase()}', // <--- Coma añadida aquí
             style: const TextStyle(
-              fontSize: 15, // Tamaño de fuente 16 px
-              fontWeight: FontWeight.w700,
+              fontSize: 14, // Tamaño de fuente 16 px
+              fontWeight: FontWeight.w500,
             ),
           ),
           value: _testsData['linearity'] != null,

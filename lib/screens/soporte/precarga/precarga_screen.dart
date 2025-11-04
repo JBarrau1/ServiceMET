@@ -7,8 +7,16 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/screens/calibracion/servicio_screen.dart';
-import '../../../database/app_database.dart';
-import '../../../database/app_database_sop.dart';
+import '../../../database/soporte_tecnico/database_helper_ajustes.dart';
+import '../../../database/soporte_tecnico/database_helper_diagnostico.dart';
+import '../../../database/soporte_tecnico/database_helper_instalacion.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_correctivo.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
+import '../../../database/soporte_tecnico/database_helper_relevamiento.dart';
+import '../../../database/soporte_tecnico/database_helper_verificaciones.dart';
 import '../modulos/ajuste_verificaciones/stac_ajuste_verificaciones.dart';
 import '../modulos/diagnostico/stac_diagnostico.dart';
 import '../modulos/instalacion/stac_instalacion.dart';
@@ -116,13 +124,49 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
   Future<void> _loadExistingSession() async {
     try {
-      final dbHelper = DatabaseHelperSop();
+      // ✅ OBTENER EL DATABASE HELPER CORRECTO SEGÚN widget.tableName
+      dynamic dbHelper;
+
+      switch (widget.tableName) {
+        case 'relevamiento_de_datos':
+          dbHelper = DatabaseHelperRelevamiento();
+          break;
+        case 'ajustes_metrologicos':
+          dbHelper = DatabaseHelperAjustes();
+          break;
+        case 'diagnostico':
+          dbHelper = DatabaseHelperDiagnostico();
+          break;
+        case 'mnt_prv_regular_stac':
+          dbHelper = DatabaseHelperMntPrvRegularStac();
+          break;
+        case 'mnt_prv_regular_stil':
+          dbHelper = DatabaseHelperMntPrvRegularStil();
+          break;
+        case 'mnt_prv_avanzado_stac':
+          dbHelper = DatabaseHelperMntPrvAvanzadoStac();
+          break;
+        case 'mnt_prv_avanzado_stil':
+          dbHelper = DatabaseHelperMntPrvAvanzadoStil();
+          break;
+        case 'mnt_correctivo':
+          dbHelper = DatabaseHelperMntCorrectivo();
+          break;
+        case 'instalacion':
+          dbHelper = DatabaseHelperInstalacion();
+          break;
+        case 'verificaciones_internas':
+          dbHelper = DatabaseHelperVerificaciones();
+          break;
+        default:
+          throw Exception('Tipo de servicio no válido: ${widget.tableName}');
+      }
+
       final db = await dbHelper.database;
 
-      final String tablaAUsar = widget.tableName;
-
+      // ✅ CONSULTAR EN LA TABLA INDEPENDIENTE
       final List<Map<String, dynamic>> rows = await db.query(
-        tablaAUsar,
+        dbHelper.tableName, // Usar el nombre de tabla del helper
         where: 'otst = ? AND session_id = ?',
         whereArgs: [widget.secaValue, widget.sessionId],
         orderBy: 'session_id DESC',
@@ -136,8 +180,8 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       final registroActual = rows.first;
 
-      final tipoServicio = registroActual['tipo_servicio']?.toString() ?? '';
-      controller.selectTipoServicio(tablaAUsar, null);
+      // Seleccionar tipo de servicio en el controller
+      controller.selectTipoServicio(widget.tableName, null);
 
       controller.setInternalValues(
         sessionId: widget.sessionId!,

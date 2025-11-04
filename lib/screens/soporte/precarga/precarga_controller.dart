@@ -6,7 +6,16 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:archive/archive_io.dart';
-import '../../../database/app_database_sop.dart';
+import '../../../database/soporte_tecnico/database_helper_ajustes.dart';
+import '../../../database/soporte_tecnico/database_helper_diagnostico.dart';
+import '../../../database/soporte_tecnico/database_helper_instalacion.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_correctivo.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
+import '../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
+import '../../../database/soporte_tecnico/database_helper_relevamiento.dart';
+import '../../../database/soporte_tecnico/database_helper_verificaciones.dart';
 
 class PrecargaControllerSop extends ChangeNotifier {
 
@@ -234,6 +243,37 @@ class PrecargaControllerSop extends ChangeNotifier {
       _currentStep = step;
       updateStepErrors();
       notifyListeners();
+    }
+  }
+
+  dynamic _getDatabaseHelper() {
+    if (_tableName == null) {
+      throw Exception('No se ha seleccionado un tipo de servicio');
+    }
+
+    switch (_tableName) {
+      case 'relevamiento_de_datos':
+        return DatabaseHelperRelevamiento();
+      case 'ajustes_metrologicos':
+        return DatabaseHelperAjustes();
+      case 'diagnostico':
+        return DatabaseHelperDiagnostico();
+      case 'mnt_prv_regular_stac':
+        return DatabaseHelperMntPrvRegularStac();
+      case 'mnt_prv_regular_stil':
+        return DatabaseHelperMntPrvRegularStil();
+      case 'mnt_prv_avanzado_stac':
+        return DatabaseHelperMntPrvAvanzadoStac();
+      case 'mnt_prv_avanzado_stil':
+        return DatabaseHelperMntPrvAvanzadoStil();
+      case 'mnt_correctivo':
+        return DatabaseHelperMntCorrectivo();
+      case 'instalacion':
+        return DatabaseHelperInstalacion();
+      case 'verificaciones_internas':
+        return DatabaseHelperVerificaciones();
+      default:
+        throw Exception('Tipo de servicio no válido: $_tableName');
     }
   }
 
@@ -513,16 +553,14 @@ class PrecargaControllerSop extends ChangeNotifier {
     if (_tableName == null) throw Exception('No se ha seleccionado tipo de servicio');
 
     try {
-      final dbHelperSop = DatabaseHelperSop();
+      // ✅ USAR EL DATABASE HELPER CORRECTO
+      final dbHelper = _getDatabaseHelper();
 
-      // Verificar si ya existe registro con este SECA en la tabla seleccionada
-      final secaExiste = await dbHelperSop.metricaExists(_generatedSeca!, _tableName!);
+      // Verificar si ya existe registro con este SECA
+      final secaExiste = await dbHelper.metricaExists(_generatedSeca!);
 
       if (secaExiste) {
-        final ultimoRegistro = await dbHelperSop.getUltimoRegistroPorMetrica(
-          _generatedSeca!,
-          _tableName!,
-        );
+        final ultimoRegistro = await dbHelper.getUltimoRegistroPorMetrica(_generatedSeca!);
         throw SecaExistsException(ultimoRegistro?['fecha_servicio'] ?? 'N/A');
       } else {
         await createNewSecaSession(userName, fechaServicio);
@@ -538,9 +576,10 @@ class PrecargaControllerSop extends ChangeNotifier {
         throw Exception('No se ha seleccionado un tipo de servicio');
       }
 
-      final dbHelperSop = DatabaseHelperSop();
+      // ✅ USAR EL DATABASE HELPER CORRECTO
+      final dbHelper = _getDatabaseHelper();
 
-      // Generar session_id específico para la tabla
+      // Generar session_id específico
       _generatedSessionId = await _generateSessionIdSop(_generatedSeca!);
 
       // Preparar registro base
@@ -555,11 +594,11 @@ class PrecargaControllerSop extends ChangeNotifier {
         'planta': _selectedPlantaNombre ?? 'No especificado',
         'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
-        'cod_metrica': '', // Se llenará en paso de balanza
+        'cod_metrica': '',
       };
 
-      // Insertar en la tabla correspondiente usando upsertRegistro
-      await dbHelperSop.upsertRegistro(_tableName!, registro);
+      // ✅ INSERTAR EN LA BASE DE DATOS INDEPENDIENTE
+      await dbHelper.upsertRegistro(registro);
 
       _secaConfirmed = true;
       updateStepErrors();
@@ -580,8 +619,9 @@ class PrecargaControllerSop extends ChangeNotifier {
         throw Exception('No se ha seleccionado un tipo de servicio');
       }
 
-      final dbHelper = DatabaseHelperSop();
-      return await dbHelper.generateSessionId(codMetrica, _tableName!);
+      // ✅ USAR EL DATABASE HELPER CORRECTO
+      final dbHelper = _getDatabaseHelper();
+      return await dbHelper.generateSessionId(codMetrica);
     } catch (e) {
       throw Exception('Error al generar sessionId: $e');
     }
@@ -653,12 +693,13 @@ class PrecargaControllerSop extends ChangeNotifier {
         return {'estado': 'sin_tabla', 'tiene_registro': false};
       }
 
-      final dbHelper = DatabaseHelperSop();
+      // ✅ USAR EL DATABASE HELPER CORRECTO
+      final dbHelper = _getDatabaseHelper();
       final db = await dbHelper.database;
 
-      // ✅ Buscar en la tabla correspondiente al tipo de servicio
+      // Buscar en la tabla independiente
       final List<Map<String, dynamic>> registros = await db.query(
-        _tableName!, // 👈 Usar la tabla dinámica según el tipo de servicio
+        dbHelper.tableName, // Usar el nombre de tabla del helper
         where: 'cod_metrica = ?',
         whereArgs: [codMetrica],
         orderBy: 'fecha_servicio DESC',
@@ -669,7 +710,7 @@ class PrecargaControllerSop extends ChangeNotifier {
         return {'estado': 'sin_registro', 'tiene_registro': false};
       }
 
-      // ✅ Verificar el estado del servicio (puede variar según la tabla)
+      // Verificar el estado del servicio
       final estadoServicio = registros.first['estado_servicio_bal']?.toString() ?? '';
 
       if (estadoServicio == 'Balanza Calibrada') {
@@ -809,7 +850,8 @@ class PrecargaControllerSop extends ChangeNotifier {
         throw Exception('No se ha seleccionado un tipo de servicio');
       }
 
-      final dbHelperSop = DatabaseHelperSop();
+      // ✅ USAR EL DATABASE HELPER CORRECTO
+      final dbHelper = _getDatabaseHelper();
 
       final registro = {
         'session_id': _generatedSessionId!,
@@ -823,12 +865,11 @@ class PrecargaControllerSop extends ChangeNotifier {
         'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
         'foto_balanza': _fotosTomadas ? '1' : '0',
-        // Campos adicionales según tu necesidad
         ...balanzaData,
       };
 
-      // Guardar en la tabla correspondiente
-      await dbHelperSop.upsertRegistro(_tableName!, registro);
+      // ✅ GUARDAR EN LA BASE DE DATOS INDEPENDIENTE
+      await dbHelper.upsertRegistro(registro);
 
       _isDataSaved = true;
       notifyListeners();

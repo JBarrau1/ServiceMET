@@ -812,7 +812,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 NavigationDestination(
                   icon: Icon(
-                    FontAwesomeIcons.solidFolder,
+                    FontAwesomeIcons.download,
                     color: _modoDemo
                         ? (isDarkMode ? Colors.white24 : Colors.black26)
                         : _currentIndex == 2
@@ -880,7 +880,7 @@ class _HomeScreenState extends State<HomeScreen> {
         preferredSize: const Size.fromHeight(70),
         child: ClipRRect(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+            filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 40.0),
             child: AppBar(
               toolbarHeight: 70,
               title: Row(
