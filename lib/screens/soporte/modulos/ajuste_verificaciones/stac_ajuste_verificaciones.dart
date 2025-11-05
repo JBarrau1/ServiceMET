@@ -10,9 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import 'package:sqflite/sqflite.dart';
-
-import '../../../../database/app_database_sop.dart';
+import '../../../../database/soporte_tecnico/database_helper_ajustes.dart';
 import 'fin_servicio_ajustes_verificaciones.dart';
 
 class StacAjusteVerificacionesScreen extends StatefulWidget {
@@ -299,7 +297,7 @@ class _StacAjusteVerificacionesScreenState
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
       // ✅ Usar DatabaseHelperSop
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperAjustes();
 
       // Preparar comentarios
       final Map<String, dynamic> comentariosData = {};
@@ -344,7 +342,7 @@ class _StacAjusteVerificacionesScreenState
       });
 
       // ✅ USAR UPSERT (actualiza si existe, inserta si no)
-      await dbHelper.upsertRegistro('ajustes_metrológicos', dbData);
+      await dbHelper.upsertRegistroRelevamiento(dbData);
 
       _showSnackBar(
         context,

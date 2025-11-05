@@ -11,9 +11,9 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import 'package:sqflite/sqflite.dart';
 
-import '../../../../database/app_database_sop.dart';
+import '../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
+
 
 class StacMntPrvAvanzadoStacScreen extends StatefulWidget {
   final String sessionId;
@@ -410,7 +410,7 @@ class _StacMntPrvAvanzadoStacScreenState
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
 
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStac();
 
       String getFotosString(String label) {
         return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
@@ -649,7 +649,7 @@ class _StacMntPrvAvanzadoStacScreenState
         'calibracion_foto': getFotosString('Calibración de balanza realiza y dentro de tolerancia'),
       };
 
-      await dbHelper.upsertRegistro('mnt_prv_avanzado_stac', dbData);
+      await dbHelper.upsertRegistroRelevamiento(dbData);
 
       _showSnackBar(
           context, 'Datos de pruebas metrológicas guardados exitosamente');

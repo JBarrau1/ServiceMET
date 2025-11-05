@@ -9,7 +9,8 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import '../../../../database/app_database_sop.dart';
+
+import '../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
 
 class FinServicioMntPrvStacScreen extends StatefulWidget {
   final String sessionId;
@@ -76,7 +77,7 @@ class _FinServicioMntPrvStacScreenState extends State<FinServicioMntPrvStacScree
       }
 
       // ✅ Obtener datos desde BD interna
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvRegularStac();
       final db = await dbHelper.database;
 
       // ✅ Consultar SOLO la tabla mnt_prv_regular_stac por session_id
@@ -219,7 +220,7 @@ class _FinServicioMntPrvStacScreenState extends State<FinServicioMntPrvStacScree
 
     try {
       // ✅ Obtener datos existentes de la BD
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvRegularStac();
       final db = await dbHelper.database;
 
       // ✅ Buscar el último registro con este SECA en mnt_prv_regular_stac
@@ -238,10 +239,8 @@ class _FinServicioMntPrvStacScreenState extends State<FinServicioMntPrvStacScree
       final registroActual = rows.first;
 
       // ✅ Generar nuevo session_id
-      final nuevoSessionId = await dbHelper.generateSessionId(
-        widget.codMetrica,
-        widget.tableName ?? 'mnt_prv_regular_stac',
-      );
+      final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
+
 
       // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
       final nuevoRegistro = {
@@ -260,10 +259,8 @@ class _FinServicioMntPrvStacScreenState extends State<FinServicioMntPrvStacScree
       };
 
       // ✅ Insertar nuevo registro
-      await dbHelper.upsertRegistro(
-        widget.tableName ?? 'mnt_prv_regular_stac',
-        nuevoRegistro,
-      );
+      await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
+
 
       if (!mounted) return;
 

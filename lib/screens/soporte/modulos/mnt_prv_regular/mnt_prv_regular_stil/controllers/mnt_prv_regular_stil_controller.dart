@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import '../../../../../../database/app_database_sop.dart';
+import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
 import '../models/mnt_prv_regular_stil_model.dart';
 
 class MntPrvRegularStilController {
@@ -22,7 +22,7 @@ class MntPrvRegularStilController {
   Future<double> getD1FromDatabase() async {
     try {
       // ✅ USAR DatabaseHelperSop en lugar de abrir BD manualmente
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvRegularStil();
       final db = await dbHelper.database;
 
       // Consultar d1 desde inf_cliente_balanza usando session_id y cod_metrica
@@ -318,7 +318,7 @@ class MntPrvRegularStilController {
 
     try {
       // ✅ USAR DatabaseHelperSop
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvRegularStil();
 
       // Preparar datos
       final Map<String, dynamic> mntPrvData = _prepareDataForSave();
@@ -328,7 +328,7 @@ class MntPrvRegularStilController {
       mntPrvData['otst'] = model.secaValue;
 
       // ✅ USAR upsertRegistro del helper
-      await dbHelper.upsertRegistro('mnt_prv_regular_stil', mntPrvData);
+      await dbHelper.upsertRegistroRelevamiento(mntPrvData);
 
     } catch (e) {
       debugPrint('Error al guardar en la base de datos: $e');

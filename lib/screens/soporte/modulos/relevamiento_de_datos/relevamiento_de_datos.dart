@@ -12,7 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
-import '../../../../database/app_database_sop.dart';
+import '../../../../database/soporte_tecnico/database_helper_relevamiento.dart';
 import '../../componentes/test_container.dart';
 
 class RelevamientoDeDatosScreen extends StatefulWidget {
@@ -860,7 +860,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
     try {
       // ✅ USAR DatabaseHelperSop en lugar de abrir BD manualmente
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperRelevamiento();
 
       // Preparar datos
       final Map<String, dynamic> relevamientoData = _prepareDataForSave();
@@ -871,7 +871,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
       relevamientoData['otst'] = widget.secaValue;
 
       // ✅ USAR upsertRegistro del helper (actualiza si existe, inserta si no)
-      await dbHelper.upsertRegistro('relevamiento_de_datos', relevamientoData);
+      await dbHelper.upsertRegistroRelevamiento(relevamientoData);
 
       _showSnackBar(
         context,
@@ -896,7 +896,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
   Future<void> _loadCurrentSessionData(BuildContext context) async {
     try {
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperRelevamiento();
       final db = await dbHelper.database;
 
       final savedData = await db.query(
@@ -1093,8 +1093,8 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
           flexibleSpace: isDarkMode
               ? ClipRect(
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                    child: Container(color: Colors.black.withOpacity(0.4)),
+                    filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 40.0),
+                    child: Container(color: Colors.black.withOpacity(0.1)),
                   ),
                 )
               : null,

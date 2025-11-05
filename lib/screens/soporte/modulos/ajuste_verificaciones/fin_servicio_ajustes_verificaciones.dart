@@ -9,7 +9,9 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import '../../../../database/app_database_sop.dart';
+
+import '../../../../database/soporte_tecnico/database_helper_ajustes.dart';
+
 
 class FinServicioAjustesVerificacionesScreen extends StatefulWidget {
   final String nReca;
@@ -77,7 +79,7 @@ class _FinServicioAjustesVerificacionesScreenState
         );
       }
 
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperAjustes();
       final db = await dbHelper.database;
 
       final List<Map<String, dynamic>> registros = await db.query(
@@ -211,7 +213,7 @@ class _FinServicioAjustesVerificacionesScreenState
     if (confirmado != true) return;
 
     try {
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperAjustes();
       final db = await dbHelper.database;
 
       final List<Map<String, dynamic>> rows = await db.query(
@@ -227,10 +229,8 @@ class _FinServicioAjustesVerificacionesScreenState
       }
 
       final registroActual = rows.first;
-      final nuevoSessionId = await dbHelper.generateSessionId(
-        widget.codMetrica,
-        widget.tableName ?? 'ajustes_metrológicos',
-      );
+      final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
+
 
       final nuevoRegistro = {
         'session_id': nuevoSessionId,
@@ -246,10 +246,8 @@ class _FinServicioAjustesVerificacionesScreenState
         'cod_metrica': '', // Vacío para nueva balanza
       };
 
-      await dbHelper.upsertRegistro(
-        widget.tableName ?? 'ajustes_metrológicos',
-        nuevoRegistro,
-      );
+      await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
+
 
       if (!mounted) return;
 

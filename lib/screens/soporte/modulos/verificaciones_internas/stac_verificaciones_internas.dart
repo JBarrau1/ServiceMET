@@ -11,9 +11,8 @@ import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:service_met/screens/soporte/modulos/verificaciones_internas/fin_servicio_vinternas.dart';
-import 'package:sqflite/sqflite.dart';
 
-import '../../../../database/app_database_sop.dart';
+import '../../../../database/soporte_tecnico/database_helper_verificaciones.dart';
 
 class StacVerificacionesInternasScreen extends StatefulWidget {
   final String sessionId;
@@ -276,7 +275,7 @@ class _StacVerificacionesInternasScreenState
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
       // ✅ USAR DatabaseHelperSop en lugar de abrir BD manualmente
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperVerificaciones();
 
       String getFotosString(String label) {
         return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
@@ -318,7 +317,7 @@ class _StacVerificacionesInternasScreenState
       };
 
       // Verificar si ya existe un registro
-      await dbHelper.upsertRegistro('verificaciones_internas', dbData);
+      await dbHelper.upsertRegistroRelevamiento(dbData);
 
       _showSnackBar(
         context,

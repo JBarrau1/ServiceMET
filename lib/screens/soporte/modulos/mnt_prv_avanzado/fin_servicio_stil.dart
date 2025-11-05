@@ -9,7 +9,9 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import '../../../../database/app_database_sop.dart';
+
+import '../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
+
 
 class FinServicioMntAvaStilScreen extends StatefulWidget {
   final String sessionId;
@@ -77,7 +79,7 @@ class _FinServicioMntAvaStilScreenState extends State<FinServicioMntAvaStilScree
       }
 
       // ✅ Obtener datos desde BD interna
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
       final db = await dbHelper.database;
 
       // ✅ Consultar SOLO la tabla mnt_prv_avanzado_stil por session_id
@@ -220,7 +222,7 @@ class _FinServicioMntAvaStilScreenState extends State<FinServicioMntAvaStilScree
 
     try {
       // ✅ Obtener datos existentes de la BD
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
       final db = await dbHelper.database;
 
       // ✅ Buscar el último registro con este SECA en mnt_prv_avanzado_stil
@@ -239,10 +241,8 @@ class _FinServicioMntAvaStilScreenState extends State<FinServicioMntAvaStilScree
       final registroActual = rows.first;
 
       // ✅ Generar nuevo session_id
-      final nuevoSessionId = await dbHelper.generateSessionId(
-        widget.codMetrica,
-        widget.tableName ?? 'mnt_prv_avanzado_stil',
-      );
+      final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
+
 
       // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
       final nuevoRegistro = {
@@ -261,10 +261,8 @@ class _FinServicioMntAvaStilScreenState extends State<FinServicioMntAvaStilScree
       };
 
       // ✅ Insertar nuevo registro
-      await dbHelper.upsertRegistro(
-        widget.tableName ?? 'mnt_prv_avanzado_stil',
-        nuevoRegistro,
-      );
+      await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
+
 
       if (!mounted) return;
 

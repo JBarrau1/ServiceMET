@@ -6,13 +6,10 @@ import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
-import 'package:provider/provider.dart';
-import 'package:service_met/screens/soporte/precarga/precarga_controller.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 import 'package:service_met/home_screen.dart';
 
-import '../../../../database/app_database_sop.dart';
-
+import '../../../../database/soporte_tecnico/database_helper_relevamiento.dart';
 
 class FinServicioScreen extends StatefulWidget {
   final String sessionId;
@@ -84,7 +81,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       }
 
       // ✅ Obtener datos desde BD interna
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperRelevamiento();
       final db = await dbHelper.database;
 
       // ✅ Consultar SOLO la tabla relevamiento_de_datos por session_id
@@ -204,7 +201,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     if (confirmado != true) return;
 
     try {
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperRelevamiento();
       final db = await dbHelper.database;
 
       final List<Map<String, dynamic>> rows = await db.query(
@@ -238,10 +235,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         throw Exception('No se pudo determinar el código de planta');
       }
 
-      final nuevoSessionId = await dbHelper.generateSessionId(
-        widget.codMetrica,
-        widget.tableName ?? 'relevamiento_de_datos',
-      );
+      final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
+
 
       final nuevoRegistro = {
         'session_id': nuevoSessionId,
@@ -258,10 +253,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         'cod_metrica': '', // Vacío para nueva balanza
       };
 
-      await dbHelper.upsertRegistro(
-        widget.tableName ?? 'relevamiento_de_datos',
-        nuevoRegistro,
-      );
+      await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
+
 
       if (!mounted) return;
 

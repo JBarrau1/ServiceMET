@@ -10,9 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import 'package:sqflite/sqflite.dart';
-
-import '../../../../database/app_database_sop.dart';
+import '../../../../database/soporte_tecnico/database_helper_diagnostico.dart';
 import '../mnt_correctivo/stac_mnt_correctivo.dart';
 import 'fin_servicio_diagnostico.dart';
 
@@ -301,7 +299,7 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
       // ✅ Usar DatabaseHelperSop
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperDiagnostico();
 
       // Preparar comentarios
       final Map<String, dynamic> comentariosData = {};
@@ -352,7 +350,7 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
       });
 
       // ✅ USAR UPSERT (actualiza si existe, inserta si no)
-      await dbHelper.upsertRegistro('diagnostico', dbData);
+      await dbHelper.upsertRegistroRelevamiento(dbData);
 
       _showSnackBar(
         context,

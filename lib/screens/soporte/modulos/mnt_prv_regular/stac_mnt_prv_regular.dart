@@ -11,9 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import 'package:sqflite/sqflite.dart';
-
-import '../../../../database/app_database_sop.dart';
+import '../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
 import 'fin_servicio_stac.dart';
 
 class StacMntPrvRegularStacScreen extends StatefulWidget {
@@ -348,7 +346,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
       // ✅ USAR DatabaseHelperSop en lugar de abrir BD manualmente
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvRegularStac();
 
       String getFotosString(String label) {
         return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
@@ -746,7 +744,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
       };
 
       // ✅ USAR upsertRegistro en lugar de verificar y actualizar/insertar manualmente
-      await dbHelper.upsertRegistro('mnt_prv_regular_stac', dbData);
+      await dbHelper.upsertRegistroRelevamiento(dbData);
 
       _showSnackBar(
         context,

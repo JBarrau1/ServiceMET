@@ -9,7 +9,8 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import 'package:service_met/database/app_database_sop.dart';
+
+import '../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
 
 class FinServicioMntPrvStilScreen extends StatefulWidget {
   final String sessionId;
@@ -84,7 +85,7 @@ class _FinServicioMntPrvStilScreenState
       }
 
       // ✅ Obtener datos desde BD interna usando DatabaseHelperSop
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvRegularStil();
       final db = await dbHelper.database;
 
       // ✅ Consultar SOLO la tabla mnt_prv_regular_stil por session_id
@@ -227,7 +228,7 @@ class _FinServicioMntPrvStilScreenState
 
     try {
       // ✅ Obtener datos existentes de la BD
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvRegularStil();
       final db = await dbHelper.database;
 
       // ✅ Buscar el último registro con este SECA en mnt_prv_regular_stil
@@ -246,10 +247,8 @@ class _FinServicioMntPrvStilScreenState
       final registroActual = rows.first;
 
       // ✅ Generar nuevo session_id
-      final nuevoSessionId = await dbHelper.generateSessionId(
-        widget.codMetrica,
-        widget.tableName ?? 'mnt_prv_regular_stil',
-      );
+      final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
+
 
       // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
       final nuevoRegistro = {
@@ -268,10 +267,8 @@ class _FinServicioMntPrvStilScreenState
       };
 
       // ✅ Insertar nuevo registro
-      await dbHelper.upsertRegistro(
-        widget.tableName ?? 'mnt_prv_regular_stil',
-        nuevoRegistro,
-      );
+      await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
+
 
       if (!mounted) return;
 

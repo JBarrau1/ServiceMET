@@ -10,9 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import 'package:sqflite/sqflite.dart';
-
-import '../../../../database/app_database_sop.dart';
+import '../../../../database/soporte_tecnico/database_helper_mnt_correctivo.dart';
 import 'fin_servicio_mntcorrectivo.dart';
 
 class StacMntCorrectivoScreen extends StatefulWidget {
@@ -368,7 +366,7 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
       // ✅ Usar DatabaseHelperSop
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntCorrectivo();
 
       // Preparar comentarios
       final Map<String, dynamic> comentariosData = {};
@@ -572,7 +570,7 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
       };
 
       // ✅ USAR UPSERT (actualiza si existe, inserta si no)
-      await dbHelper.upsertRegistro('mnt_correctivo', dbData);
+      await dbHelper.upsertRegistroRelevamiento(dbData);
 
       _showSnackBar(
         context,

@@ -9,7 +9,9 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import '../../../../database/app_database_sop.dart';
+
+import '../../../../database/soporte_tecnico/database_helper_mnt_correctivo.dart';
+
 
 class FinServicioMntcorrectivoScreen extends StatefulWidget {
   final String nReca;
@@ -79,7 +81,7 @@ class _FinServicioMntcorrectivoScreenState
       }
 
       // ✅ Obtener datos desde BD interna usando el helper
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntCorrectivo();
       final db = await dbHelper.database;
 
       // ✅ Consultar tabla mnt_correctivo por session_id
@@ -228,7 +230,7 @@ class _FinServicioMntcorrectivoScreenState
 
     try {
       // ✅ Obtener datos existentes de la BD
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntCorrectivo();
       final db = await dbHelper.database;
 
       // ✅ Buscar el último registro con este SECA en mnt_correctivo
@@ -247,10 +249,7 @@ class _FinServicioMntcorrectivoScreenState
       final registroActual = rows.first;
 
       // ✅ Generar nuevo session_id
-      final nuevoSessionId = await dbHelper.generateSessionId(
-        widget.codMetrica,
-        widget.tableName ?? 'mnt_correctivo',
-      );
+      final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
 
       // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
       final nuevoRegistro = {
@@ -269,10 +268,7 @@ class _FinServicioMntcorrectivoScreenState
       };
 
       // ✅ Insertar nuevo registro
-      await dbHelper.upsertRegistro(
-        widget.tableName ?? 'mnt_correctivo',
-        nuevoRegistro,
-      );
+      await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
 
       if (!mounted) return;
 

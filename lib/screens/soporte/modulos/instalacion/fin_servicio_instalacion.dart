@@ -9,7 +9,8 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import '../../../../database/app_database_sop.dart';
+
+import '../../../../database/soporte_tecnico/database_helper_instalacion.dart';
 
 class FinServicioInstalacionScreen extends StatefulWidget {
   final String nReca;
@@ -79,7 +80,7 @@ class _FinServicioInstalacionScreenState
       }
 
       // ✅ Obtener datos desde BD interna usando el helper
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperInstalacion();
       final db = await dbHelper.database;
 
       // ✅ Consultar SOLO la tabla instalacion por session_id
@@ -222,7 +223,7 @@ class _FinServicioInstalacionScreenState
 
     try {
       // ✅ Obtener datos existentes de la BD
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperInstalacion();
       final db = await dbHelper.database;
 
       // ✅ Buscar el último registro con este SECA en instalacion
@@ -241,10 +242,7 @@ class _FinServicioInstalacionScreenState
       final registroActual = rows.first;
 
       // ✅ Generar nuevo session_id
-      final nuevoSessionId = await dbHelper.generateSessionId(
-        widget.codMetrica,
-        widget.tableName ?? 'instalacion',
-      );
+      final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
 
       // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
       final nuevoRegistro = {
@@ -263,10 +261,7 @@ class _FinServicioInstalacionScreenState
       };
 
       // ✅ Insertar nuevo registro
-      await dbHelper.upsertRegistro(
-        widget.tableName ?? 'instalacion',
-        nuevoRegistro,
-      );
+      await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
 
       if (!mounted) return;
 

@@ -12,7 +12,8 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../../../database/app_database_sop.dart';
+
+import '../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
 
 class StilMntPrvAvanzadoStacScreen extends StatefulWidget {
   final String sessionId;
@@ -1065,7 +1066,7 @@ class _StilMntPrvAvanzadoStacScreenState
   // dart
   Future<double> _getD1FromDatabase() async {
     try {
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
       Database? db;
 
       // Intentar obtener la BD desde la helper (compatible con distintas API)
@@ -2645,7 +2646,7 @@ class _StilMntPrvAvanzadoStacScreenState
 
     try {
       // âœ… USAR DatabaseHelperSop
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
 
       // Convertir listas de fotos a strings separados por comas
       String getFotosString(String label) {
@@ -2653,7 +2654,7 @@ class _StilMntPrvAvanzadoStacScreenState
       }
 
       // Preparar datos para insertar/actualizar
-      final Map<String, dynamic> relevamientoData = {
+      final Map<String, dynamic> dbData = {
         // âœ… CAMPOS CLAVE PARA IDENTIFICAR LA SESIÓN
         'session_id': widget.sessionId,
         'cod_metrica': widget.codMetrica,
@@ -2851,7 +2852,7 @@ class _StilMntPrvAvanzadoStacScreenState
 
       // Agregar datos de pruebas metrológicas iniciales si están activas
       if (_showPlatformFieldsInicial) {
-        relevamientoData.addAll({
+        dbData.addAll({
           'tipo_plataforma_inicial': _selectedPlatformInicial ?? '',
           'puntos_ind_inicial': _selectedOptionInicial ?? '',
           'carga_exc_inicial': _cargaExcInicialController.text,
@@ -2860,7 +2861,7 @@ class _StilMntPrvAvanzadoStacScreenState
         // Posiciones de excentricidad inicial
         for (int i = 0; i < _positionInicialControllers.length; i++) {
           final position = i + 1;
-          relevamientoData.addAll({
+          dbData.addAll({
             'posicion_inicial_$position': _positionInicialControllers[i].text,
             'indicacion_inicial_$position': _indicationInicialControllers[i].text,
             'retorno_inicial_$position': _returnInicialControllers[i].text,
@@ -2870,10 +2871,10 @@ class _StilMntPrvAvanzadoStacScreenState
 
       if (_showRepetibilidadFieldsInicial) {
         // Carga 1 inicial
-        relevamientoData['repetibilidad1_inicial'] = _repetibilidadInicialController1.text;
+        dbData['repetibilidad1_inicial'] = _repetibilidadInicialController1.text;
         for (int i = 0; i < _selectedRowCountInicial; i++) {
           final testNum = i + 1;
-          relevamientoData.addAll({
+          dbData.addAll({
             'indicacion1_inicial_$testNum': _indicacionInicialControllers1[i].text,
             'retorno1_inicial_$testNum': _retornoInicialControllers1[i].text,
           });
@@ -2881,10 +2882,10 @@ class _StilMntPrvAvanzadoStacScreenState
 
         // Carga 2 inicial (si aplica)
         if (_selectedRepetibilityCountInicial >= 2) {
-          relevamientoData['repetibilidad2_inicial'] = _repetibilidadInicialController2.text;
+          dbData['repetibilidad2_inicial'] = _repetibilidadInicialController2.text;
           for (int i = 0; i < _selectedRowCountInicial; i++) {
             final testNum = i + 1;
-            relevamientoData.addAll({
+            dbData.addAll({
               'indicacion2_inicial_$testNum': _indicacionInicialControllers2[i].text,
               'retorno2_inicial_$testNum': _retornoInicialControllers2[i].text,
             });
@@ -2893,10 +2894,10 @@ class _StilMntPrvAvanzadoStacScreenState
 
         // Carga 3 inicial (si aplica)
         if (_selectedRepetibilityCountInicial >= 3) {
-          relevamientoData['repetibilidad3_inicial'] = _repetibilidadInicialController3.text;
+          dbData['repetibilidad3_inicial'] = _repetibilidadInicialController3.text;
           for (int i = 0; i < _selectedRowCountInicial; i++) {
             final testNum = i + 1;
-            relevamientoData.addAll({
+            dbData.addAll({
               'indicacion3_inicial_$testNum': _indicacionInicialControllers3[i].text,
               'retorno3_inicial_$testNum': _retornoInicialControllers3[i].text,
             });
@@ -2907,7 +2908,7 @@ class _StilMntPrvAvanzadoStacScreenState
       if (_showLinealidadFieldsInicial) {
         for (int i = 0; i < _rowsInicial.length; i++) {
           final pointNum = i + 1;
-          relevamientoData.addAll({
+          dbData.addAll({
             'lin_inicial_$pointNum': _rowsInicial[i]['lt']?.text ?? '',
             'ind_inicial_$pointNum': _rowsInicial[i]['indicacion']?.text ?? '',
             'retorno_lin_inicial_$pointNum': _rowsInicial[i]['retorno']?.text ?? '0',
@@ -2916,7 +2917,7 @@ class _StilMntPrvAvanzadoStacScreenState
       }
 
       // PRUEBAS METROLÓGICAS FINALES
-      relevamientoData.addAll({
+      dbData.addAll({
         'retorno_cero_final': _retornoCeroDropdownController.value,
         'carga_retorno_cero_final': _retornoCeroValorController.text,
         'unidad_retorno_cero_final': _selectedUnit,
@@ -2924,7 +2925,7 @@ class _StilMntPrvAvanzadoStacScreenState
 
       // Agregar datos de pruebas metrológicas finales si están activas
       if (_showPlatformFields) {
-        relevamientoData.addAll({
+        dbData.addAll({
           'tipo_plataforma_final': _selectedPlatform ?? '',
           'puntos_ind_final': _selectedOption ?? '',
           'carga_exc_final': _cargaExcController.text,
@@ -2933,7 +2934,7 @@ class _StilMntPrvAvanzadoStacScreenState
         // Posiciones de excentricidad final
         for (int i = 0; i < _positionControllers.length; i++) {
           final position = i + 1;
-          relevamientoData.addAll({
+          dbData.addAll({
             'posicion_final_$position': _positionControllers[i].text,
             'indicacion_final_$position': _indicationControllers[i].text,
             'retorno_final_$position': _returnControllers[i].text,
@@ -2942,14 +2943,14 @@ class _StilMntPrvAvanzadoStacScreenState
       }
 
       if (_showRepetibilidadFields) {
-        relevamientoData['repetibilidad_count_final'] = _selectedRepetibilityCount;
-        relevamientoData['repetibilidad_rows_final'] = _selectedRowCount;
+        dbData['repetibilidad_count_final'] = _selectedRepetibilityCount;
+        dbData['repetibilidad_rows_final'] = _selectedRowCount;
 
         // Carga 1 final
-        relevamientoData['repetibilidad1_final'] = _repetibilidadController1.text;
+        dbData['repetibilidad1_final'] = _repetibilidadController1.text;
         for (int i = 0; i < _selectedRowCount; i++) {
           final testNum = i + 1;
-          relevamientoData.addAll({
+          dbData.addAll({
             'indicacion1_final_$testNum': _indicacionControllers1[i].text,
             'retorno1_final_$testNum': _retornoControllers1[i].text,
           });
@@ -2957,10 +2958,10 @@ class _StilMntPrvAvanzadoStacScreenState
 
         // Carga 2 final (si aplica)
         if (_selectedRepetibilityCount >= 2) {
-          relevamientoData['repetibilidad2_final'] = _repetibilidadController2.text;
+          dbData['repetibilidad2_final'] = _repetibilidadController2.text;
           for (int i = 0; i < _selectedRowCount; i++) {
             final testNum = i + 1;
-            relevamientoData.addAll({
+            dbData.addAll({
               'indicacion2_final_$testNum': _indicacionControllers2[i].text,
               'retorno2_final_$testNum': _retornoControllers2[i].text,
             });
@@ -2969,10 +2970,10 @@ class _StilMntPrvAvanzadoStacScreenState
 
         // Carga 3 final (si aplica)
         if (_selectedRepetibilityCount >= 3) {
-          relevamientoData['repetibilidad3_final'] = _repetibilidadController3.text;
+          dbData['repetibilidad3_final'] = _repetibilidadController3.text;
           for (int i = 0; i < _selectedRowCount; i++) {
             final testNum = i + 1;
-            relevamientoData.addAll({
+            dbData.addAll({
               'indicacion3_final_$testNum': _indicacionControllers3[i].text,
               'retorno3_final_$testNum': _retornoControllers3[i].text,
             });
@@ -2983,7 +2984,7 @@ class _StilMntPrvAvanzadoStacScreenState
       if (_showLinealidadFields) {
         for (int i = 0; i < _rows.length; i++) {
           final pointNum = i + 1;
-          relevamientoData.addAll({
+          dbData.addAll({
             'lin_final_$pointNum': _rows[i]['lt']?.text ?? '',
             'ind_final_$pointNum': _rows[i]['indicacion']?.text ?? '',
             'retorno_lin_final_$pointNum': _rows[i]['retorno']?.text ?? '0',
@@ -2992,7 +2993,7 @@ class _StilMntPrvAvanzadoStacScreenState
       }
 
       // ✅ USAR upsertRegistro del helper (actualiza si existe, inserta si no)
-      await dbHelper.upsertRegistro('mnt_prv_avanzado_stil', relevamientoData);
+      await dbHelper.upsertRegistroRelevamiento(dbData);
 
       _showSnackBar(
         context,

@@ -9,7 +9,9 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import '../../../../database/app_database_sop.dart';
+
+import '../../../../database/soporte_tecnico/database_helper_diagnostico.dart';
+
 
 class FinServicioDiagnosticoScreen extends StatefulWidget {
   final String nReca;
@@ -79,7 +81,7 @@ class _FinServicioDiagnosticoScreenState
       }
 
       // ✅ Obtener datos desde BD interna usando el helper
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperDiagnostico();
       final db = await dbHelper.database;
 
       // ✅ Consultar SOLO la tabla diagnostico por session_id
@@ -222,7 +224,7 @@ class _FinServicioDiagnosticoScreenState
 
     try {
       // ✅ Obtener datos existentes de la BD
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperDiagnostico();
       final db = await dbHelper.database;
 
       // ✅ Buscar el último registro con este SECA en diagnostico
@@ -241,10 +243,8 @@ class _FinServicioDiagnosticoScreenState
       final registroActual = rows.first;
 
       // ✅ Generar nuevo session_id
-      final nuevoSessionId = await dbHelper.generateSessionId(
-        widget.codMetrica,
-        widget.tableName ?? 'diagnostico',
-      );
+      final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
+
 
       // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
       final nuevoRegistro = {
@@ -263,10 +263,7 @@ class _FinServicioDiagnosticoScreenState
       };
 
       // ✅ Insertar nuevo registro
-      await dbHelper.upsertRegistro(
-        widget.tableName ?? 'diagnostico',
-        nuevoRegistro,
-      );
+      await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
 
       if (!mounted) return;
 

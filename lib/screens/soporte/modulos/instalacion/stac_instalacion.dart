@@ -11,9 +11,8 @@ import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:service_met/screens/soporte/modulos/instalacion/fin_servicio_instalacion.dart';
-import 'package:sqflite/sqflite.dart';
 
-import '../../../../database/app_database_sop.dart';
+import '../../../../database/soporte_tecnico/database_helper_instalacion.dart';
 
 class StacInstalacionScreen extends StatefulWidget {
   final String sessionId;
@@ -236,7 +235,7 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
   Future<void> _saveAllMetrologicalTests(BuildContext context) async {
     try {
       // ✅ Usar DatabaseHelperSop
-      final dbHelper = DatabaseHelperSop();
+      final dbHelper = DatabaseHelperInstalacion();
 
       // Preparar comentarios
       final Map<String, dynamic> comentariosData = {};
@@ -291,7 +290,7 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
       });
 
       // ✅ USAR UPSERT (actualiza si existe, inserta si no)
-      await dbHelper.upsertRegistro('instalacion', dbData);
+      await dbHelper.upsertRegistroRelevamiento(dbData);
 
       _showSnackBar(
         context,
