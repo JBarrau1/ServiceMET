@@ -3,15 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/fin_servicio_stil.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/steps/paso_entorno.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/steps/paso_estado_final.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/steps/paso_pruebas_iniciales_finales.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/steps/paso_terminal_balanza_caja.dart';
-import 'controllers/mnt_prv_regular_stil_controller.dart';
-import 'models/mnt_prv_regular_stil_model.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/utils/constants.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_entorno.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_estado_final.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_generico.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_pruebas_iniciales_finales.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_terminal_balanza_caja.dart';
+import 'controllers/mnt_prv_regular_stac_controller.dart';
+import 'fin_servicio_stac.dart';
+import 'models/mnt_prv_regular_stac_model.dart';
 
-class StilMntPrvRegularStacScreen extends StatefulWidget {
+
+
+class StacMntPrvRegularStacScreen extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final String nReca;
@@ -20,7 +24,7 @@ class StilMntPrvRegularStacScreen extends StatefulWidget {
   final String clienteId;
   final String plantaCodigo;
 
-  const StilMntPrvRegularStacScreen({
+  const StacMntPrvRegularStacScreen({
     super.key,
     required this.sessionId,
     required this.secaValue,
@@ -32,13 +36,13 @@ class StilMntPrvRegularStacScreen extends StatefulWidget {
   });
 
   @override
-  _StilMntPrvRegularStacScreenState createState() =>
-      _StilMntPrvRegularStacScreenState();
+  _StacMntPrvRegularStacScreenState createState() =>
+      _StacMntPrvRegularStacScreenState();
 }
 
-class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScreen> {
-  late MntPrvRegularStilModel _model;
-  late MntPrvRegularStilController _controller;
+class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScreen> {
+  late MntPrvRegularStacModel _model;
+  late MntPrvRegularStacController _controller;
 
   int _currentStep = 0;
   bool _isSaving = false;
@@ -52,7 +56,7 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
   void initState() {
     super.initState();
     _initializeModel();
-    _controller = MntPrvRegularStilController(model: _model);
+    _controller = MntPrvRegularStacController(model: _model);
     _actualizarHora();
     _loadD1Value();
     _initializeSteps();
@@ -66,24 +70,39 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
         icon: Icons.science_outlined,
       ),
       StepData(
-        title: 'Entorno de Instalación',
-        subtitle: '8 campos de inspección',
-        icon: Icons.domain_outlined,
+        title: 'Lozas y Fundaciones',
+        subtitle: '2 campos de inspección',
+        icon: Icons.foundation_outlined,
       ),
       StepData(
-        title: 'Terminal de Pesaje',
-        subtitle: '10 campos de inspección',
+        title: 'Limpieza y Drenaje',
+        subtitle: '4 campos de inspección',
+        icon: Icons.cleaning_services_outlined,
+      ),
+      StepData(
+        title: 'Chequeo General',
+        subtitle: '8 campos de inspección',
+        icon: Icons.checklist_outlined,
+      ),
+      StepData(
+        title: 'Verificaciones Eléctricas',
+        subtitle: '8 campos de inspección',
+        icon: Icons.electrical_services_outlined,
+      ),
+      StepData(
+        title: 'Protección contra Rayos',
+        subtitle: '4 campos de inspección',
+        icon: Icons.flash_on_outlined,
+      ),
+      StepData(
+        title: 'Terminal',
+        subtitle: '8 campos de inspección',
         icon: Icons.computer_outlined,
       ),
       StepData(
-        title: 'Estado de Balanza',
-        subtitle: '6 campos de inspección',
-        icon: Icons.balance_outlined,
-      ),
-      StepData(
-        title: 'Caja Sumadora',
-        subtitle: '4 campos de inspección',
-        icon: Icons.electrical_services_outlined,
+        title: 'Calibración',
+        subtitle: '1 campo de inspección',
+        icon: Icons.tune_outlined,
       ),
       StepData(
         title: 'Pruebas Finales',
@@ -99,51 +118,14 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
   }
 
   void _initializeModel() {
-    final camposEstado = {
-      // Entorno de instalación
-      'Vibración': CampoEstado(),
-      'Polvo': CampoEstado(),
-      'Temperatura': CampoEstado(),
-      'Humedad': CampoEstado(),
-      'Mesada': CampoEstado(),
-      'Iluminación': CampoEstado(),
-      'Limpieza de Fosa': CampoEstado(),
-      'Estado de Drenaje': CampoEstado(),
+    final camposEstado = <String, CampoEstado>{};
 
-      // Terminal de pesaje
-      'Carcasa': CampoEstado(),
-      'Teclado Fisico': CampoEstado(),
-      'Display Fisico': CampoEstado(),
-      'Fuente de poder': CampoEstado(),
-      'Bateria operacional': CampoEstado(),
-      'Bracket': CampoEstado(),
-      'Teclado Operativo': CampoEstado(),
-      'Display Operativo': CampoEstado(),
-      'Contector de celda': CampoEstado(),
-      'Bateria de memoria': CampoEstado(),
+    //Inicializar TODOS los campos usando la lista de constants
+    for (final campo in AppStacConstants.getAllCampos()) {
+      camposEstado[campo] = CampoEstado();
+    }
 
-      // Estado general de la balanza
-      'Limpieza general': CampoEstado(),
-      'Golpes al terminal': CampoEstado(),
-      'Nivelacion': CampoEstado(),
-      'Limpieza receptor': CampoEstado(),
-      'Golpes al receptor de carga': CampoEstado(),
-      'Encendido': CampoEstado(),
-
-      // Balanza/Plataforma
-      'Limitador de movimiento': CampoEstado(),
-      'Suspensión': CampoEstado(),
-      'Limitador de carga': CampoEstado(),
-      'Celda de carga': CampoEstado(),
-
-      // Caja sumadora
-      'Tapa de caja sumadora': CampoEstado(),
-      'Humedad Interna': CampoEstado(),
-      'Estado de prensacables': CampoEstado(),
-      'Estado de borneas': CampoEstado(),
-    };
-
-    _model = MntPrvRegularStilModel(
+    _model = MntPrvRegularStacModel(
       codMetrica: widget.codMetrica,
       sessionId: widget.sessionId,
       secaValue: widget.secaValue,
@@ -224,7 +206,7 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
       case 5: // Pruebas Finales
         return true;
 
-      case 6: // Estado Final
+      case 10: // Estado Final
         if (_model.comentarioGeneral.isEmpty) {
           _showSnackBar('Por favor complete el Comentario General', isError: true);
           return false;
@@ -252,21 +234,14 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
 
   List<String> _getCamposDelPaso(int paso) {
     switch (paso) {
-      case 1: // Entorno
-        return ['Vibración', 'Polvo', 'Temperatura', 'Humedad',
-          'Mesada', 'Iluminación', 'Limpieza de Fosa', 'Estado de Drenaje'];
-      case 2: // Terminal
-        return ['Carcasa', 'Teclado Fisico', 'Display Fisico', 'Fuente de poder',
-          'Bateria operacional', 'Bracket', 'Teclado Operativo', 'Display Operativo',
-          'Contector de celda', 'Bateria de memoria'];
-      case 3: // Balanza
-        return ['Limpieza general', 'Golpes al terminal', 'Nivelacion', 'Limpieza receptor',
-          'Golpes al receptor de carga', 'Encendido'];
-      case 4: // Caja sumadora
-        return ['Limitador de movimiento', 'Suspensión', 'Limitador de carga', 'Celda de carga',
-          'Tapa de caja sumadora', 'Humedad Interna', 'Estado de prensacables', 'Estado de borneas'];
-      default:
-        return [];
+      case 1: return AppStacConstants.lozasYFundacionesCampos;
+      case 2: return AppStacConstants.limpiezaYDrenajeCampos;
+      case 3: return AppStacConstants.chequeoCampos;
+      case 4: return AppStacConstants.verificacionesElectricasCampos;
+      case 5: return AppStacConstants.proteccionRayosCampos;
+      case 6: return AppStacConstants.terminalCampos;
+      case 7: return AppStacConstants.calibracionCampos;
+      default: return [];
     }
   }
 
@@ -331,7 +306,7 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'MNT PRV REGULAR STIL',
+                'MNT PRV REGULAR STAC',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -486,37 +461,90 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
           onChanged: () => setState(() {}),
         );
       case 1:
-        return PasoEntorno(
+        return PasoGenerico(
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
+          campos: AppStacConstants.lozasYFundacionesCampos,
+          titulo: 'LOZAS Y FUNDACIONES',
+          subtitulo: 'Inspeccione el estado de lozas y fundaciones',
+          icono: Icons.foundation_outlined,
+          color: Colors.brown,
         );
       case 2:
-        return PasoTerminal(
+        return PasoGenerico(
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
+          campos: AppStacConstants.limpiezaYDrenajeCampos,
+          titulo: 'LIMPIEZA Y DRENAJE',
+          subtitulo: 'Inspeccione limpieza y sistema de drenaje',
+          icono: Icons.cleaning_services_outlined,
+          color: Colors.lightBlue,
         );
       case 3:
-        return PasoBalanza(
+        return PasoGenerico(
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
+          campos: AppStacConstants.chequeoCampos,
+          titulo: 'CHEQUEO GENERAL',
+          subtitulo: 'Inspeccione el estado general del equipo',
+          icono: Icons.checklist_outlined,
+          color: Colors.teal,
         );
       case 4:
-        return PasoCajaSumadora(
+        return PasoGenerico(
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
+          campos: AppStacConstants.verificacionesElectricasCampos,
+          titulo: 'VERIFICACIONES ELÉCTRICAS',
+          subtitulo: 'Inspeccione conexiones y cableado',
+          icono: Icons.electrical_services_outlined,
+          color: Colors.amber,
         );
       case 5:
+        return PasoGenerico(
+          model: _model,
+          controller: _controller,
+          onChanged: () => setState(() {}),
+          campos: AppStacConstants.proteccionRayosCampos,
+          titulo: 'PROTECCIÓN CONTRA RAYOS',
+          subtitulo: 'Verifique sistema de protección eléctrica',
+          icono: Icons.flash_on_outlined,
+          color: Colors.orange,
+        );
+      case 6:
+        return PasoGenerico(
+          model: _model,
+          controller: _controller,
+          onChanged: () => setState(() {}),
+          campos: AppStacConstants.terminalCampos,
+          titulo: 'TERMINAL',
+          subtitulo: 'Inspeccione el terminal de pesaje',
+          icono: Icons.computer_outlined,
+          color: Colors.purple,
+        );
+      case 7:
+        return PasoGenerico(
+          model: _model,
+          controller: _controller,
+          onChanged: () => setState(() {}),
+          campos: AppStacConstants.calibracionCampos,
+          titulo: 'CALIBRACIÓN',
+          subtitulo: 'Verifique la calibración',
+          icono: Icons.tune_outlined,
+          color: Colors.green,
+        );
+      case 8:
         return PasoPruebasFinales(
           model: _model,
           controller: _controller,
           getD1FromDatabase: _getD1FromCache,
           onChanged: () => setState(() {}),
         );
-      case 6:
+      case 9:
         return PasoEstadoFinal(
           model: _model,
           onChanged: () => setState(() {}),
@@ -577,7 +605,7 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => FinServicioMntPrvStilScreen(
+                        builder: (context) => FinServicioMntPrvStacScreen(
                           sessionId: widget.sessionId,
                           secaValue: widget.secaValue,
                           codMetrica: widget.codMetrica,

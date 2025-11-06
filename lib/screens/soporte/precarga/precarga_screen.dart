@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/screens/calibracion/servicio_screen.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/stac_mnt_prv_regular.dart';
 import '../../../database/soporte_tecnico/database_helper_ajustes.dart';
 import '../../../database/soporte_tecnico/database_helper_diagnostico.dart';
 import '../../../database/soporte_tecnico/database_helper_instalacion.dart';
@@ -24,7 +25,6 @@ import '../modulos/mnt_correctivo/stac_mnt_correctivo.dart';
 import '../modulos/mnt_prv_avanzado/stac_mnt_prv_avanzado.dart';
 import '../modulos/mnt_prv_avanzado/stil_mnt_prv_avanzado.dart';
 import '../modulos/mnt_prv_regular/mnt_prv_regular_stil/stil_mnt_prv_regular.dart';
-import '../modulos/mnt_prv_regular/stac_mnt_prv_regular.dart';
 import '../modulos/relevamiento_de_datos/relevamiento_de_datos.dart';
 import '../modulos/verificaciones_internas/stac_verificaciones_internas.dart';
 import 'precarga_controller.dart';
@@ -124,7 +124,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
   Future<void> _loadExistingSession() async {
     try {
-      // ✅ OBTENER EL DATABASE HELPER CORRECTO SEGÚN widget.tableName
+      //OBTENER EL DATABASE HELPER CORRECTO SEGÚN widget.tableName
       dynamic dbHelper;
 
       switch (widget.tableName) {
@@ -164,7 +164,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
       final db = await dbHelper.database;
 
-      // ✅ CONSULTAR EN LA TABLA INDEPENDIENTE
+      //CONSULTAR EN LA TABLA INDEPENDIENTE
       final List<Map<String, dynamic>> rows = await db.query(
         dbHelper.tableName, // Usar el nombre de tabla del helper
         where: 'otst = ? AND session_id = ?',

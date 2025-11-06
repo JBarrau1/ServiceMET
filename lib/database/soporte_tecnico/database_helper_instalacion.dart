@@ -11,8 +11,21 @@ class DatabaseHelperInstalacion {
   factory DatabaseHelperInstalacion() => _instance;
   static Database? _database;
   static bool _isInitializing = false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
+  String get tableName => 'instalacion';
 
   DatabaseHelperInstalacion._internal();
+
+  Future<bool> metricaExists(String otst) async {
+    return await secaExists(otst);
+  }
+
+  Future<Map<String, dynamic>?> getUltimoRegistroPorMetrica(String otst) async {
+    return await getUltimoRegistroPorSeca(otst);
+  }
+
+  Future<void> upsertRegistro(Map<String, dynamic> registro) async {
+    await upsertRegistroRelevamiento(registro);
+  }
 
   Future<Map<String, dynamic>?> getRegistroByCodMetrica(String codMetrica) async {
     try {

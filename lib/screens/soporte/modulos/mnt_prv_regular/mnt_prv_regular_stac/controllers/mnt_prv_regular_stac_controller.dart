@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
-import '../models/mnt_prv_regular_stil_model.dart';
+import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
+import '../models/mnt_prv_regular_stac_model.dart';
 
-class MntPrvRegularStilController {
-  final MntPrvRegularStilModel model;
+
+class MntPrvRegularStacController {
+  final MntPrvRegularStacModel model;
   final Map<String, List<File>> _fieldPhotos = {};
 
-  MntPrvRegularStilController({required this.model});
+  MntPrvRegularStacController({required this.model});
 
   void copiarPruebasInicialesAFinales() {
     model.copiarPruebasInicialesAFinales();
@@ -20,11 +21,11 @@ class MntPrvRegularStilController {
   // ✅ OPTIMIZADO: Obtener d1 sin múltiples consultas
   Future<double> getD1FromDatabase() async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStil();
+      final dbHelper = DatabaseHelperMntPrvRegularStac();
       final db = await dbHelper.database;
 
       final results = await db.query(
-        'mnt_prv_regular_stil',
+        'mnt_prv_regular_stac',
         columns: ['d1'],
         where: 'session_id = ? AND cod_metrica = ?',
         whereArgs: [model.sessionId, model.codMetrica],
@@ -52,7 +53,7 @@ class MntPrvRegularStilController {
   // ✅ NUEVO: Método para guardar solo en BD (sin fotos)
   Future<void> saveDataToDatabase(BuildContext context, {bool showMessage = true}) async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStil();
+      final dbHelper = DatabaseHelperMntPrvRegularStac();
       final Map<String, dynamic> mntPrvData = _prepareDataForSave();
 
       mntPrvData['session_id'] = model.sessionId;
@@ -181,14 +182,14 @@ class MntPrvRegularStilController {
       'session_id': model.sessionId,
       'cod_metrica': model.codMetrica,
       'otst': model.secaValue,
-      'tipo_servicio': 'mnt prv regular stil',
+      'tipo_servicio': 'mnt prv regular stac',
       'hora_inicio': model.horaInicio,
       'hora_fin': model.horaFin,
       'comentario_general': model.comentarioGeneral,
       'recomendacion': model.recomendacion,
-      'estado_fisico': model.estadoFisico,
-      'estado_operacional': model.estadoOperacional,
-      'estado_metrologico': model.estadoMetrologico,
+      'fisico': model.estadoFisico,
+      'operacional': model.estadoOperacional,
+      'metrologico': model.estadoMetrologico,
     };
 
     _addCamposEstadoData(data);
@@ -197,7 +198,7 @@ class MntPrvRegularStilController {
     return data;
   }
 
-  // ✅ REFACTORIZADO: Agregar datos de campos de estado
+  // REFACTORIZADO: Agregar datos de campos de estado
   void _addCamposEstadoData(Map<String, dynamic> data) {
     // Función auxiliar simplificada
     void addCampo(String dbKey, String modelKey) {
@@ -212,55 +213,62 @@ class MntPrvRegularStilController {
       }
     }
 
-    // Mapeo de campos (DB key -> Model key)
+    // MAPEO ACTUALIZADO CON NOMBRES DE BD CORRECTOS
     final camposMap = {
-      // Entorno
-      'vibracion': 'Vibración',
-      'polvo': 'Polvo',
-      'temperatura': 'Temperatura',
-      'humedad': 'Humedad',
-      'mesada': 'Mesada',
-      'iluminacion': 'Iluminación',
-      'limpieza_fosa': 'Limpieza de Fosa',
-      'estado_drenaje': 'Estado de Drenaje',
+      // Lozas y Fundaciones
+      'losas_aproximacion': 'Losas de aproximación (daños o grietas)',
+      'fundaciones': 'Fundaciones (daños o grietas)',
+
+      // Limpieza y Drenaje
+      'limpieza_perimetro': 'Limpieza de perímetro de balanza',
+      'fosa_humedad': 'Fosa libre de humedad',
+      'drenaje_libre': 'Drenaje libre',
+      'bomba_sumidero': 'Bomba de sumidero funcional',
+
+      // Chequeo
+      'corrosion': 'Corrosión',
+      'grietas': 'Grietas',
+      'tapas_pernos': 'Tapas superiores y pernos',
+      'desgaste_estres': 'Desgaste y estrés',
+      'acumulacion_escombros': 'Acumulación de escombros o materiales externos',
+      'verificacion_rieles': 'Verificación de rieles laterales',
+      'paragolpes_longitudinales': 'Verificación de paragolpes longitudinales',
+      'paragolpes_transversales': 'Verificación de paragolpes transversales',
+
+      // Verificaciones Eléctricas
+      'cable_home_run': 'Condición de cable de Home Run',
+      'cable_celula_celula': 'Condición de cable de célula a célula',
+      'conexion_celdas': 'Conexión segura a celdas de carga',
+      'funda_conector': 'Funda de goma y conector ajustados',
+      'conector_terminacion': 'Conector de terminación ajustado',
+      'cables_seguros': 'Los cables están conectados de forma segura a todas las celdas de carga',
+      'funda_apretada': 'La funda de goma y el conector del cable están apretados contra la celda de carga',
+      'conector_capuchon': 'Conector de terminación ajustado y capuchón en su lugar',
+
+      // Protección contra Rayos
+      'sistema_tierra': 'Sistema de protección contra rayos conectado a tierra',
+      'conexion_strike_shield': 'Conexión de la correa de tierra del Strike shield',
+      'tension_neutro_tierra': 'Tensión entre neutro y tierra adecuada',
+      'impresora_strike_shield': 'Impresora conectada al mismo Strike Shield',
 
       // Terminal
-      'carcasa': 'Carcasa',
-      'teclado_fisico': 'Teclado Fisico',
-      'display_fisico': 'Display Fisico',
-      'fuente_poder': 'Fuente de poder',
-      'bateria_operacional': 'Bateria operacional',
-      'bracket': 'Bracket',
-      'teclado_operativo': 'Teclado Operativo',
-      'display_operativo': 'Display Operativo',
-      'conector_celda': 'Contector de celda',
-      'bateria_memoria': 'Bateria de memoria',
+      'carcasa_lente_teclado': 'Carcasa, lente y el teclado estan limpios, sin daños y sellados',
+      'voltaje_bateria': 'Voltaje de la batería es adecuado',
+      'teclado_operativo': 'Teclado operativo correctamente',
+      'brillo_pantalla': 'Brillo de pantalla adecuado',
+      'registros_pdx': 'Registros de rendimiento de cambio PDX OK',
+      'pantallas_servicio': 'Pantallas de servicio de MT indican operación normal',
+      'archivos_respaldados': 'Archivos de configuración respaldados con InSite',
+      'terminal_disponibilidad': 'Terminal devuelto a la disponibilidad operativo',
 
-      // Balanza
-      'limpieza_general': 'Limpieza general',
-      'golpes_terminal': 'Golpes al terminal',
-      'nivelacion': 'Nivelacion',
-      'limpieza_receptor': 'Limpieza receptor',
-      'golpes_receptor': 'Golpes al receptor de carga',
-      'encendido': 'Encendido',
-
-      // Plataforma
-      'limitador_movimiento': 'Limitador de movimiento',
-      'suspension': 'Suspensión',
-      'limitador_carga': 'Limitador de carga',
-      'celda_carga': 'Celda de carga',
-
-      // Caja sumadora
-      'tapa_caja': 'Tapa de caja sumadora',
-      'humedad_interna': 'Humedad Interna',
-      'estado_prensacables': 'Estado de prensacables',
-      'estado_borneas': 'Estado de borneas',
+      // Calibración
+      'calibracion_balanza': 'Calibración de balanza realiza y dentro de tolerancia',
     };
 
     camposMap.forEach((dbKey, modelKey) => addCampo(dbKey, modelKey));
   }
 
-  // ✅ MEJORADO: Agregar pruebas metrológicas con null-safety
+  //MEJORADO: Agregar pruebas metrológicas con null-safety
   void _addPruebasMetrologicasData(Map<String, dynamic> data) {
 
     // Excentricidad inicial

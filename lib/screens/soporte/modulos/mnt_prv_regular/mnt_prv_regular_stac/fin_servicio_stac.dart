@@ -6,13 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import '../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
 
-class FinServicioMntPrvStilScreen extends StatefulWidget {
+import '../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
+
+class FinServicioMntPrvStacScreen extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final String nReca;
@@ -22,7 +22,7 @@ class FinServicioMntPrvStilScreen extends StatefulWidget {
   final String plantaCodigo;
   final String? tableName;
 
-  const FinServicioMntPrvStilScreen({
+  const FinServicioMntPrvStacScreen({
     super.key,
     required this.sessionId,
     required this.secaValue,
@@ -35,12 +35,12 @@ class FinServicioMntPrvStilScreen extends StatefulWidget {
   });
 
   @override
-  _FinServicioMntPrvStilScreenState createState() =>
-      _FinServicioMntPrvStilScreenState();
+  _FinServicioMntPrvStacScreenState createState() =>
+      _FinServicioMntPrvStacScreenState();
 }
 
-class _FinServicioMntPrvStilScreenState
-    extends State<FinServicioMntPrvStilScreen> {
+class _FinServicioMntPrvStacScreenState
+    extends State<FinServicioMntPrvStacScreen> {
   String? errorMessage;
   bool _isExporting = false;
 
@@ -77,12 +77,12 @@ class _FinServicioMntPrvStilScreenState
   // ✅ NUEVO: Función principal de confirmación y exportación
   Future<void> _confirmarYExportar(BuildContext context) async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStil();
+      final dbHelper = DatabaseHelperMntPrvRegularStac();
       final db = await dbHelper.database;
 
       // ✅ CAMBIO: Usar otst y estado_balanza = 'Balanza Realizada'
       final rows = await db.query(
-        widget.tableName ?? 'mnt_prv_regular_stil',
+        widget.tableName ?? 'mnt_prv_regular_stac',
         where: 'otst = ? AND estado_balanza = ?',
         whereArgs: [widget.secaValue, 'Balanza Realizada'],
       );
@@ -98,7 +98,7 @@ class _FinServicioMntPrvStilScreenState
 
       // 3. Obtener rows actualizados
       final updatedRows = await db.query(
-        widget.tableName ?? 'mnt_prv_regular_stil',
+        widget.tableName ?? 'mnt_prv_regular_stac',
         where: 'otst = ? AND estado_balanza = ?',
         whereArgs: [widget.secaValue, 'Balanza Realizada'],
       );
@@ -167,7 +167,7 @@ class _FinServicioMntPrvStilScreenState
 
       // 3. Crear nombre del archivo
       final fileName =
-          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}_mnt_prv_regular_stil.csv';
+          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}_mnt_prv_regular_stac.csv';
 
       // 4. Guardar internamente
       final externalDir = await getExternalStorageDirectory();
@@ -269,11 +269,11 @@ class _FinServicioMntPrvStilScreenState
     if (confirmado != true) return;
 
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStil();
+      final dbHelper = DatabaseHelperMntPrvRegularStac();
       final db = await dbHelper.database;
 
       final List<Map<String, dynamic>> rows = await db.query(
-        widget.tableName ?? 'mnt_prv_regular_stil',
+        widget.tableName ?? 'mnt_prv_regular_stac',
         where: 'otst = ?',
         whereArgs: [widget.secaValue],
         orderBy: 'session_id DESC',
@@ -310,7 +310,7 @@ class _FinServicioMntPrvStilScreenState
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => PrecargaScreenSop(
-            tableName: widget.tableName ?? 'mnt_prv_regular_stil',
+            tableName: widget.tableName ?? 'mnt_prv_regular_stac',
             userName: widget.userName,
             clienteId: widget.clienteId,
             plantaCodigo: widget.plantaCodigo,

@@ -553,7 +553,7 @@ class PrecargaControllerSop extends ChangeNotifier {
     if (_tableName == null) throw Exception('No se ha seleccionado tipo de servicio');
 
     try {
-      // ✅ USAR EL DATABASE HELPER CORRECTO
+
       final dbHelper = _getDatabaseHelper();
 
       // Verificar si ya existe registro con este SECA
@@ -576,7 +576,7 @@ class PrecargaControllerSop extends ChangeNotifier {
         throw Exception('No se ha seleccionado un tipo de servicio');
       }
 
-      // ✅ USAR EL DATABASE HELPER CORRECTO
+
       final dbHelper = _getDatabaseHelper();
 
       // Generar session_id específico
@@ -594,10 +594,11 @@ class PrecargaControllerSop extends ChangeNotifier {
         'planta': _selectedPlantaNombre ?? 'No especificado',
         'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
+        'cod_planta': _selectedPlantaCodigo ?? 'No especificado',
         'cod_metrica': '',
       };
 
-      // ✅ INSERTAR EN LA BASE DE DATOS INDEPENDIENTE
+
       await dbHelper.upsertRegistro(registro);
 
       _secaConfirmed = true;
@@ -619,7 +620,7 @@ class PrecargaControllerSop extends ChangeNotifier {
         throw Exception('No se ha seleccionado un tipo de servicio');
       }
 
-      // ✅ USAR EL DATABASE HELPER CORRECTO
+
       final dbHelper = _getDatabaseHelper();
       return await dbHelper.generateSessionId(codMetrica);
     } catch (e) {
@@ -630,7 +631,7 @@ class PrecargaControllerSop extends ChangeNotifier {
   // MÉTODOS DE BALANZA
   Future<void> fetchBalanzas(String plantaCodigo) async {
     try {
-      // ✅ Validar que exista tipo de servicio antes de buscar balanzas
+
       if (_tableName == null) {
         debugPrint('⚠️ No se puede buscar balanzas sin tipo de servicio seleccionado');
         _balanzas = [];
@@ -658,7 +659,7 @@ class PrecargaControllerSop extends ChangeNotifier {
           whereArgs: [codMetrica],
         );
 
-        // ✅ Ahora usará la tabla correcta según _tableName
+
         final estadoCalibacion = await _verificarEstadoCalibacion(codMetrica);
 
         Map<String, dynamic> balanzaCompleta = {
@@ -688,12 +689,12 @@ class PrecargaControllerSop extends ChangeNotifier {
 
   Future<Map<String, dynamic>> _verificarEstadoCalibacion(String codMetrica) async {
     try {
-      // ✅ Validar que exista un tipo de servicio seleccionado
+
       if (_tableName == null || _tableName!.isEmpty) {
         return {'estado': 'sin_tabla', 'tiene_registro': false};
       }
 
-      // ✅ USAR EL DATABASE HELPER CORRECTO
+
       final dbHelper = _getDatabaseHelper();
       final db = await dbHelper.database;
 
@@ -850,7 +851,6 @@ class PrecargaControllerSop extends ChangeNotifier {
         throw Exception('No se ha seleccionado un tipo de servicio');
       }
 
-      // ✅ USAR EL DATABASE HELPER CORRECTO
       final dbHelper = _getDatabaseHelper();
 
       final registro = {
@@ -864,11 +864,11 @@ class PrecargaControllerSop extends ChangeNotifier {
         'planta': _selectedPlantaNombre ?? 'No especificado',
         'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
+        'cod_planta': _selectedPlantaCodigo ?? '',
         'foto_balanza': _fotosTomadas ? '1' : '0',
         ...balanzaData,
       };
 
-      // ✅ GUARDAR EN LA BASE DE DATOS INDEPENDIENTE
       await dbHelper.upsertRegistro(registro);
 
       _isDataSaved = true;
@@ -884,7 +884,7 @@ class PrecargaControllerSop extends ChangeNotifier {
   }
 
   void reset() {
-    _currentStep = -1; // ✅ Asegurar que empiece en -1
+    _currentStep = -1;
     _isDataSaved = false;
     _generatedSessionId = null;
     _generatedSeca = null;
@@ -902,7 +902,7 @@ class PrecargaControllerSop extends ChangeNotifier {
     _selectedPlantaDir = null;
     _selectedPlantaDep = null;
     _selectedPlantaCodigo = null;
-    _selectedPlantaNombre = null; // ✅ Agregar esto
+    _selectedPlantaNombre = null;
 
     _balanzas = [];
     _selectedBalanza = null;
@@ -914,7 +914,7 @@ class PrecargaControllerSop extends ChangeNotifier {
 
     _balanzaPhotos.clear();
     _fotosTomadas = false;
-    _baseFotoPath = null; // ✅ Agregar esto
+    _baseFotoPath = null;
 
     _stepErrors = {-1: null, 0: null, 1: null, 2: null, 3: null, 4: null};
 

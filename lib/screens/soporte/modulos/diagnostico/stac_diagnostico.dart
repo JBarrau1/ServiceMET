@@ -74,75 +74,6 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
     _initialTestsData = <String, dynamic>{};
     _finalTestsData = <String, dynamic>{};
 
-    // Lista de todos los campos del estado general del instrumento
-    final List<String> camposEstadoGeneral = [
-      // Sección de Lazas de aproximación y fundaciones
-      'Losas de aproximación (daños o grietas)',
-      'Fundaciones (daños o grietas)',
-
-      // Sección de limpieza y drenaje
-      'Limpieza de perímetro de balanza',
-      'Fosa libre de humedad',
-      'Drenaje libre',
-      'Bomba de sumidero funcional',
-
-      // Sección de Chequeo
-      'Corrosión',
-      'Grietas',
-      'Tapas superiores y pernos',
-      'Desgaste y estrés',
-      'Acumulación de escombros o materiales externos',
-      'Verificación de rieles laterales',
-      'Verificación de paragolpes longitudinales',
-      'Verificación de paragolpes transversales',
-
-      // Sección de Verificaciones eléctricas
-      'Condición de cable de Home Run',
-      'Condición de cable de célula a célula',
-      'Conexión segura a celdas de carga',
-      'Funda de goma y conector ajustados',
-      'Conector de terminación ajustado',
-      'Los cables están conectados de forma segura a todas las celdas de carga',
-      'La funda de goma y el conector del cable están apretados contra la celda de carga',
-      'Conector de terminación ajustado y capuchón en su lugar',
-
-      // Sección de protección contra rayos
-      'Sistema de protección contra rayos conectado a tierra',
-      'Conexión de la correa de tierra del Strike shield',
-      'Tensión entre neutro y tierra adecuada',
-      'Impresora conectada al mismo Strike Shield',
-
-      // Sección de Terminal
-      'Carcasa, lente y el teclado estan limpios, sin daños y sellados',
-      'Voltaje de la batería es adecuado',
-      'Teclado operativo correctamente',
-      'Brillo de pantalla adecuado',
-      'Registros de rendimiento de cambio PDX OK',
-      'Pantallas de servicio de MT indican operación normal',
-      'Archivos de configuración respaldados con InSite',
-      'Terminal devuelto a la disponibilidad operativo',
-
-      // Nueva seccion
-      'Elevado del puente de pesaje y retirado de las celdas de carga',
-      'Limpieza e inspección de superficies de acoplamiento de la estructura',
-      'Limpieza e inspección de bearing cups',
-      'Limpieza e inspección de celdas de carga',
-      'Lubricación de cabezas de celdas de carga',
-      'Engrasado de bearing cups',
-      'Lainas, botas de goma colocadas',
-
-      // Sección de Calibración
-      'Calibración de balanza realiza y dentro de tolerancia'
-    ];
-
-    // Inicializar TODOS los campos con "4 No aplica" y "No aplica"
-    for (final campo in camposEstadoGeneral) {
-      _fieldData[campo] = {
-        'initial_value': '4 No aplica', // Estado inicial
-        'solution_value':
-            'No aplica' // Solución (asegurar que coincida exactamente con las opciones)
-      };
-    }
     // Forzar actualización de la UI después de la inicialización
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -542,7 +473,6 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
     return WillPopScope(
       onWillPop: () => _onWillPop(context),
       child: Scaffold(
-        extendBodyBehindAppBar: true,
         appBar: AppBar(
           toolbarHeight: 80,
           title: Column(
@@ -572,20 +502,15 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
           flexibleSpace: isDarkMode
               ? ClipRect(
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(color: Colors.black.withOpacity(0.4)),
+                    filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                    child: Container(color: Colors.black.withOpacity(0.1)),
                   ),
                 )
               : null,
           centerTitle: true,
         ),
         body: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            top: kToolbarHeight + MediaQuery.of(context).padding.top + 40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-            left: 16.0, // Tu padding horizontal original
-            right: 16.0, // Tu padding horizontal original
-            bottom: 16.0, // Tu padding inferior original
-          ),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
               const Text(

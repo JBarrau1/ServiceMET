@@ -43,7 +43,7 @@ class TipoServicioStep extends StatelessWidget {
                   'Relevamiento de Datos',
                   'relevamiento_de_datos',
                   Icons.assignment,
-                  Colors.blue,
+                  Color(0xFF3D705B),
                 ),
                 _buildServiceCard(
                   context,
@@ -51,7 +51,7 @@ class TipoServicioStep extends StatelessWidget {
                   'Ajustes Metrológicos',
                   'ajustes_metrologicos',
                   Icons.tune,
-                  Colors.green,
+                  Color(0xFF3D6270),
                 ),
                 _buildServiceCard(
                   context,
@@ -59,7 +59,7 @@ class TipoServicioStep extends StatelessWidget {
                   'Diagnóstico',
                   'diagnostico',
                   Icons.search,
-                  Colors.orange,
+                  Color(0xFF6E703D)
                 ),
                 _buildServiceCard(
                   context,
@@ -67,7 +67,7 @@ class TipoServicioStep extends StatelessWidget {
                   'Mnt. Prev. Regular',
                   'mnt_prv_regular',
                   Icons.build,
-                  Colors.purple,
+                  Color(0xFF70463D),
                   hasSubtypes: true,
                 ),
                 _buildServiceCard(
@@ -76,7 +76,7 @@ class TipoServicioStep extends StatelessWidget {
                   'Mnt. Prev. Avanzado',
                   'mnt_prv_avanzado',
                   Icons.engineering,
-                  Colors.red,
+                  Color(0xFF70643D),
                   hasSubtypes: true,
                 ),
                 _buildServiceCard(
@@ -142,10 +142,10 @@ class TipoServicioStep extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12), // Reducido de 16 a 12
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2E2E2E) : Colors.white, // Color 2E2E2E cuando está seleccionado
+          color: isSelected ? const Color(0xFF317833) : Colors.white, // Color 2E2E2E cuando está seleccionado
           borderRadius: BorderRadius.circular(12), // Aumentado de 16 a 12 (más cuadrado pero con buen border radius)
           border: Border.all(
-            color: isSelected ? const Color(0xFF2E2E2E) : Colors.grey[300]!,
+            color: isSelected ? const Color(0xFF317833) : Colors.grey[300]!,
             width: isSelected ? 2 : 1, // Reducido de 3 a 2 para hacerlo más pequeño
           ),
           boxShadow: [
@@ -186,7 +186,7 @@ class TipoServicioStep extends StatelessWidget {
                 margin: const EdgeInsets.only(top: 4),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withOpacity(0.3) : const Color(0xFF2E2E2E).withOpacity(0.3),
+                  color: isSelected ? Colors.white.withOpacity(0.3) : const Color(0xFF317833).withOpacity(0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -194,7 +194,7 @@ class TipoServicioStep extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : const Color(0xFF2E2E2E),
+                    color: isSelected ? Colors.white : const Color(0xFF317833),
                   ),
                 ),
               ),
