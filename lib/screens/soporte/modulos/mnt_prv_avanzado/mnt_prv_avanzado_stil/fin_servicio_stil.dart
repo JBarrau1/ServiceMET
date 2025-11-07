@@ -10,9 +10,11 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-import '../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
 
-class FinServicioMntPrvStilScreen extends StatefulWidget {
+import '../../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
+
+
+class FinServicioMntAvaStilScreen extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final String nReca;
@@ -22,7 +24,7 @@ class FinServicioMntPrvStilScreen extends StatefulWidget {
   final String plantaCodigo;
   final String? tableName;
 
-  const FinServicioMntPrvStilScreen({
+  const FinServicioMntAvaStilScreen({
     super.key,
     required this.sessionId,
     required this.secaValue,
@@ -35,12 +37,12 @@ class FinServicioMntPrvStilScreen extends StatefulWidget {
   });
 
   @override
-  _FinServicioMntPrvStilScreenState createState() =>
-      _FinServicioMntPrvStilScreenState();
+  _FinServicioMntAvaStilScreenState createState() =>
+      _FinServicioMntAvaStilScreenState();
 }
 
-class _FinServicioMntPrvStilScreenState
-    extends State<FinServicioMntPrvStilScreen> {
+class _FinServicioMntAvaStilScreenState
+    extends State<FinServicioMntAvaStilScreen> {
   String? errorMessage;
   bool _isExporting = false;
 
@@ -77,7 +79,7 @@ class _FinServicioMntPrvStilScreenState
   // ✅ NUEVO: Función principal de confirmación y exportación
   Future<void> _confirmarYExportar(BuildContext context) async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStil();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
       final db = await dbHelper.database;
 
       // ✅ CAMBIO: Usar otst y estado_balanza = 'Balanza Realizada'
@@ -269,7 +271,7 @@ class _FinServicioMntPrvStilScreenState
     if (confirmado != true) return;
 
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStil();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
       final db = await dbHelper.database;
 
       final List<Map<String, dynamic>> rows = await db.query(

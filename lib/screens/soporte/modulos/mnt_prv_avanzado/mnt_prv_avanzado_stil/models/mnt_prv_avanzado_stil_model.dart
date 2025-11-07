@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-class MntPrvRegularStilModel {
+class MntPrvAvanzadoStilModel {
 
   final String codMetrica;
-  final String sessionId; // ✅ AGREGAR
-  final String secaValue; // ✅ AGREGAR
+  final String sessionId;
+  final String secaValue;
 
   // Campos de estado general
-  Map<String, CampoEstado> camposEstado;
+  Map<String, CampoEstadoAvanzadoStil> camposEstado;
 
   // Pruebas metrológicas
   PruebasMetrologicas pruebasIniciales;
@@ -22,8 +22,9 @@ class MntPrvRegularStilModel {
   String estadoMetrologico;
   String horaInicio;
   String horaFin;
+  String fechaProxServicio;
 
-  MntPrvRegularStilModel({
+  MntPrvAvanzadoStilModel({
 
     required this.codMetrica,
     required this.sessionId,
@@ -38,6 +39,7 @@ class MntPrvRegularStilModel {
     this.estadoMetrologico = '',
     this.horaInicio = '',
     this.horaFin = '',
+    this.fechaProxServicio = '',
   })  : pruebasIniciales = pruebasIniciales ?? PruebasMetrologicas(),
         pruebasFinales = pruebasFinales ?? PruebasMetrologicas();
 
@@ -65,16 +67,17 @@ class MntPrvRegularStilModel {
     estadoMetrologico = '';
     horaInicio = '';
     horaFin = '';
+    fechaProxServicio = '';
   }
 }
 
-class CampoEstado {
+class CampoEstadoAvanzadoStil {
   String initialValue;
   String solutionValue;
   String comentario;
   List<File> fotos;
 
-  CampoEstado({
+  CampoEstadoAvanzadoStil({
     this.initialValue = '4 No aplica',
     this.solutionValue = 'No aplica',
     this.comentario = 'Sin comentario',

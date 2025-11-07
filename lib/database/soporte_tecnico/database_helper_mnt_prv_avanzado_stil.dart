@@ -295,6 +295,7 @@ class DatabaseHelperMntPrvAvanzadoStil {
         estado_fisico TEXT DEFAULT '',
         estado_operacional TEXT DEFAULT '',
         estado_metrologico TEXT DEFAULT '',
+        fecha_prox_servicio TEXT DEFAULT '',
         
         -- Entorno de instalación
         vibracion_estado TEXT DEFAULT '',
@@ -470,6 +471,11 @@ class DatabaseHelperMntPrvAvanzadoStil {
         limpieza_profunda_solucion TEXT DEFAULT '',
         limpieza_profunda_comentario TEXT DEFAULT '',
         limpieza_profunda_foto TEXT DEFAULT '',
+        
+        trabajo_especial_estado TEXT DEFAULT '',
+        trabajo_especial_solucion TEXT DEFAULT '',
+        trabajo_especial_comentario TEXT DEFAULT '',
+        trabajo_especial_foto TEXT DEFAULT '',
         
         -- PRUEBAS METROLÓGICAS INICIALES
         retorno_cero_inicial TEXT DEFAULT '',

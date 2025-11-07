@@ -3,15 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/fin_servicio_stil.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/steps/paso_entorno.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/steps/paso_estado_final.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/steps/paso_pruebas_iniciales_finales.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/widgets/steps/paso_terminal_balanza_caja.dart';
-import 'controllers/mnt_prv_regular_stil_controller.dart';
-import 'models/mnt_prv_regular_stil_model.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_avanzado/mnt_prv_avanzado_stil/fin_servicio_stil.dart';
+import '../mnt_prv_avanzado_stil/widgets/steps/paso_entorno.dart';
+import '../mnt_prv_avanzado_stil/widgets/steps/paso_estado_final.dart';
+import '../mnt_prv_avanzado_stil/widgets/steps/paso_terminal_balanza_caja.dart';
+import '../mnt_prv_avanzado_stil/widgets/steps/paso_pruebas_iniciales_finales.dart';
+import 'controllers/mnt_prv_avanzado_stil_controller.dart';
+import 'models/mnt_prv_avanzado_stil_model.dart';
 
-class StilMntPrvRegularStacScreen extends StatefulWidget {
+
+class MntPrvAvanzadoStilScreen extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final String nReca;
@@ -20,7 +21,7 @@ class StilMntPrvRegularStacScreen extends StatefulWidget {
   final String clienteId;
   final String plantaCodigo;
 
-  const StilMntPrvRegularStacScreen({
+  const MntPrvAvanzadoStilScreen({
     super.key,
     required this.sessionId,
     required this.secaValue,
@@ -32,13 +33,13 @@ class StilMntPrvRegularStacScreen extends StatefulWidget {
   });
 
   @override
-  _StilMntPrvRegularStacScreenState createState() =>
-      _StilMntPrvRegularStacScreenState();
+  _MntPrvAvanzadoStilScreenState createState() =>
+      _MntPrvAvanzadoStilScreenState();
 }
 
-class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScreen> {
-  late MntPrvRegularStilModel _model;
-  late MntPrvRegularStilController _controller;
+class _MntPrvAvanzadoStilScreenState extends State<MntPrvAvanzadoStilScreen> {
+  late MntPrvAvanzadoStilModel _model;
+  late MntPrvAvanzadoStilController _controller;
 
   int _currentStep = 0;
   bool _isSaving = false;
@@ -52,7 +53,7 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
   void initState() {
     super.initState();
     _initializeModel();
-    _controller = MntPrvRegularStilController(model: _model);
+    _controller = MntPrvAvanzadoStilController(model: _model);
     _actualizarHora();
     _loadD1Value();
     _initializeSteps();
@@ -101,49 +102,50 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
   void _initializeModel() {
     final camposEstado = {
       // Entorno de instalación
-      'Vibración': CampoEstado(),
-      'Polvo': CampoEstado(),
-      'Temperatura': CampoEstado(),
-      'Humedad': CampoEstado(),
-      'Mesada': CampoEstado(),
-      'Iluminación': CampoEstado(),
-      'Limpieza de Fosa': CampoEstado(),
-      'Estado de Drenaje': CampoEstado(),
+      'Vibración': CampoEstadoAvanzadoStil(),
+      'Polvo': CampoEstadoAvanzadoStil(),
+      'Temperatura': CampoEstadoAvanzadoStil(),
+      'Humedad': CampoEstadoAvanzadoStil(),
+      'Mesada': CampoEstadoAvanzadoStil(),
+      'Iluminación': CampoEstadoAvanzadoStil(),
+      'Limpieza de Fosa': CampoEstadoAvanzadoStil(),
+      'Estado de Drenaje': CampoEstadoAvanzadoStil(),
 
       // Terminal de pesaje
-      'Carcasa': CampoEstado(),
-      'Teclado Fisico': CampoEstado(),
-      'Display Fisico': CampoEstado(),
-      'Fuente de poder': CampoEstado(),
-      'Bateria operacional': CampoEstado(),
-      'Bracket': CampoEstado(),
-      'Teclado Operativo': CampoEstado(),
-      'Display Operativo': CampoEstado(),
-      'Contector de celda': CampoEstado(),
-      'Bateria de memoria': CampoEstado(),
+      'Carcasa': CampoEstadoAvanzadoStil(),
+      'Teclado Fisico': CampoEstadoAvanzadoStil(),
+      'Display Fisico': CampoEstadoAvanzadoStil(),
+      'Fuente de poder': CampoEstadoAvanzadoStil(),
+      'Bateria operacional': CampoEstadoAvanzadoStil(),
+      'Bracket': CampoEstadoAvanzadoStil(),
+      'Teclado Operativo': CampoEstadoAvanzadoStil(),
+      'Display Operativo': CampoEstadoAvanzadoStil(),
+      'Contector de celda': CampoEstadoAvanzadoStil(),
+      'Bateria de memoria': CampoEstadoAvanzadoStil(),
 
       // Estado general de la balanza
-      'Limpieza general': CampoEstado(),
-      'Golpes al terminal': CampoEstado(),
-      'Nivelacion': CampoEstado(),
-      'Limpieza receptor': CampoEstado(),
-      'Golpes al receptor de carga': CampoEstado(),
-      'Encendido': CampoEstado(),
+      'Limpieza general': CampoEstadoAvanzadoStil(),
+      'Golpes al terminal': CampoEstadoAvanzadoStil(),
+      'Nivelacion': CampoEstadoAvanzadoStil(),
+      'Limpieza receptor': CampoEstadoAvanzadoStil(),
+      'Golpes al receptor de carga': CampoEstadoAvanzadoStil(),
+      'Encendido': CampoEstadoAvanzadoStil(),
 
       // Balanza/Plataforma
-      'Limitador de movimiento': CampoEstado(),
-      'Suspensión': CampoEstado(),
-      'Limitador de carga': CampoEstado(),
-      'Celda de carga': CampoEstado(),
+      'Limitador de movimiento': CampoEstadoAvanzadoStil(),
+      'Suspensión': CampoEstadoAvanzadoStil(),
+      'Limitador de carga': CampoEstadoAvanzadoStil(),
+      'Celda de carga': CampoEstadoAvanzadoStil(),
 
       // Caja sumadora
-      'Tapa de caja sumadora': CampoEstado(),
-      'Humedad Interna': CampoEstado(),
-      'Estado de prensacables': CampoEstado(),
-      'Estado de borneas': CampoEstado(),
+      'Tapa de caja sumadora': CampoEstadoAvanzadoStil(),
+      'Humedad Interna': CampoEstadoAvanzadoStil(),
+      'Estado de prensacables': CampoEstadoAvanzadoStil(),
+      'Estado de borneas': CampoEstadoAvanzadoStil(),
+      'Trabajo especial': CampoEstadoAvanzadoStil(),
     };
 
-    _model = MntPrvRegularStilModel(
+    _model = MntPrvAvanzadoStilModel(
       codMetrica: widget.codMetrica,
       sessionId: widget.sessionId,
       secaValue: widget.secaValue,
@@ -229,6 +231,10 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
           _showSnackBar('Por favor complete el Comentario General', isError: true);
           return false;
         }
+        if (_model.fechaProxServicio.isEmpty) {
+          _showSnackBar('Por favor seleccione la fecha del próximo servicio', isError: true);
+          return false;
+        }
         if (_model.recomendacion.isEmpty) {
           _showSnackBar('Por favor seleccione una Recomendación', isError: true);
           return false;
@@ -264,7 +270,7 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
           'Golpes al receptor de carga', 'Encendido'];
       case 4: // Caja sumadora
         return ['Limitador de movimiento', 'Suspensión', 'Limitador de carga', 'Celda de carga',
-          'Tapa de caja sumadora', 'Humedad Interna', 'Estado de prensacables', 'Estado de borneas'];
+          'Tapa de caja sumadora', 'Humedad Interna', 'Estado de prensacables', 'Estado de borneas', 'Trabajo especial'];
       default:
         return [];
     }
@@ -331,7 +337,7 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'MNT PRV REGULAR STIL',
+                'MNT PRV AVANZADO STIL',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -577,7 +583,7 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => FinServicioMntPrvStilScreen(
+                        builder: (context) => FinServicioMntAvaStilScreen(
                           sessionId: widget.sessionId,
                           secaValue: widget.secaValue,
                           codMetrica: widget.codMetrica,

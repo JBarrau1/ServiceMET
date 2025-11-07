@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-class MntPrvRegularStacModel {
+class MntPrvAvanzadoStacModel {
 
   final String codMetrica;
   final String sessionId;
   final String secaValue;
 
   // Campos de estado general
-  Map<String, CampoEstado> camposEstado;
+  Map<String, CampoEstadoAvanzadoStac> camposEstado;
 
   // Pruebas metrológicas
   PruebasMetrologicas pruebasIniciales;
@@ -23,7 +23,10 @@ class MntPrvRegularStacModel {
   String horaInicio;
   String horaFin;
 
-  MntPrvRegularStacModel({
+  // Fecha proximo servicio
+  String fechaProxServicio;
+
+  MntPrvAvanzadoStacModel({
 
     required this.codMetrica,
     required this.sessionId,
@@ -38,6 +41,7 @@ class MntPrvRegularStacModel {
     this.estadoMetrologico = '',
     this.horaInicio = '',
     this.horaFin = '',
+    this.fechaProxServicio = '',
   })  : pruebasIniciales = pruebasIniciales ?? PruebasMetrologicas(),
         pruebasFinales = pruebasFinales ?? PruebasMetrologicas();
 
@@ -46,7 +50,6 @@ class MntPrvRegularStacModel {
     pruebasFinales = PruebasMetrologicas.fromOther(pruebasIniciales);
   }
 
-  // Método para resetear el modelo
   void reset() {
     camposEstado.forEach((key, value) {
       value.initialValue = '4 No aplica';
@@ -65,16 +68,17 @@ class MntPrvRegularStacModel {
     estadoMetrologico = '';
     horaInicio = '';
     horaFin = '';
+    fechaProxServicio = '';
   }
 }
 
-class CampoEstado {
+class CampoEstadoAvanzadoStac {
   String initialValue;
   String solutionValue;
   String comentario;
   List<File> fotos;
 
-  CampoEstado({
+  CampoEstadoAvanzadoStac({
     this.initialValue = '4 No aplica',
     this.solutionValue = 'No aplica',
     this.comentario = 'Sin comentario',

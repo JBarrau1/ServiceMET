@@ -216,8 +216,14 @@ class _HomeScreenState extends State<HomeScreen> {
         final tituloAbr = userData['titulo_abr'] ?? '';
         final nombre1 = userData['nombre1'] ?? '';
         final apellido1 = userData['apellido1'] ?? '';
+        final apellido2 = userData['apellido2'] ?? '';
 
-        final userName = '$tituloAbr $nombre1 $apellido1'.trim();
+        String inicialApellido2 = '';
+        if (apellido2.isNotEmpty) {
+          inicialApellido2 = '${apellido2[0]}.';
+        }
+
+        final userName = '$tituloAbr $nombre1 $apellido1 $inicialApellido2'.trim();
 
         setState(() {
           this.userName = userName.isNotEmpty ? userName : "Usuario";

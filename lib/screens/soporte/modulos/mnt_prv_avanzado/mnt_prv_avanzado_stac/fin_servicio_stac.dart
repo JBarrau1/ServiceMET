@@ -9,10 +9,10 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
+import '../../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
 
-import '../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
 
-class FinServicioMntPrvStacScreen extends StatefulWidget {
+class FinServicioMntAvaStacScreen  extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final String nReca;
@@ -22,7 +22,7 @@ class FinServicioMntPrvStacScreen extends StatefulWidget {
   final String plantaCodigo;
   final String? tableName;
 
-  const FinServicioMntPrvStacScreen({
+  const FinServicioMntAvaStacScreen ({
     super.key,
     required this.sessionId,
     required this.secaValue,
@@ -35,12 +35,12 @@ class FinServicioMntPrvStacScreen extends StatefulWidget {
   });
 
   @override
-  _FinServicioMntPrvStacScreenState createState() =>
-      _FinServicioMntPrvStacScreenState();
+  _FinServicioMntAvaStacScreenState createState() =>
+      _FinServicioMntAvaStacScreenState();
 }
 
-class _FinServicioMntPrvStacScreenState
-    extends State<FinServicioMntPrvStacScreen> {
+class _FinServicioMntAvaStacScreenState
+    extends State<FinServicioMntAvaStacScreen> {
   String? errorMessage;
   bool _isExporting = false;
 
@@ -77,12 +77,12 @@ class _FinServicioMntPrvStacScreenState
   // ✅ NUEVO: Función principal de confirmación y exportación
   Future<void> _confirmarYExportar(BuildContext context) async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStac();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStac();
       final db = await dbHelper.database;
 
       // ✅ CAMBIO: Usar otst y estado_balanza = 'Balanza Realizada'
       final rows = await db.query(
-        widget.tableName ?? 'mnt_prv_regular_stac',
+        widget.tableName ?? 'mnt_prv_avanzado_stac',
         where: 'otst = ? AND estado_balanza = ?',
         whereArgs: [widget.secaValue, 'Balanza Realizada'],
       );
@@ -98,7 +98,7 @@ class _FinServicioMntPrvStacScreenState
 
       // 3. Obtener rows actualizados
       final updatedRows = await db.query(
-        widget.tableName ?? 'mnt_prv_regular_stac',
+        widget.tableName ?? 'mnt_prv_avanzado_stac',
         where: 'otst = ? AND estado_balanza = ?',
         whereArgs: [widget.secaValue, 'Balanza Realizada'],
       );
@@ -167,7 +167,7 @@ class _FinServicioMntPrvStacScreenState
 
       // 3. Crear nombre del archivo
       final fileName =
-          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}_mnt_prv_regular_stac.csv';
+          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}_mnt_prv_avanzado_stac.csv';
 
       // 4. Guardar internamente
       final externalDir = await getExternalStorageDirectory();
@@ -269,11 +269,11 @@ class _FinServicioMntPrvStacScreenState
     if (confirmado != true) return;
 
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStac();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStac();
       final db = await dbHelper.database;
 
       final List<Map<String, dynamic>> rows = await db.query(
-        widget.tableName ?? 'mnt_prv_regular_stac',
+        widget.tableName ?? 'mnt_prv_avanzado_stac',
         where: 'otst = ?',
         whereArgs: [widget.secaValue],
         orderBy: 'session_id DESC',
@@ -310,7 +310,7 @@ class _FinServicioMntPrvStacScreenState
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => PrecargaScreenSop(
-            tableName: widget.tableName ?? 'mnt_prv_regular_stac',
+            tableName: widget.tableName ?? 'mnt_prv_avanzado_stac',
             userName: widget.userName,
             clienteId: widget.clienteId,
             plantaCodigo: widget.plantaCodigo,

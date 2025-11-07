@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 class MntPrvRegularStilModel {
 
   final String codMetrica;
-  final String sessionId; // ✅ AGREGAR
-  final String secaValue; // ✅ AGREGAR
+  final String sessionId;
+  final String secaValue;
 
   // Campos de estado general
   Map<String, CampoEstado> camposEstado;
@@ -22,6 +22,7 @@ class MntPrvRegularStilModel {
   String estadoMetrologico;
   String horaInicio;
   String horaFin;
+  String fechaProxServicio;
 
   MntPrvRegularStilModel({
 
@@ -38,6 +39,7 @@ class MntPrvRegularStilModel {
     this.estadoMetrologico = '',
     this.horaInicio = '',
     this.horaFin = '',
+    this.fechaProxServicio = '',
   })  : pruebasIniciales = pruebasIniciales ?? PruebasMetrologicas(),
         pruebasFinales = pruebasFinales ?? PruebasMetrologicas();
 
@@ -65,6 +67,7 @@ class MntPrvRegularStilModel {
     estadoMetrologico = '';
     horaInicio = '';
     horaFin = '';
+    fechaProxServicio = '';
   }
 }
 

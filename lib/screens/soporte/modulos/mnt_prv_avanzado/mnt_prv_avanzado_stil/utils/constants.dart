@@ -1,4 +1,4 @@
-class AppConstants {
+class AppConstantsAvanzadoStil {
   // Opciones de plataforma
   static const Map<String, List<String>> platformOptions = {
     'Rectangular': [
@@ -96,6 +96,7 @@ class AppConstants {
 
   static const List<String> cajaSumadoraCampos = [
     'Tapa de caja sumadora', 'Humedad Interna',
-    'Estado de prensacables', 'Estado de borneas'
+    'Estado de prensacables', 'Estado de borneas',
+    'Trabajo especial'
   ];
 }

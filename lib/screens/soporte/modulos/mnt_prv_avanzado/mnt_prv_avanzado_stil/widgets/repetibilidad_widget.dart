@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/mnt_prv_regular_stil_model.dart';
+import '../../mnt_prv_avanzado_stil/models/mnt_prv_avanzado_stil_model.dart';
+
 
 class RepetibilidadWidget extends StatefulWidget {
   final Repetibilidad repetibilidad;

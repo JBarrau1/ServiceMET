@@ -288,6 +288,7 @@ class DatabaseHelperMntPrvRegularStac {
         fecha_servicio TEXT DEFAULT '',
         hora_inicio TEXT DEFAULT '',
         hora_fin TEXT DEFAULT '',
+        fecha_prox_servicio TEXT DEFAULT '',
         
         -- Comentarios y Recomendaciones
         comentario_general TEXT DEFAULT '',

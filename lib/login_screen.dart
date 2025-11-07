@@ -163,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           nombre1 TEXT,
           apellido1 TEXT,
+          apellido2 TEXT,
           pass TEXT,
           usuario TEXT,
           titulo_abr TEXT,
@@ -438,7 +439,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       }
 
       final query = '''
-      SELECT nombre1, apellido1, pass, usuario, titulo_abr, estado 
+      SELECT nombre1, apellido1, apellido2, pass, usuario, titulo_abr, estado 
       FROM data_users 
       WHERE usuario = '$usuarioSeguro' AND pass = '$passSeguro'
     ''';

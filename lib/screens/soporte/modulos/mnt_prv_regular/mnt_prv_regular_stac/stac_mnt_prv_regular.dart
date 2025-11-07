@@ -211,6 +211,10 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
           _showSnackBar('Por favor complete el Comentario General', isError: true);
           return false;
         }
+        if (_model.fechaProxServicio.isEmpty) {
+          _showSnackBar('Por favor seleccione la fecha del próximo servicio', isError: true);
+          return false;
+        }
         if (_model.recomendacion.isEmpty) {
           _showSnackBar('Por favor seleccione una Recomendación', isError: true);
           return false;

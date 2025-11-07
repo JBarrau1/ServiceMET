@@ -22,6 +22,7 @@ class MntPrvRegularStacModel {
   String estadoMetrologico;
   String horaInicio;
   String horaFin;
+  String fechaProxServicio;
 
   MntPrvRegularStacModel({
 
@@ -38,6 +39,7 @@ class MntPrvRegularStacModel {
     this.estadoMetrologico = '',
     this.horaInicio = '',
     this.horaFin = '',
+    this.fechaProxServicio = '',
   })  : pruebasIniciales = pruebasIniciales ?? PruebasMetrologicas(),
         pruebasFinales = pruebasFinales ?? PruebasMetrologicas();
 
@@ -65,6 +67,7 @@ class MntPrvRegularStacModel {
     estadoMetrologico = '';
     horaInicio = '';
     horaFin = '';
+    fechaProxServicio = '';
   }
 }
 

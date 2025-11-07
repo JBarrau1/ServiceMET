@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/mnt_prv_regular_stac_model.dart';
+import '../models/mnt_prv_avanzado_stac_model.dart';
 import '../utils/constants.dart';
 
 class ExcentricidadWidget extends StatefulWidget {
@@ -97,7 +97,7 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
         DropdownButtonFormField<String>(
           value: widget.excentricidad.tipoPlataforma,
           decoration: _buildInputDecoration('Tipo de Plataforma'),
-          items: AppStacConstants.platformOptions.keys.map((String value) {
+          items: AppStacAvanzadoConstants.platformOptions.keys.map((String value) {
             return DropdownMenuItem<String>(
               value: value,
               child: Text(value),
@@ -117,7 +117,7 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
           DropdownButtonFormField<String>(
             value: widget.excentricidad.puntosIndicador,
             decoration: _buildInputDecoration('Puntos e Indicador'),
-            items: AppStacConstants.platformOptions[widget.excentricidad.tipoPlataforma]!.map((String value) {
+            items: AppStacAvanzadoConstants.platformOptions[widget.excentricidad.tipoPlataforma]!.map((String value) {
               return DropdownMenuItem<String>(
                 value: value,
                 child: Text(value),
@@ -126,7 +126,7 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
             onChanged: (String? newValue) {
               setState(() {
                 widget.excentricidad.puntosIndicador = newValue;
-                widget.excentricidad.imagenPath = AppStacConstants.optionImages[newValue!];
+                widget.excentricidad.imagenPath = AppStacAvanzadoConstants.optionImages[newValue!];
                 _updatePositions();
               });
             },

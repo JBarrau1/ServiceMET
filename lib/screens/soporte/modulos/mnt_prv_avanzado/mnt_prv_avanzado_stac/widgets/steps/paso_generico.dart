@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../controllers/mnt_prv_regular_stac_controller.dart';
-import '../../models/mnt_prv_regular_stac_model.dart';
+import '../../controllers/mnt_prv_avanzado_stac_controller.dart';
+import '../../models/mnt_prv_avanzado_stac_model.dart';
 import '../campo_inspeccion_widget.dart';
 
 class PasoGenerico extends StatelessWidget {
-  final MntPrvRegularStacModel model;
-  final MntPrvRegularStacController controller;
+  final MntPrvAvanzadoStacModel model;
+  final MntPrvAvanzadoStacController controller;
   final VoidCallback onChanged;
   final List<String> campos;
   final String titulo;

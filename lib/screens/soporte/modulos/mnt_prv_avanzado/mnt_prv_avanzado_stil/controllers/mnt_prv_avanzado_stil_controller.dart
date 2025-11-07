@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
-import '../models/mnt_prv_regular_stil_model.dart';
+import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
+import '../models/mnt_prv_avanzado_stil_model.dart';
 
-class MntPrvRegularStilController {
-  final MntPrvRegularStilModel model;
+
+class MntPrvAvanzadoStilController {
+  final MntPrvAvanzadoStilModel model;
   final Map<String, List<File>> _fieldPhotos = {};
 
-  MntPrvRegularStilController({required this.model});
+  MntPrvAvanzadoStilController({required this.model});
 
   void copiarPruebasInicialesAFinales() {
     model.copiarPruebasInicialesAFinales();
@@ -20,11 +21,11 @@ class MntPrvRegularStilController {
   // ✅ OPTIMIZADO: Obtener d1 sin múltiples consultas
   Future<double> getD1FromDatabase() async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStil();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
       final db = await dbHelper.database;
 
       final results = await db.query(
-        'mnt_prv_regular_stil',
+        'mnt_prv_avanzado_stil',
         columns: ['d1'],
         where: 'session_id = ? AND cod_metrica = ?',
         whereArgs: [model.sessionId, model.codMetrica],
@@ -52,7 +53,7 @@ class MntPrvRegularStilController {
   // ✅ NUEVO: Método para guardar solo en BD (sin fotos)
   Future<void> saveDataToDatabase(BuildContext context, {bool showMessage = true}) async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStil();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
       final Map<String, dynamic> mntPrvData = _prepareDataForSave();
 
       mntPrvData['session_id'] = model.sessionId;
@@ -189,6 +190,7 @@ class MntPrvRegularStilController {
       'estado_fisico': model.estadoFisico,
       'estado_operacional': model.estadoOperacional,
       'estado_metrologico': model.estadoMetrologico,
+      'fecha_prox_servicio': model.fechaProxServicio,
     };
 
     _addCamposEstadoData(data);
@@ -255,6 +257,7 @@ class MntPrvRegularStilController {
       'humedad_interna': 'Humedad Interna',
       'estado_prensacables': 'Estado de prensacables',
       'estado_borneas': 'Estado de borneas',
+      'trabajo_especial': 'Trabajo especial'
     };
 
     camposMap.forEach((dbKey, modelKey) => addCampo(dbKey, modelKey));

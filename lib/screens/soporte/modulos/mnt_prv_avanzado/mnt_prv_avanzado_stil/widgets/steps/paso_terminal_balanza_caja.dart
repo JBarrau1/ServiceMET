@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../models/mnt_prv_regular_stil_model.dart';
-import '../../controllers/mnt_prv_regular_stil_controller.dart';
+import '../../controllers/mnt_prv_avanzado_stil_controller.dart';
+import '../../models/mnt_prv_avanzado_stil_model.dart';
 import '../campo_inspeccion_widget.dart';
 
-// ============================================
 // PASO 2: TERMINAL DE PESAJE
-// ============================================
+
 class PasoTerminal extends StatelessWidget {
-  final MntPrvRegularStilModel model;
-  final MntPrvRegularStilController controller;
+  final MntPrvAvanzadoStilModel model;
+  final MntPrvAvanzadoStilController controller;
   final VoidCallback onChanged;
 
   const PasoTerminal({
@@ -111,12 +110,12 @@ class PasoTerminal extends StatelessWidget {
   }
 }
 
-// ============================================
+
 // PASO 3: ESTADO DE BALANZA
-// ============================================
+
 class PasoBalanza extends StatelessWidget {
-  final MntPrvRegularStilModel model;
-  final MntPrvRegularStilController controller;
+  final MntPrvAvanzadoStilModel model;
+  final MntPrvAvanzadoStilController controller;
   final VoidCallback onChanged;
 
   const PasoBalanza({
@@ -215,12 +214,11 @@ class PasoBalanza extends StatelessWidget {
   }
 }
 
-// ============================================
 // PASO 4: CAJA SUMADORA
-// ============================================
+
 class PasoCajaSumadora extends StatelessWidget {
-  final MntPrvRegularStilModel model;
-  final MntPrvRegularStilController controller;
+  final MntPrvAvanzadoStilModel model;
+  final MntPrvAvanzadoStilController controller;
   final VoidCallback onChanged;
 
   const PasoCajaSumadora({
@@ -237,6 +235,7 @@ class PasoCajaSumadora extends StatelessWidget {
       'Suspensión',
       'Limitador de carga',
       'Celda de carga',
+      'Trabajo especial',
     ];
 
     final camposCajaSumadora = [
@@ -244,6 +243,7 @@ class PasoCajaSumadora extends StatelessWidget {
       'Humedad Interna',
       'Estado de prensacables',
       'Estado de borneas',
+      'Trabajo especial',
     ];
 
     return SingleChildScrollView(

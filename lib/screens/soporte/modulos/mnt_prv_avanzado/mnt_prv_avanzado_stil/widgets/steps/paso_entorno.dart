@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../models/mnt_prv_regular_stil_model.dart';
-import '../../controllers/mnt_prv_regular_stil_controller.dart';
-import '../campo_inspeccion_widget.dart';
+import '../../../mnt_prv_avanzado_stil/widgets/campo_inspeccion_widget.dart';
+import '../../controllers/mnt_prv_avanzado_stil_controller.dart';
+import '../../models/mnt_prv_avanzado_stil_model.dart';
+
 
 class PasoEntorno extends StatelessWidget {
-  final MntPrvRegularStilModel model;
-  final MntPrvRegularStilController controller;
+  final MntPrvAvanzadoStilModel model;
+  final MntPrvAvanzadoStilController controller;
   final VoidCallback onChanged;
 
   const PasoEntorno({

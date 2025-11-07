@@ -3,19 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/utils/constants.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_entorno.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_estado_final.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_generico.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_pruebas_iniciales_finales.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/widgets/steps/paso_terminal_balanza_caja.dart';
-import 'controllers/mnt_prv_regular_stac_controller.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_avanzado/mnt_prv_avanzado_stac/models/mnt_prv_avanzado_stac_model.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_avanzado/mnt_prv_avanzado_stac/utils/constants.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_avanzado/mnt_prv_avanzado_stac/widgets/steps/paso_estado_final.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_avanzado/mnt_prv_avanzado_stac/widgets/steps/paso_generico.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_avanzado/mnt_prv_avanzado_stac/widgets/steps/paso_pruebas_iniciales_finales.dart';
+
+import 'controllers/mnt_prv_avanzado_stac_controller.dart';
 import 'fin_servicio_stac.dart';
-import 'models/mnt_prv_regular_stac_model.dart';
 
 
 
-class StacMntPrvRegularStacScreen extends StatefulWidget {
+
+class StacMntPrvAvanzadoStacScreen extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final String nReca;
@@ -24,7 +24,7 @@ class StacMntPrvRegularStacScreen extends StatefulWidget {
   final String clienteId;
   final String plantaCodigo;
 
-  const StacMntPrvRegularStacScreen({
+  const StacMntPrvAvanzadoStacScreen({
     super.key,
     required this.sessionId,
     required this.secaValue,
@@ -36,13 +36,13 @@ class StacMntPrvRegularStacScreen extends StatefulWidget {
   });
 
   @override
-  _StacMntPrvRegularStacScreenState createState() =>
-      _StacMntPrvRegularStacScreenState();
+  _StacMntPrvAvanzadoStacScreenState createState() =>
+      _StacMntPrvAvanzadoStacScreenState();
 }
 
-class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScreen> {
-  late MntPrvRegularStacModel _model;
-  late MntPrvRegularStacController _controller;
+class _StacMntPrvAvanzadoStacScreenState extends State<StacMntPrvAvanzadoStacScreen> {
+  late MntPrvAvanzadoStacModel _model;
+  late MntPrvAvanzadoStacController _controller;
 
   int _currentStep = 0;
   bool _isSaving = false;
@@ -56,7 +56,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
   void initState() {
     super.initState();
     _initializeModel();
-    _controller = MntPrvRegularStacController(model: _model);
+    _controller = MntPrvAvanzadoStacController(model: _model);
     _actualizarHora();
     _loadD1Value();
     _initializeSteps();
@@ -95,6 +95,11 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
         icon: Icons.flash_on_outlined,
       ),
       StepData(
+        title: 'Verificaciones de Células',
+        subtitle: '7 campos de inspección',
+        icon: Icons.grain_outlined, // Ícono de célula/componente
+      ),
+      StepData(
         title: 'Terminal',
         subtitle: '8 campos de inspección',
         icon: Icons.computer_outlined,
@@ -118,14 +123,14 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
   }
 
   void _initializeModel() {
-    final camposEstado = <String, CampoEstado>{};
+    final camposEstado = <String, CampoEstadoAvanzadoStac>{};
 
     //Inicializar TODOS los campos usando la lista de constants
-    for (final campo in AppStacConstants.getAllCampos()) {
-      camposEstado[campo] = CampoEstado();
+    for (final campo in AppStacAvanzadoConstants.getAllCampos()) {
+      camposEstado[campo] = CampoEstadoAvanzadoStac();
     }
 
-    _model = MntPrvRegularStacModel(
+    _model = MntPrvAvanzadoStacModel(
       codMetrica: widget.codMetrica,
       sessionId: widget.sessionId,
       secaValue: widget.secaValue,
@@ -215,6 +220,10 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
           _showSnackBar('Por favor seleccione una Recomendación', isError: true);
           return false;
         }
+        if (_model.fechaProxServicio.isEmpty) {
+          _showSnackBar('Por favor seleccione la fecha del próximo servicio', isError: true);
+          return false;
+        }
         if (_model.estadoFisico.isEmpty ||
             _model.estadoOperacional.isEmpty ||
             _model.estadoMetrologico.isEmpty) {
@@ -234,13 +243,14 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
 
   List<String> _getCamposDelPaso(int paso) {
     switch (paso) {
-      case 1: return AppStacConstants.lozasYFundacionesCampos;
-      case 2: return AppStacConstants.limpiezaYDrenajeCampos;
-      case 3: return AppStacConstants.chequeoCampos;
-      case 4: return AppStacConstants.verificacionesElectricasCampos;
-      case 5: return AppStacConstants.proteccionRayosCampos;
-      case 6: return AppStacConstants.terminalCampos;
-      case 7: return AppStacConstants.calibracionCampos;
+      case 1: return AppStacAvanzadoConstants.lozasYFundacionesCampos;
+      case 2: return AppStacAvanzadoConstants.limpiezaYDrenajeCampos;
+      case 3: return AppStacAvanzadoConstants.chequeoCampos;
+      case 4: return AppStacAvanzadoConstants.verificacionesElectricasCampos;
+      case 5: return AppStacAvanzadoConstants.proteccionRayosCampos;
+      case 6: return AppStacAvanzadoConstants.verificacionesCeldasCampos;
+      case 7: return AppStacAvanzadoConstants.terminalCampos;
+      case 8: return AppStacAvanzadoConstants.calibracionCampos;
       default: return [];
     }
   }
@@ -306,7 +316,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'MNT PRV REGULAR STAC',
+                'MNT PRV AVANZADO STAC',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -465,7 +475,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
-          campos: AppStacConstants.lozasYFundacionesCampos,
+          campos: AppStacAvanzadoConstants.lozasYFundacionesCampos,
           titulo: 'LOZAS Y FUNDACIONES',
           subtitulo: 'Inspeccione el estado de lozas y fundaciones',
           icono: Icons.foundation_outlined,
@@ -476,7 +486,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
-          campos: AppStacConstants.limpiezaYDrenajeCampos,
+          campos: AppStacAvanzadoConstants.limpiezaYDrenajeCampos,
           titulo: 'LIMPIEZA Y DRENAJE',
           subtitulo: 'Inspeccione limpieza y sistema de drenaje',
           icono: Icons.cleaning_services_outlined,
@@ -487,7 +497,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
-          campos: AppStacConstants.chequeoCampos,
+          campos: AppStacAvanzadoConstants.chequeoCampos,
           titulo: 'CHEQUEO GENERAL',
           subtitulo: 'Inspeccione el estado general del equipo',
           icono: Icons.checklist_outlined,
@@ -498,7 +508,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
-          campos: AppStacConstants.verificacionesElectricasCampos,
+          campos: AppStacAvanzadoConstants.verificacionesElectricasCampos,
           titulo: 'VERIFICACIONES ELÉCTRICAS',
           subtitulo: 'Inspeccione conexiones y cableado',
           icono: Icons.electrical_services_outlined,
@@ -509,7 +519,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
-          campos: AppStacConstants.proteccionRayosCampos,
+          campos: AppStacAvanzadoConstants.proteccionRayosCampos,
           titulo: 'PROTECCIÓN CONTRA RAYOS',
           subtitulo: 'Verifique sistema de protección eléctrica',
           icono: Icons.flash_on_outlined,
@@ -520,31 +530,42 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
-          campos: AppStacConstants.terminalCampos,
-          titulo: 'TERMINAL',
-          subtitulo: 'Inspeccione el terminal de pesaje',
-          icono: Icons.computer_outlined,
-          color: Colors.purple,
+          campos: AppStacAvanzadoConstants.verificacionesCeldasCampos,
+          titulo: 'VERIFICACIONES DE CÉLULAS DE CARGA',
+          subtitulo: 'Inspeccione células y componentes de pesaje',
+          icono: Icons.grain_outlined,
+          color: Colors.indigo,
         );
       case 7:
         return PasoGenerico(
           model: _model,
           controller: _controller,
           onChanged: () => setState(() {}),
-          campos: AppStacConstants.calibracionCampos,
+          campos: AppStacAvanzadoConstants.terminalCampos,
+          titulo: 'TERMINAL',
+          subtitulo: 'Inspeccione el terminal de pesaje',
+          icono: Icons.computer_outlined,
+          color: Colors.purple,
+        );
+      case 8:
+        return PasoGenerico(
+          model: _model,
+          controller: _controller,
+          onChanged: () => setState(() {}),
+          campos: AppStacAvanzadoConstants.calibracionCampos,
           titulo: 'CALIBRACIÓN',
           subtitulo: 'Verifique la calibración',
           icono: Icons.tune_outlined,
           color: Colors.green,
         );
-      case 8:
+      case 9:
         return PasoPruebasFinales(
           model: _model,
           controller: _controller,
           getD1FromDatabase: _getD1FromCache,
           onChanged: () => setState(() {}),
         );
-      case 9:
+      case 10:
         return PasoEstadoFinal(
           model: _model,
           onChanged: () => setState(() {}),
@@ -605,7 +626,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => FinServicioMntPrvStacScreen(
+                        builder: (context) => FinServicioMntAvaStacScreen(
                           sessionId: widget.sessionId,
                           secaValue: widget.secaValue,
                           codMetrica: widget.codMetrica,
@@ -613,7 +634,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
                           userName: widget.userName,
                           clienteId: widget.clienteId,
                           plantaCodigo: widget.plantaCodigo,
-                          tableName: 'mnt_prv_regular_stil',
+                          tableName: 'mnt_prv_avanzado_stac',
                         ),
                       ),
                     );

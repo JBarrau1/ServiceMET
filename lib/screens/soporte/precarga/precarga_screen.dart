@@ -22,8 +22,8 @@ import '../modulos/ajuste_verificaciones/stac_ajuste_verificaciones.dart';
 import '../modulos/diagnostico/stac_diagnostico.dart';
 import '../modulos/instalacion/stac_instalacion.dart';
 import '../modulos/mnt_correctivo/stac_mnt_correctivo.dart';
-import '../modulos/mnt_prv_avanzado/stac_mnt_prv_avanzado.dart';
-import '../modulos/mnt_prv_avanzado/stil_mnt_prv_avanzado.dart';
+import '../modulos/mnt_prv_avanzado/mnt_prv_avanzado_stac/stac_mnt_prv_avanzado.dart';
+import '../modulos/mnt_prv_avanzado/mnt_prv_avanzado_stil/stil_mnt_prv_avanzado.dart';
 import '../modulos/mnt_prv_regular/mnt_prv_regular_stil/stil_mnt_prv_regular.dart';
 import '../modulos/relevamiento_de_datos/relevamiento_de_datos.dart';
 import '../modulos/verificaciones_internas/stac_verificaciones_internas.dart';
@@ -795,7 +795,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
         );
 
       case 'mnt_prv_avanzado_stil':
-        return StilMntPrvAvanzadoStacScreen(
+        return MntPrvAvanzadoStilScreen(
           userName: widget.userName,
           clienteId: controller.selectedClienteId ?? '',
           plantaCodigo: controller.selectedPlantaCodigo ?? '',

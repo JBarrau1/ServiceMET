@@ -1,13 +1,13 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/mnt_prv_regular_stil_model.dart';
-import '../controllers/mnt_prv_regular_stil_controller.dart';
+import '../controllers/mnt_prv_avanzado_stil_controller.dart';
+import '../models/mnt_prv_avanzado_stil_model.dart';
+
 
 class EstadoGeneralWidget extends StatefulWidget {
-  final Map<String, CampoEstado> campos;
-  final MntPrvRegularStilController controller;
+  final Map<String, CampoEstadoAvanzadoStil> campos;
+  final MntPrvAvanzadoStilController controller;
   final Function onFieldChanged;
 
   const EstadoGeneralWidget({
@@ -50,7 +50,7 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
 
   Widget _buildDropdownFieldWithComment(
       String label,
-      CampoEstado campo,
+      CampoEstadoAvanzadoStil campo,
       ) {
     final List<String> initialOptions = ['1 Bueno', '2 Aceptable', '3 Malo', '4 No aplica'];
     final List<String> solutionOptions = ['Sí', 'Se intentó', 'No', 'No aplica'];
@@ -256,7 +256,7 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
     );
   }
 
-  Future<void> _showCommentDialog(BuildContext context, String label, CampoEstado campo) async {
+  Future<void> _showCommentDialog(BuildContext context, String label, CampoEstadoAvanzadoStil campo) async {
     await showDialog(
       context: context,
       builder: (BuildContext context) {

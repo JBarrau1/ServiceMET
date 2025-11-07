@@ -1,4 +1,4 @@
-class AppStacConstants {
+class AppStacAvanzadoConstants {
   // Opciones de plataforma
   static const Map<String, List<String>> platformOptions = {
     'Rectangular': [
@@ -103,9 +103,7 @@ class AppStacConstants {
     'Conexión segura a celdas de carga',
     'Funda de goma y conector ajustados',
     'Conector de terminación ajustado',
-    'Los cables están conectados de forma segura a todas las celdas de carga',
-    'La funda de goma y el conector del cable están apretados contra la celda de carga',
-    'Conector de terminación ajustado y capuchón en su lugar',
+    'Cables conectados correctamente',
   ];
 
   static const List<String> proteccionRayosCampos = [
@@ -113,6 +111,16 @@ class AppStacConstants {
     'Conexión de la correa de tierra del Strike shield',
     'Tensión entre neutro y tierra adecuada',
     'Impresora conectada al mismo Strike Shield',
+  ];
+
+  static const List<String> verificacionesCeldasCampos = [
+    'Elevado del puente de pesaje y retirado de las celdas de carga',
+    'Limpieza e inspección de superficies de acoplamiento de la estructura',
+    'Limpieza e inspección de bearing cups',
+    'Limpieza e inspección de celdas de carga',
+    'Lubricación de cabezas de celdas de carga',
+    'Engrasado de bearing cups',
+    'Lainas, botas de goma colocadas',
   ];
 
   static const List<String> terminalCampos = [
@@ -138,6 +146,7 @@ class AppStacConstants {
       ...chequeoCampos,
       ...verificacionesElectricasCampos,
       ...proteccionRayosCampos,
+      ...verificacionesCeldasCampos,
       ...terminalCampos,
       ...calibracionCampos,
     ];

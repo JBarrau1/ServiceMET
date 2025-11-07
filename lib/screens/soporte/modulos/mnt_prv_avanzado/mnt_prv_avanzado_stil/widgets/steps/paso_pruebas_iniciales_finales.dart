@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../models/mnt_prv_regular_stil_model.dart';
-import '../../controllers/mnt_prv_regular_stil_controller.dart';
+import '../../controllers/mnt_prv_avanzado_stil_controller.dart';
+import '../../models/mnt_prv_avanzado_stil_model.dart';
 import '../pruebas_metrologicas_widget.dart';
 
-// ============================================
+
 // PASO 0: PRUEBAS METROLÓGICAS INICIALES
-// ============================================
+
 class PasoPruebasIniciales extends StatelessWidget {
-  final MntPrvRegularStilModel model;
-  final MntPrvRegularStilController controller;
+  final MntPrvAvanzadoStilModel model;
+  final MntPrvAvanzadoStilController controller;
   final Future<double> Function() getD1FromDatabase;
   final VoidCallback onChanged;
 
@@ -160,12 +160,11 @@ class PasoPruebasIniciales extends StatelessWidget {
   }
 }
 
-// ============================================
 // PASO 5: PRUEBAS METROLÓGICAS FINALES
-// ============================================
+
 class PasoPruebasFinales extends StatelessWidget {
-  final MntPrvRegularStilModel model;
-  final MntPrvRegularStilController controller;
+  final MntPrvAvanzadoStilModel model;
+  final MntPrvAvanzadoStilController controller;
   final Future<double> Function() getD1FromDatabase;
   final VoidCallback onChanged;
 

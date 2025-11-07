@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../controllers/mnt_prv_regular_stac_controller.dart';
-import '../../models/mnt_prv_regular_stac_model.dart';
+import '../../controllers/mnt_prv_avanzado_stac_controller.dart';
+import '../../models/mnt_prv_avanzado_stac_model.dart';
 import '../campo_inspeccion_widget.dart';
 
-// ============================================
 // PASO 2: TERMINAL DE PESAJE
-// ============================================
+
 class PasoTerminal extends StatelessWidget {
-  final MntPrvRegularStacModel model;
-  final MntPrvRegularStacController controller;
+  final MntPrvAvanzadoStacModel model;
+  final MntPrvAvanzadoStacController controller;
   final VoidCallback onChanged;
 
   const PasoTerminal({
@@ -111,12 +110,11 @@ class PasoTerminal extends StatelessWidget {
   }
 }
 
-// ============================================
 // PASO 3: ESTADO DE BALANZA
-// ============================================
+
 class PasoBalanza extends StatelessWidget {
-  final MntPrvRegularStacModel model;
-  final MntPrvRegularStacController controller;
+  final MntPrvAvanzadoStacModel model;
+  final MntPrvAvanzadoStacController controller;
   final VoidCallback onChanged;
 
   const PasoBalanza({
@@ -215,12 +213,11 @@ class PasoBalanza extends StatelessWidget {
   }
 }
 
-// ============================================
 // PASO 4: CAJA SUMADORA
-// ============================================
+
 class PasoCajaSumadora extends StatelessWidget {
-  final MntPrvRegularStacModel model;
-  final MntPrvRegularStacController controller;
+  final MntPrvAvanzadoStacModel model;
+  final MntPrvAvanzadoStacController controller;
   final VoidCallback onChanged;
 
   const PasoCajaSumadora({

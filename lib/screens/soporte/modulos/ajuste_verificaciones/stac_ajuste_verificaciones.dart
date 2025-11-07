@@ -471,7 +471,6 @@ class _StacAjusteVerificacionesScreenState
     return WillPopScope(
       onWillPop: () => _onWillPop(context),
       child: Scaffold(
-        extendBodyBehindAppBar: true,
         appBar: AppBar(
           toolbarHeight: 80,
           title: Column(
@@ -509,12 +508,7 @@ class _StacAjusteVerificacionesScreenState
           centerTitle: true,
         ),
         body: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            top: kToolbarHeight + MediaQuery.of(context).padding.top + 40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-            left: 16.0, // Tu padding horizontal original
-            right: 16.0, // Tu padding horizontal original
-            bottom: 16.0, // Tu padding inferior original
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             children: [
               const Text(

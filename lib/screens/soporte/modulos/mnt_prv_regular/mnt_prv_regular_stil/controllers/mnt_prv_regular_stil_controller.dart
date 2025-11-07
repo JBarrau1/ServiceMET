@@ -189,6 +189,7 @@ class MntPrvRegularStilController {
       'estado_fisico': model.estadoFisico,
       'estado_operacional': model.estadoOperacional,
       'estado_metrologico': model.estadoMetrologico,
+      'fecha_prox_servicio': model.fechaProxServicio,
     };
 
     _addCamposEstadoData(data);

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../models/mnt_prv_regular_stac_model.dart';
+import '../../models/mnt_prv_avanzado_stac_model.dart';
 
 class PasoEstadoFinal extends StatelessWidget {
-  final MntPrvRegularStacModel model;
+  final MntPrvAvanzadoStacModel model;
   final VoidCallback onChanged;
 
   const PasoEstadoFinal({
@@ -11,6 +11,85 @@ class PasoEstadoFinal extends StatelessWidget {
     required this.model,
     required this.onChanged,
   }) : super(key: key);
+
+
+  // Función para calcular fecha futura
+  String _calcularFechaFutura(int meses) {
+    final fechaActual = DateTime.now();
+    final fechaFutura = DateTime(
+      fechaActual.year,
+      fechaActual.month + meses,
+      fechaActual.day,
+    );
+    return DateFormat('dd/MM/yyyy').format(fechaFutura);
+  }
+
+  // Mostrar diálogo de selección de meses
+  Future<void> _mostrarSelectorMeses(BuildContext context) async {
+    final opciones = [
+      {'meses': 3, 'label': '3 meses'},
+      {'meses': 6, 'label': '6 meses'},
+      {'meses': 12, 'label': '12 meses'},
+    ];
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'SELECCIONE PERÍODO',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: opciones.map((opcion) {
+              final meses = opcion['meses'] as int;
+              final label = opcion['label'] as String;
+              final fechaCalculada = _calcularFechaFutura(meses);
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.calendar_today,
+                    color: meses == 3
+                        ? Colors.green
+                        : meses == 6
+                        ? Colors.orange
+                        : Colors.blue,
+                  ),
+                  title: Text(
+                    label,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'Fecha: $fechaCalculada',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    model.fechaProxServicio = fechaCalculada;
+                    onChanged();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('CANCELAR'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +164,29 @@ class PasoEstadoFinal extends StatelessWidget {
               onChanged();
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
+          // Fecha del próximo servicio
+          GestureDetector(
+            onTap: () => _mostrarSelectorMeses(context),
+            child: AbsorbPointer(
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: 'Fecha Sugerida del Próximo Servicio *',
+                  hintText: 'Toque para seleccionar período',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.event_repeat, color: Colors.blue),
+                  suffixIcon: const Icon(Icons.arrow_drop_down),
+                  helperText: 'Seleccione 3, 6 o 12 meses',
+                ),
+                controller: TextEditingController(text: model.fechaProxServicio),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
           // Estados Finales
           const Text(
             'ESTADO FINAL DEL INSTRUMENTO',
@@ -351,6 +451,7 @@ class PasoEstadoFinal extends StatelessWidget {
   Widget _buildResumenCard(BuildContext context, bool isDarkMode) {
     final tieneComentario = model.comentarioGeneral.isNotEmpty;
     final tieneRecomendacion = model.recomendacion.isNotEmpty;
+    final tieneFechaProxServicio = model.fechaProxServicio.isNotEmpty;
     final tieneEstados = model.estadoFisico.isNotEmpty &&
         model.estadoOperacional.isNotEmpty &&
         model.estadoMetrologico.isNotEmpty;
@@ -358,6 +459,7 @@ class PasoEstadoFinal extends StatelessWidget {
 
     final completado = tieneComentario &&
         tieneRecomendacion &&
+        tieneFechaProxServicio &&
         tieneEstados &&
         tieneHoraFinal;
 
@@ -396,6 +498,7 @@ class PasoEstadoFinal extends StatelessWidget {
           const SizedBox(height: 12),
           _buildCheckItem('Comentario General', tieneComentario),
           _buildCheckItem('Recomendación', tieneRecomendacion),
+          _buildCheckItem('Fecha Próximo Servicio', tieneFechaProxServicio),
           _buildCheckItem('Estados Finales', tieneEstados),
           _buildCheckItem('Hora Final', tieneHoraFinal),
         ],

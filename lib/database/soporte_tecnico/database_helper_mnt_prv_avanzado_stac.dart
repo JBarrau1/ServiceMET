@@ -294,6 +294,8 @@ class DatabaseHelperMntPrvAvanzadoStac {
         fisico TEXT DEFAULT '',
         operacional TEXT DEFAULT '',
         metrologico TEXT DEFAULT '',
+        fecha_prox_servicio TEXT DEFAULT '',
+        
         
         -- Retorno a Cero
         retorno_cero_inicial_valoracion TEXT DEFAULT '',

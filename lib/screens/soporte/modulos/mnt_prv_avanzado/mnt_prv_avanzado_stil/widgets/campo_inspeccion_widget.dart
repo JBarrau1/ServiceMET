@@ -1,13 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/mnt_prv_regular_stil_model.dart';
-import '../controllers/mnt_prv_regular_stil_controller.dart';
+import '../controllers/mnt_prv_avanzado_stil_controller.dart';
+import '../models/mnt_prv_avanzado_stil_model.dart';
+
 
 class CampoInspeccionWidget extends StatefulWidget {
   final String label;
-  final CampoEstado campo;
-  final MntPrvRegularStilController controller;
+  final CampoEstadoAvanzadoStil campo;
+  final MntPrvAvanzadoStilController controller;
   final VoidCallback onChanged;
 
   const CampoInspeccionWidget({

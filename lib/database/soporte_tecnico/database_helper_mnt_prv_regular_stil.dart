@@ -287,7 +287,8 @@ class DatabaseHelperMntPrvRegularStil {
         fecha_servicio TEXT DEFAULT '',
         hora_inicio TEXT DEFAULT '',
         hora_fin TEXT DEFAULT '',
-        
+        fecha_prox_servicio TEXT DEFAULT '',
+               
         -- Inspección Visual
         comentario_general TEXT DEFAULT '',
         estado_fisico TEXT DEFAULT '',

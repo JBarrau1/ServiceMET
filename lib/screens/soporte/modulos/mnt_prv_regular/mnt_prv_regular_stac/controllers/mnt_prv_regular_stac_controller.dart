@@ -190,6 +190,7 @@ class MntPrvRegularStacController {
       'fisico': model.estadoFisico,
       'operacional': model.estadoOperacional,
       'metrologico': model.estadoMetrologico,
+      'fecha_prox_servicio': model.fechaProxServicio,
     };
 
     _addCamposEstadoData(data);

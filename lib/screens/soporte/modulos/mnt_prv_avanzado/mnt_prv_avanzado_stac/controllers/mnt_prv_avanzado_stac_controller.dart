@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
-import '../models/mnt_prv_regular_stac_model.dart';
+import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
+import '../models/mnt_prv_avanzado_stac_model.dart';
 
 
-class MntPrvRegularStacController {
-  final MntPrvRegularStacModel model;
+class MntPrvAvanzadoStacController {
+  final MntPrvAvanzadoStacModel model;
   final Map<String, List<File>> _fieldPhotos = {};
 
-  MntPrvRegularStacController({required this.model});
+  MntPrvAvanzadoStacController({required this.model});
 
   void copiarPruebasInicialesAFinales() {
     model.copiarPruebasInicialesAFinales();
@@ -21,7 +21,7 @@ class MntPrvRegularStacController {
   // ✅ OPTIMIZADO: Obtener d1 sin múltiples consultas
   Future<double> getD1FromDatabase() async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStac();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStac();
       final db = await dbHelper.database;
 
       final results = await db.query(
@@ -53,7 +53,7 @@ class MntPrvRegularStacController {
   // ✅ NUEVO: Método para guardar solo en BD (sin fotos)
   Future<void> saveDataToDatabase(BuildContext context, {bool showMessage = true}) async {
     try {
-      final dbHelper = DatabaseHelperMntPrvRegularStac();
+      final dbHelper = DatabaseHelperMntPrvAvanzadoStac();
       final Map<String, dynamic> mntPrvData = _prepareDataForSave();
 
       mntPrvData['session_id'] = model.sessionId;
@@ -190,6 +190,7 @@ class MntPrvRegularStacController {
       'fisico': model.estadoFisico,
       'operacional': model.estadoOperacional,
       'metrologico': model.estadoMetrologico,
+      'fecha_prox_servicio': model.fechaProxServicio,
     };
 
     _addCamposEstadoData(data);
@@ -235,21 +236,28 @@ class MntPrvRegularStacController {
       'paragolpes_longitudinales': 'Verificación de paragolpes longitudinales',
       'paragolpes_transversales': 'Verificación de paragolpes transversales',
 
-      // Verificaciones Eléctricas
-      'cable_home_run': 'Condición de cable de Home Run',
-      'cable_celula_celula': 'Condición de cable de célula a célula',
+      // Verificaciones Eléctricas (CORREGIDO)
+      'cable_homerun': 'Condición de cable de Home Run',
+      'cable_celda_celda': 'Condición de cable de célula a célula',
       'conexion_celdas': 'Conexión segura a celdas de carga',
       'funda_conector': 'Funda de goma y conector ajustados',
       'conector_terminacion': 'Conector de terminación ajustado',
-      'cables_seguros': 'Los cables están conectados de forma segura a todas las celdas de carga',
-      'funda_apretada': 'La funda de goma y el conector del cable están apretados contra la celda de carga',
-      'conector_capuchon': 'Conector de terminación ajustado y capuchón en su lugar',
+      'cables_conectados': 'Cables conectados correctamente',
 
       // Protección contra Rayos
       'sistema_tierra': 'Sistema de protección contra rayos conectado a tierra',
       'conexion_strike_shield': 'Conexión de la correa de tierra del Strike shield',
       'tension_neutro_tierra': 'Tensión entre neutro y tierra adecuada',
       'impresora_strike_shield': 'Impresora conectada al mismo Strike Shield',
+
+      //Verificaciones de Células de Carga (nombres exactos de BD)
+      'elevado_puente': 'Elevado del puente de pesaje y retirado de las celdas de carga',
+      'limpieza_estructura': 'Limpieza e inspección de superficies de acoplamiento de la estructura',
+      'bearing_cups': 'Limpieza e inspección de bearing cups',
+      'celdas_carga': 'Limpieza e inspección de celdas de carga',
+      'lubricacion_cabezas': 'Lubricación de cabezas de celdas de carga',
+      'engrasado_bearing': 'Engrasado de bearing cups',
+      'lainas_botas': 'Lainas, botas de goma colocadas',
 
       // Terminal
       'carcasa_lente_teclado': 'Carcasa, lente y el teclado estan limpios, sin daños y sellados',

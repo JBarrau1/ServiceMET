@@ -233,6 +233,10 @@ class _StilMntPrvRegularStacScreenState extends State<StilMntPrvRegularStacScree
           _showSnackBar('Por favor seleccione una Recomendación', isError: true);
           return false;
         }
+        if (_model.fechaProxServicio.isEmpty) {
+          _showSnackBar('Por favor seleccione la fecha del próximo servicio', isError: true);
+          return false;
+        }
         if (_model.estadoFisico.isEmpty ||
             _model.estadoOperacional.isEmpty ||
             _model.estadoMetrologico.isEmpty) {
