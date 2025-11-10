@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/providers/calibration_provider.dart';
 import 'package:service_met/repositories/calibration_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database/app_database.dart';
 import 'database/soporte_tecnico/database_helper_ajustes.dart';
 import 'database/soporte_tecnico/database_helper_diagnostico.dart';
@@ -16,6 +17,7 @@ import 'database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
 import 'database/soporte_tecnico/database_helper_relevamiento.dart';
 import 'database/soporte_tecnico/database_helper_verificaciones.dart';
 import 'login_screen.dart';
+import 'initial_setup_screen.dart'; // NUEVO
 import 'package:service_met/screens/calibracion/selec_cliente.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:provider/provider.dart';
@@ -23,8 +25,9 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
   // Inicializa la base de datos local
-  await AppDatabase().database; // Esta línea creará la BD si no existe
+  await AppDatabase().database;
   await DatabaseHelperAjustes().database;
   await DatabaseHelperDiagnostico().database;
   await DatabaseHelperInstalacion().database;
@@ -36,6 +39,10 @@ void main() async {
   await DatabaseHelperRelevamiento().database;
   await DatabaseHelperVerificaciones().database;
 
+  // NUEVO: Verificar si se completó el setup inicial
+  final prefs = await SharedPreferences.getInstance();
+  final setupCompleted = prefs.getBool('setup_completed') ?? false;
+
   runApp(
     MultiProvider(
       providers: [
@@ -44,13 +51,15 @@ void main() async {
           create: (_) => CalibrationProvider(CalibrationRepository()),
         ),
       ],
-      child: const MyApp(),
+      child: MyApp(setupCompleted: setupCompleted),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool setupCompleted;
+
+  const MyApp({super.key, required this.setupCompleted});
 
   @override
   Widget build(BuildContext context) {
@@ -64,10 +73,12 @@ class MyApp extends StatelessWidget {
         theme: _buildLightTheme(context),
         darkTheme: _buildDarkTheme(context),
         themeMode: ThemeMode.system,
-        initialRoute: '/login',
+        // MODIFICADO: Decidir ruta inicial basado en setup
+        initialRoute: setupCompleted ? '/login' : '/setup',
         routes: {
+          '/setup': (context) => const InitialSetupScreen(), // NUEVO
           '/login': (context) => const LoginScreen(),
-          '/home': (context) => const HomeScreen(), // Cambia aquí
+          '/home': (context) => const HomeScreen(),
           '/calibracion': (context) => const CalibracionScreen(
             dbName: '',
             userName: '',
@@ -88,14 +99,12 @@ class MyApp extends StatelessWidget {
     final baseTheme = ThemeData.light();
 
     return baseTheme.copyWith(
-      // Colores base
       scaffoldBackgroundColor: scaffoldBackgroundColor,
       primaryColor: primaryColor,
       canvasColor: scaffoldBackgroundColor,
       cardColor: scaffoldBackgroundColor,
       disabledColor: Colors.grey[400],
 
-      // Esquema de color
       colorScheme: baseTheme.colorScheme.copyWith(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -104,7 +113,6 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
       ),
 
-      // Textos
       textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).copyWith(
         displayLarge: const TextStyle(color: textColor),
         displayMedium: const TextStyle(color: textColor),
@@ -112,16 +120,15 @@ class MyApp extends StatelessWidget {
         headlineMedium: const TextStyle(color: textColor),
         headlineSmall: const TextStyle(color: textColor),
         titleLarge: const TextStyle(color: textColor),
-        titleMedium: const TextStyle(color: textColor), // Usado en AppBar
+        titleMedium: const TextStyle(color: textColor),
         titleSmall: const TextStyle(color: textColor),
         bodyLarge: const TextStyle(color: textColor),
-        bodyMedium: const TextStyle(color: textColor), // Default para Text()
+        bodyMedium: const TextStyle(color: textColor),
         bodySmall: TextStyle(color: Colors.grey[800]),
-        labelLarge: const TextStyle(color: Colors.white), // Botones
+        labelLarge: const TextStyle(color: Colors.white),
         labelSmall: TextStyle(color: Colors.grey[800]),
       ),
 
-      // AppBar
       appBarTheme: const AppBarTheme(
         backgroundColor: primaryColor,
         titleTextStyle: TextStyle(
@@ -129,11 +136,10 @@ class MyApp extends StatelessWidget {
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: IconThemeData(color: Colors.black), // <-- Ahora negro
+        iconTheme: IconThemeData(color: Colors.black),
         elevation: 1,
       ),
 
-      // Inputs
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.grey[100],
@@ -148,14 +154,13 @@ class MyApp extends StatelessWidget {
         suffixIconColor: Colors.grey[800],
       ),
 
-      // Botones
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
-          backgroundColor: primaryColor, // Usa primaryColor en ambos temas
+          backgroundColor: primaryColor,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20), // Igual en ambos temas
+            borderRadius: BorderRadius.circular(20),
           ),
           textStyle: const TextStyle(
             fontWeight: FontWeight.w600,
@@ -169,7 +174,6 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // Iconos
       iconTheme: const IconThemeData(color: textColor),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
@@ -177,13 +181,11 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // Divider
       dividerTheme: const DividerThemeData(
         thickness: 1,
         space: 1,
       ).copyWith(color: Colors.grey[300]),
 
-      // Otras configuraciones
       snackBarTheme: SnackBarThemeData(
         backgroundColor: Colors.grey[800],
         contentTextStyle: const TextStyle(color: Colors.white),
@@ -203,17 +205,17 @@ class MyApp extends StatelessWidget {
         thumbColor: MaterialStateProperty.resolveWith<Color?>(
               (states) {
             if (states.contains(MaterialState.selected)) {
-              return Colors.white; // color del thumb activo
+              return Colors.white;
             }
-            return Colors.grey; // color del thumb inactivo
+            return Colors.grey;
           },
         ),
         trackColor: MaterialStateProperty.resolveWith<Color?>(
               (states) {
             if (states.contains(MaterialState.selected)) {
-              return const Color(0xFF457D41); // pista activa
+              return const Color(0xFF457D41);
             }
-            return Colors.black12; // pista inactiva
+            return Colors.black12;
           },
         ),
       ),
@@ -221,7 +223,7 @@ class MyApp extends StatelessWidget {
   }
 
   ThemeData _buildDarkTheme(BuildContext context) {
-    const primaryColor = Color(0xFFFFFFFF); // Correcto para una constante
+    const primaryColor = Color(0xFFFFFFFF);
     const secondaryColor = Color(0xFFFFFFFF);
     const textColor = Colors.white;
     const scaffoldBackgroundColor = Color(0xFF121212);
@@ -229,14 +231,12 @@ class MyApp extends StatelessWidget {
     final baseTheme = ThemeData.dark();
 
     return baseTheme.copyWith(
-      // Colores base
       scaffoldBackgroundColor: scaffoldBackgroundColor,
       primaryColor: primaryColor,
       canvasColor: const Color(0xFF1E1E1E),
       cardColor: const Color(0xFF1E1E1E),
       disabledColor: Colors.grey[600],
 
-      // Esquema de color
       colorScheme: baseTheme.colorScheme.copyWith(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -245,7 +245,6 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
       ),
 
-      // Textos
       textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).copyWith(
         displayLarge: const TextStyle(color: textColor),
         displayMedium: const TextStyle(color: textColor),
@@ -253,16 +252,15 @@ class MyApp extends StatelessWidget {
         headlineMedium: const TextStyle(color: textColor),
         headlineSmall: const TextStyle(color: textColor),
         titleLarge: const TextStyle(color: textColor),
-        titleMedium: const TextStyle(color: textColor), // Usado en AppBar
+        titleMedium: const TextStyle(color: textColor),
         titleSmall: const TextStyle(color: textColor),
         bodyLarge: const TextStyle(color: textColor),
-        bodyMedium: const TextStyle(color: textColor), // Default para Text()
+        bodyMedium: const TextStyle(color: textColor),
         bodySmall: const TextStyle(color: Colors.white70),
-        labelLarge: const TextStyle(color: Colors.black), // Botones
+        labelLarge: const TextStyle(color: Colors.black),
         labelSmall: const TextStyle(color: Colors.white70),
       ),
 
-      // AppBar
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF1E1E1E),
         titleTextStyle: TextStyle(
@@ -274,7 +272,6 @@ class MyApp extends StatelessWidget {
         elevation: 1,
       ),
 
-      // Inputs
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.grey[800],
@@ -289,11 +286,10 @@ class MyApp extends StatelessWidget {
         suffixIconColor: Colors.white70,
       ),
 
-      // Botones
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white, // Texto
-          backgroundColor: primaryColor, // Fondo
+          foregroundColor: Colors.white,
+          backgroundColor: primaryColor,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -310,7 +306,6 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // Iconos
       iconTheme: const IconThemeData(color: textColor),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
@@ -318,13 +313,11 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // Divider
       dividerTheme: const DividerThemeData(
         thickness: 1,
         space: 1,
       ).copyWith(color: Colors.grey[700]),
 
-      // Otras configuraciones
       snackBarTheme: const SnackBarThemeData(
         contentTextStyle: TextStyle(color: textColor),
       ).copyWith(backgroundColor: const Color(0xFF1E1E1E)),
@@ -344,17 +337,17 @@ class MyApp extends StatelessWidget {
         thumbColor: MaterialStateProperty.resolveWith<Color?>(
               (states) {
             if (states.contains(MaterialState.selected)) {
-              return Colors.white; // color del thumb activo
+              return Colors.white;
             }
-            return Colors.grey; // color del thumb inactivo
+            return Colors.grey;
           },
         ),
         trackColor: MaterialStateProperty.resolveWith<Color?>(
               (states) {
             if (states.contains(MaterialState.selected)) {
-              return const Color(0xFF457D41); // pista activa
+              return const Color(0xFF457D41);
             }
-            return Colors.black12; // pista inactiva
+            return Colors.black12;
           },
         ),
       ),
