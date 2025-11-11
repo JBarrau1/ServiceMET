@@ -300,6 +300,7 @@ class _StacVerificacionesInternasScreenState
         'excentricidad_estado_general': _excentricidadValue,
         'repetibilidad_estado_general': _repetibilidadValue,
         'linealidad_estado_general': _linealidadValue,
+        'estado_servicio': 'Completo',
         // Datos de pruebas metrológicas iniciales
         ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
 

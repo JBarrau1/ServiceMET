@@ -746,7 +746,7 @@ class DatabaseHelperMntPrvAvanzadoStil {
         lin_final_12 TEXT DEFAULT '',
         ind_final_12 TEXT DEFAULT '',
         retorno_lin_final_12 TEXT DEFAULT '',
-        estado_balanza TEXT DEFAULT ''
+        estado_servicio TEXT DEFAULT ''
       )
       ''');
 

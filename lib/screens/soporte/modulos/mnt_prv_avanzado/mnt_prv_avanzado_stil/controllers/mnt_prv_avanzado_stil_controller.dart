@@ -178,7 +178,7 @@ class MntPrvAvanzadoStilController {
   // ✅ MEJORADO: Preparar datos con validación
   Map<String, dynamic> _prepareDataForSave() {
     final data = <String, dynamic>{
-      'estado_balanza': 'Balanza Realizada',
+      'estado_servicio': 'Completo',
       'session_id': model.sessionId,
       'cod_metrica': model.codMetrica,
       'otst': model.secaValue,

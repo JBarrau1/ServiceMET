@@ -568,7 +568,7 @@ class DatabaseHelperVerificaciones {
         linealidad_inicial_punto12_indicacion REAL DEFAULT '',
         linealidad_inicial_punto12_retorno REAL DEFAULT '',
         linealidad_inicial_punto12_error REAL DEFAULT '',
-        estado_balanza TEXT DEFAULT ''
+        estado_servicio TEXT DEFAULT ''
       )
       ''');
 

@@ -85,8 +85,8 @@ class _FinServicioDiagnosticoScreenState
       // ✅ CAMBIO: Usar otst y estado_balanza = 'Balanza Realizada'
       final rows = await db.query(
         widget.tableName ?? 'diagnostico',
-        where: 'otst = ? AND estado_balanza = ?',
-        whereArgs: [widget.secaValue, 'Balanza Realizada'],
+        where: 'otst = ? AND estado_servicio = ?',
+        whereArgs: [widget.secaValue, 'Completo'],
       );
 
       final cantidad = rows.length;
@@ -101,8 +101,8 @@ class _FinServicioDiagnosticoScreenState
       // 3. Obtener rows actualizados
       final updatedRows = await db.query(
         widget.tableName ?? 'diagnostico',
-        where: 'otst = ? AND estado_balanza = ?',
-        whereArgs: [widget.secaValue, 'Balanza Realizada'],
+        where: 'otst = ? AND estado_servicio = ?',
+        whereArgs: [widget.secaValue, 'Completo'],
       );
 
       // 4. Mostrar pantalla de resumen

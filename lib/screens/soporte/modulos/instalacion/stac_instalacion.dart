@@ -257,6 +257,7 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
         'tipo_servicio': 'instalacion',
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
+        'estado_servicio': 'Completo',
 
         // Datos de pruebas metrológicas iniciales
         ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),

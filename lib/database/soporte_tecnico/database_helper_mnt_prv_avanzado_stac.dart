@@ -951,7 +951,7 @@ class DatabaseHelperMntPrvAvanzadoStac {
         otros TEXT DEFAULT '',
         otros_foto TEXT DEFAULT '',
         conclusion TEXT DEFAULT '',
-        estado_balanza TEXT DEFAULT ''
+        estado_servicio TEXT DEFAULT ''
       )
       ''');
 

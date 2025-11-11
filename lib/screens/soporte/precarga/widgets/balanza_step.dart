@@ -842,16 +842,16 @@ class _BalanzaStepState extends State<BalanzaStep> {
                         itemCount: filteredBalanzas.length,
                         itemBuilder: (context, index) {
                           final balanza = filteredBalanzas[index];
-                          final estadoCalibacion = balanza['estado_calibracion'] ?? 'sin_registro';
+                          final estadoCalibacion = balanza['estado_servicio'] ?? 'sin_registro';
                           final tieneRegistro = balanza['tiene_registro'] ?? false;
 
                           return Container(
                             margin: const EdgeInsets.symmetric(vertical: 4),
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: estadoCalibacion == 'calibrada'
+                                color: estadoCalibacion == 'Completo'
                                     ? Colors.green[300]!
-                                    : estadoCalibacion == 'no_calibrada'
+                                    : estadoCalibacion == 'Pendiente'
                                     ? Colors.orange[300]!
                                     : Colors.grey[300]!,
                                 width: 2,
@@ -878,11 +878,11 @@ class _BalanzaStepState extends State<BalanzaStep> {
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4),
                                       child: Text(
-                                        estadoCalibacion == 'calibrada'
-                                            ? '✓ Balanza Calibrada'
+                                        estadoCalibacion == 'Completo'
+                                            ? '✓ Balanza Completada'
                                             : '⚠ Requiere Concluir',
                                         style: TextStyle(
-                                          color: estadoCalibacion == 'calibrada'
+                                          color: estadoCalibacion == 'Completo'
                                               ? Colors.green[700]
                                               : Colors.orange[700],
                                           fontWeight: FontWeight.bold,
@@ -895,7 +895,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
                               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                               onTap: () {
                                 // Mostrar alerta si la balanza no está calibrada
-                                if (tieneRegistro && estadoCalibacion == 'no_calibrada') {
+                                if (tieneRegistro && estadoCalibacion == 'Pendiente') {
                                   _showCalibrationWarningDialog(balanza, controller);
                                 } else {
                                   controller.selectBalanza(balanza);

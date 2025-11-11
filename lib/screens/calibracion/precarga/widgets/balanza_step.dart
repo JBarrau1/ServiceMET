@@ -98,8 +98,12 @@ class _BalanzaStepState extends State<BalanzaStep> {
             if (controller.selectedBalanza != null || controller.isNewBalanza)
               _buildBalanzaForm(controller),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
+            // Sección de Datos de Servicio
+            _buildServicioSection(controller),
+
+            const SizedBox(height: 30),
             // Campos RECA y Sticker
             _buildRecaAndStickerFields(),
 
@@ -160,6 +164,163 @@ class _BalanzaStepState extends State<BalanzaStep> {
     widget.balanzaControllers['d3']?.text = '0';
     widget.balanzaControllers['e3']?.text = '0';
     widget.balanzaControllers['dec3']?.text = '0';
+  }
+
+  Widget _buildServicioSection(PrecargaController controller) {
+    final balanza = controller.selectedBalanza;
+    final servicioData = balanza?['servicio'] as Map<String, dynamic>?;
+
+    if (servicioData == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Center(
+          child: Text(
+            'No hay datos de servicio previos',
+            style: GoogleFonts.inter(
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.purple[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Título
+          Row(
+            children: [
+              Icon(Icons.history, color: Colors.purple[700], size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'DATOS DE SERVICIO ANTERIOR',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple[700],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Errores de centrado (EXC)
+          _buildServicioCard(
+            'ERRORES DE CENTRADO (EXC)',
+            [
+              _buildServicioRow('EXC', servicioData['exc']?.toString() ?? 'N/A'),
+            ],
+            Colors.purple,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Repetibilidad
+          _buildServicioCard(
+            'REPETIBILIDAD',
+            [
+              _buildServicioRow('Rep 1', servicioData['rep1']?.toString() ?? 'N/A'),
+              _buildServicioRow('Rep 2', servicioData['rep2']?.toString() ?? 'N/A'),
+              _buildServicioRow('Rep 3', servicioData['rep3']?.toString() ?? 'N/A'),
+            ],
+            Colors.blue,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Linealidad
+          _buildServicioCard(
+            'LINEALIDAD',
+            _buildLinealidadRows(servicioData),
+            Colors.green,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServicioCard(String title, List<Widget> rows, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...rows,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServicioRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.grey[800],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildLinealidadRows(Map<String, dynamic> servicioData) {
+    List<Widget> rows = [];
+
+    // LIN1 a LIN13
+    for (int i = 1; i <= 13; i++) {
+      final linKey = 'lin$i';
+      final value = servicioData[linKey]?.toString() ?? 'N/A';
+      rows.add(_buildServicioRow('LIN$i', value));
+    }
+
+    return rows;
   }
 
   Widget _buildBalanzaForm(PrecargaController controller) {

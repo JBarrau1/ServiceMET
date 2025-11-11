@@ -14,6 +14,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'extenciones/database_helper.dart';
 import 'detalles_seca_screen.dart';
+import 'detalles_otst_screen.dart';
 import 'home/configuracion_screen.dart';
 import 'home/otros_apartados_screen.dart';
 import 'home/servicios_screen.dart';
@@ -30,6 +31,18 @@ class ServicioSeca {
   });
 }
 
+class ServicioOtst {
+  final String otst;
+  final int cantidadServicios;
+  final List<Map<String, dynamic>> servicios;
+
+  ServicioOtst({
+    required this.otst,
+    required this.cantidadServicios,
+    required this.servicios,
+  });
+}
+
 class HomeScreen extends StatefulWidget {
   final String dbName;
   const HomeScreen({super.key, this.dbName = ''});
@@ -39,7 +52,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
   bool _modoDemo = false;
   // Variables para el Home
   String userName = "Cargando...";
@@ -47,6 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int totalServiciosCal = 0;
   int totalServiciosSop = 0;
   String fechaUltimaPrecarga = "Sin datos";
+
+  // Variables para controlar qué tipo de servicios mostrar
+  int _tipoServicioSeleccionado = 0; // 0: Calibración, 1: Soporte Técnico
 
   // Variables para la navegación (ahora solo 3 tabs)
   int _currentIndex = 0;
@@ -94,22 +109,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _getTotalServiciosSop() async {
     try {
-      String dbPath = join(await getDatabasesPath(), 'servcios_soporte_tecnico.db');
+      int total = 0;
 
-      if (await databaseExists(dbPath)) {
-        final db = await openDatabase(dbPath);
-        final result = await db.rawQuery('SELECT COUNT(*) as total FROM inf_cliente_balanza');
-        await db.close();
-        int count = result.isNotEmpty ? result.first['total'] as int : 0;
-        setState(() {
-          totalServiciosSop = count;
-        });
-      } else {
-        setState(() {
-          totalServiciosSop = 0;
-        });
+      // Mapa de bases de datos con sus nombres de tabla correctos
+      final Map<String, String> databasesMap = {
+        'ajustes.db': 'ajustes_metrologicos',
+        'diagnostico.db': 'diagnostico',
+        'instalacion.db': 'instalacion',
+        'mnt_correctivo.db': 'mnt_correctivo',
+        'mnt_prv_avanzado_stac.db': 'mnt_prv_avanzado_stac',
+        'mnt_prv_avanzado_stil.db': 'mnt_prv_avanzado_stil',
+        'mnt_prv_regular_stac.db': 'mnt_prv_regular_stac',
+        'mnt_prv_regular_stil.db': 'mnt_prv_regular_stil',
+        'relevamiento_de_datos.db': 'relevamiento_de_datos',
+        'verificaciones.db': 'verificaciones_internas',
+      };
+
+      for (var entry in databasesMap.entries) {
+        String dbName = entry.key;
+        String tableName = entry.value;
+        String dbPath = join(await getDatabasesPath(), dbName);
+
+        if (await databaseExists(dbPath)) {
+          try {
+            final db = await openDatabase(dbPath);
+            final result = await db.rawQuery('SELECT COUNT(*) as total FROM $tableName');
+            await db.close();
+            int count = result.isNotEmpty ? result.first['total'] as int : 0;
+            total += count;
+          } catch (e) {
+            debugPrint('Error contando en $dbName: $e');
+            continue;
+          }
+        }
       }
+
+      setState(() {
+        totalServiciosSop = total;
+      });
     } catch (e) {
+      debugPrint('Error en _getTotalServiciosSop: $e');
       setState(() {
         totalServiciosSop = 0;
       });
@@ -167,8 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
-  Future<List<ServicioSeca>> _getServiciosAgrupadosPorSeca() async {
+  // Obtener servicios de calibración agrupados por SECA
+  Future<List<ServicioSeca>> _getServiciosCalibracionPorSeca() async {
     final List<ServicioSeca> servicios = [];
 
     try {
@@ -204,6 +243,100 @@ class _HomeScreenState extends State<HomeScreen> {
       return servicios;
     } catch (e) {
       return [];
+    }
+  }
+
+  // Obtener servicios de soporte técnico agrupados por OTST
+  Future<List<ServicioOtst>> _getServiciosSoportePorOtst() async {
+    final List<ServicioOtst> servicios = [];
+
+    try {
+      // Mapa de bases de datos con sus nombres de tabla correctos
+      final Map<String, String> databasesMap = {
+        'ajustes.db': 'ajustes_metrologicos',
+        'diagnostico.db': 'diagnostico',
+        'instalacion.db': 'instalacion',
+        'mnt_correctivo.db': 'mnt_correctivo',
+        'mnt_prv_avanzado_stac.db': 'mnt_prv_avanzado_stac',
+        'mnt_prv_avanzado_stil.db': 'mnt_prv_avanzado_stil',
+        'mnt_prv_regular_stac.db': 'mnt_prv_regular_stac',
+        'mnt_prv_regular_stil.db': 'mnt_prv_regular_stil',
+        'relevamiento_de_datos.db': 'relevamiento_de_datos',
+        'verificaciones.db': 'verificaciones_internas',
+      };
+
+      final Map<String, List<Map<String, dynamic>>> agrupados = {};
+
+      for (var entry in databasesMap.entries) {
+        String dbName = entry.key;
+        String tableName = entry.value;
+        String dbPath = join(await getDatabasesPath(), dbName);
+
+        if (await databaseExists(dbPath)) {
+          try {
+            final db = await openDatabase(dbPath);
+            final List<Map<String, dynamic>> registros = await db.query(tableName);
+            await db.close();
+
+            for (var registro in registros) {
+              final String otst = registro['otst']?.toString() ?? 'Sin OTST';
+
+              if (!agrupados.containsKey(otst)) {
+                agrupados[otst] = [];
+              }
+
+              // Agregar información del tipo de servicio
+              registro['tipo_servicio'] = _obtenerTipoServicio(dbName);
+              agrupados[otst]!.add(registro);
+            }
+          } catch (e) {
+            debugPrint('Error leyendo $dbName: $e');
+            // Continuar con la siguiente base de datos si hay error
+            continue;
+          }
+        }
+      }
+
+      agrupados.forEach((otst, serviciosList) {
+        servicios.add(ServicioOtst(
+          otst: otst,
+          cantidadServicios: serviciosList.length,
+          servicios: serviciosList,
+        ));
+      });
+
+      servicios.sort((a, b) => a.otst.compareTo(b.otst));
+      return servicios;
+    } catch (e) {
+      debugPrint('Error general en _getServiciosSoportePorOtst: $e');
+      return [];
+    }
+  }
+
+  String _obtenerTipoServicio(String dbName) {
+    switch (dbName) {
+      case 'ajustes.db':
+        return 'Ajustes';
+      case 'diagnostico.db':
+        return 'Diagnóstico';
+      case 'instalacion.db':
+        return 'Instalación';
+      case 'mnt_correctivo.db':
+        return 'Mantenimiento Correctivo';
+      case 'mnt_prv_avanzado_stac.db':
+        return 'Mantenimiento Preventivo Avanzado STAC';
+      case 'mnt_prv_avanzado_stil.db':
+        return 'Mantenimiento Preventivo Avanzado STIL';
+      case 'mnt_prv_regular_stac.db':
+        return 'Mantenimiento Preventivo Regular STAC';
+      case 'mnt_prv_regular_stil.db':
+        return 'Mantenimiento Preventivo Regular STIL';
+      case 'relevamiento.db':
+        return 'Relevamiento';
+      case 'verificaciones.db':
+        return 'Verificaciones';
+      default:
+        return 'Soporte Técnico';
     }
   }
 
@@ -262,6 +395,51 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final fileName = 'SECA_${servicio.seca}_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final filePath = '$path/$fileName';
+      final File file = File(filePath);
+      await file.writeAsString(csv);
+
+      OpenFilex.open(filePath);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Archivo exportado: $fileName'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          )
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al exportar: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          )
+      );
+    }
+  }
+
+  Future<void> _exportarOtstDirectamente(BuildContext context, ServicioOtst servicio) async {
+    try {
+      final List<List<dynamic>> csvData = [];
+
+      if (servicio.servicios.isNotEmpty) {
+        csvData.add(servicio.servicios.first.keys.toList());
+      }
+
+      for (var serv in servicio.servicios) {
+        csvData.add(serv.values.toList());
+      }
+
+      String csv = const ListToCsvConverter().convert(csvData);
+      final directory = await getDownloadsDirectory();
+      final path = directory?.path;
+
+      if (path == null) {
+        throw Exception('No se pudo acceder al directorio de descargas');
+      }
+
+      final fileName = 'OTST_${servicio.otst}_${DateTime.now().millisecondsSinceEpoch}.csv';
       final filePath = '$path/$fileName';
       final File file = File(filePath);
       await file.writeAsString(csv);
@@ -463,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildServiceCard(BuildContext context, ServicioSeca servicio) {
+  Widget _buildServiceCardCalibracion(BuildContext context, ServicioSeca servicio) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -507,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          FontAwesomeIcons.building,
+                          FontAwesomeIcons.scaleBalanced,
                           color: Colors.white,
                           size: 20,
                         ),
@@ -526,7 +704,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             Text(
-                              '${servicio.cantidadBalanzas} balanza${servicio.cantidadBalanzas != 1 ? 's' : ''} registrada${servicio.cantidadBalanzas != 1 ? 's' : ''}',
+                              '${servicio.cantidadBalanzas} balanza${servicio.cantidadBalanzas != 1 ? 's' : ''} calibrada${servicio.cantidadBalanzas != 1 ? 's' : ''}',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -606,6 +784,227 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildServiceCardSoporte(BuildContext context, ServicioOtst servicio) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C3E50) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DetallesOtstScreen(servicioOtst: servicio),
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF4CAF50), Color(0xFF45a049)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          FontAwesomeIcons.screwdriverWrench,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'OTST ${servicio.otst}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : const Color(0xFF2C3E50),
+                              ),
+                            ),
+                            Text(
+                              '${servicio.cantidadServicios} servicio${servicio.cantidadServicios != 1 ? 's' : ''} técnico${servicio.cantidadServicios != 1 ? 's' : ''}',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          servicio.cantidadServicios.toString(),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF4CAF50),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetallesOtstScreen(servicioOtst: servicio),
+                              ),
+                            );
+                          },
+                          icon: const Icon(FontAwesomeIcons.eye, size: 16),
+                          label: const Text('Ver detalles'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4CAF50),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _exportarOtstDirectamente(context, servicio),
+                          icon: const Icon(FontAwesomeIcons.download, size: 16),
+                          label: const Text('Exportar'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF4CAF50),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            side: const BorderSide(color: Color(0xFF4CAF50)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipoServicioSelector(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildTipoServicioButton(
+            index: 0,
+            icon: FontAwesomeIcons.scaleBalanced,
+            label: 'Calibración',
+            isSelected: _tipoServicioSeleccionado == 0,
+          ),
+          _buildTipoServicioButton(
+            index: 1,
+            icon: FontAwesomeIcons.screwdriverWrench,
+            label: 'Soporte Técnico',
+            isSelected: _tipoServicioSeleccionado == 1,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipoServicioButton({
+    required int index,
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _tipoServicioSeleccionado = index;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF667EEA) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : Colors.grey,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected ? Colors.white : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // Contenido original del Home
   Widget _buildHomeContent(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -641,10 +1040,14 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildStatCard(
                   icon: FontAwesomeIcons.screwdriverWrench,
-                  title: 'Balanzas\nArregladas',
+                  title: 'Servicios\nSoporte Técnico',
                   value: totalServiciosSop.toString(),
                   color: Color(0xFF89B2CC),
-                  onTap: () {},
+                  onTap: () {
+                    setState(() {
+                      _tipoServicioSeleccionado = 1;
+                    });
+                  },
                 ),
                 const SizedBox(width: 16),
                 _buildStatCard(
@@ -652,7 +1055,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: 'Balanzas\nCalibradas',
                   value: totalServiciosCal.toString(),
                   color: Color(0xFFBFD6A7),
-                  onTap: () {},
+                  onTap: () {
+                    setState(() {
+                      _tipoServicioSeleccionado = 0;
+                    });
+                  },
                 ),
               ],
             ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
@@ -673,12 +1080,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 40),
 
-            // Lista de servicios
+            // Selector de tipo de servicio
+            _buildTipoServicioSelector(context),
+
+            const SizedBox(height: 20),
+
+            // Lista de servicios según el tipo seleccionado
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Servicios por\nSECA u OTST',
+                  _tipoServicioSeleccionado == 0
+                      ? 'Servicios de Calibración\npor SECA'
+                      : 'Servicios de Soporte\npor OTST',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -686,7 +1100,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Icon(
-                  FontAwesomeIcons.listUl,
+                  _tipoServicioSeleccionado == 0
+                      ? FontAwesomeIcons.scaleBalanced
+                      : FontAwesomeIcons.screwdriverWrench,
                   color: Colors.grey[600],
                   size: 20,
                 ),
@@ -695,73 +1111,149 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 20),
 
-            FutureBuilder<List<ServicioSeca>>(
-              future: _getServiciosAgrupadosPorSeca(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(40),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? const Color(0xFF2C3E50) : Colors.grey[50],
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          FontAwesomeIcons.exclamationTriangle,
-                          size: 48,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No hay servicios registrados',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Los servicios de calibración o soporte técnico aparecerán aquí cuando estén disponibles',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final servicios = snapshot.data!;
-
-                return Column(
-                  children: servicios.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final servicio = entry.value;
-
-                    return _buildServiceCard(context, servicio)
-                        .animate(delay: Duration(milliseconds: 700 + (index * 100)))
-                        .fadeIn()
-                        .slideX(begin: 0.3);
-                  }).toList(),
-                );
-              },
-            ),
+            if (_tipoServicioSeleccionado == 0)
+              _buildListaCalibracion(context)
+            else
+              _buildListaSoporte(context),
 
             const SizedBox(height: 80), // Espacio para el bottom navigation
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildListaCalibracion(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return FutureBuilder<List<ServicioSeca>>(
+      future: _getServiciosCalibracionPorSeca(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF2C3E50) : Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  FontAwesomeIcons.scaleBalanced,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No hay servicios de calibración',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Los servicios de calibración aparecerán aquí cuando estén disponibles',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.grey[500],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final servicios = snapshot.data!;
+
+        return Column(
+          children: servicios.asMap().entries.map((entry) {
+            final index = entry.key;
+            final servicio = entry.value;
+
+            return _buildServiceCardCalibracion(context, servicio)
+                .animate(delay: Duration(milliseconds: 700 + (index * 100)))
+                .fadeIn()
+                .slideX(begin: 0.3);
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildListaSoporte(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return FutureBuilder<List<ServicioOtst>>(
+      future: _getServiciosSoportePorOtst(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF2C3E50) : Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  FontAwesomeIcons.screwdriverWrench,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No hay servicios de soporte técnico',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Los servicios de soporte técnico aparecerán aquí cuando estén disponibles',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.grey[500],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final servicios = snapshot.data!;
+
+        return Column(
+          children: servicios.asMap().entries.map((entry) {
+            final index = entry.key;
+            final servicio = entry.value;
+
+            return _buildServiceCardSoporte(context, servicio)
+                .animate(delay: Duration(milliseconds: 700 + (index * 100)))
+                .fadeIn()
+                .slideX(begin: 0.3);
+          }).toList(),
+        );
+      },
     );
   }
 
@@ -873,7 +1365,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -12,15 +13,16 @@ import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 
 import '../../../../database/soporte_tecnico/database_helper_verificaciones.dart';
 
+
 class FinServicioVinternasScreen extends StatefulWidget {
   final String sessionId;
   final String secaValue;
   final String nReca;
   final String codMetrica;
-  final String userName; // ✅ AGREGAR
-  final String clienteId; // ✅ AGREGAR
-  final String plantaCodigo; // ✅ AGREGAR
-  final String? tableName; // ✅ AGREGAR
+  final String userName;
+  final String clienteId;
+  final String plantaCodigo;
+  final String? tableName;
 
   const FinServicioVinternasScreen({
     super.key,
@@ -28,21 +30,37 @@ class FinServicioVinternasScreen extends StatefulWidget {
     required this.secaValue,
     required this.nReca,
     required this.codMetrica,
-    required this.userName, // ✅ AGREGAR
-    required this.clienteId, // ✅ AGREGAR
-    required this.plantaCodigo, // ✅ AGREGAR
-    required this.tableName, // ✅ AGREGAR
+    required this.userName,
+    required this.clienteId,
+    required this.plantaCodigo,
+    required this.tableName,
   });
 
   @override
-  _FinServicioVinternasScreenState createState() => _FinServicioVinternasScreenState();
+  _FinServicioVinternasScreenState createState() =>
+      _FinServicioVinternasScreenState();
 }
 
-class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen> {
+class _FinServicioVinternasScreenState
+    extends State<FinServicioVinternasScreen> {
   String? errorMessage;
   bool _isExporting = false;
 
-  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+  // ✅ NUEVOS CONTROLADORES PARA DATOS ADICIONALES
+  String? _selectedEmp23001;
+  final TextEditingController _indicarController = TextEditingController();
+  final TextEditingController _factorSeguridadController = TextEditingController();
+  String? _selectedReglaAceptacion;
+
+  @override
+  void dispose() {
+    _indicarController.dispose();
+    _factorSeguridadController.dispose();
+    super.dispose();
+  }
+
+  void _showSnackBar(BuildContext context, String message,
+      {bool isError = false}) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
     messenger.showSnackBar(
@@ -58,127 +76,155 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
     );
   }
 
-  /// Exporta CSV desde la tabla verificaciones_internas
-  Future<void> _exportToCSV(BuildContext context) async {
+  // ✅ NUEVO: Función principal de confirmación y exportación
+  Future<void> _confirmarYExportar(BuildContext context) async {
+    try {
+      final dbHelper = DatabaseHelperVerificaciones();
+      final db = await dbHelper.database;
+
+      // ✅ CAMBIO: Usar otst y estado_balanza = 'Balanza Realizada'
+      final rows = await db.query(
+        widget.tableName ?? 'verificaciones_internas',
+        where: 'otst = ? AND estado_servicio = ?',
+        whereArgs: [widget.secaValue, 'Completo'],
+      );
+
+      final cantidad = rows.length;
+
+      if (cantidad == 0) {
+        _showSnackBar(context,
+            'No hay registros para exportar con este OTST (${widget.secaValue})',
+            isError: true);
+        return;
+      }
+
+      // 3. Obtener rows actualizados
+      final updatedRows = await db.query(
+        widget.tableName ?? 'verificaciones_internas',
+        where: 'otst = ? AND estado_servicio = ?',
+        whereArgs: [widget.secaValue, 'Completo'],
+      );
+
+      // 4. Mostrar pantalla de resumen
+      if (!mounted) return;
+      final resultado = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => _ResumenExportacionScreen(
+            cantidad: cantidad,
+            otst: widget.secaValue,
+            registros: updatedRows,
+            onExport: (registros) => _exportToCSV(context, registros),
+          ),
+        ),
+      );
+
+      if (resultado == true && mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+              (route) => false,
+        );
+      }
+    } catch (e) {
+      _showSnackBar(context, 'Error en exportación: $e', isError: true);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _depurarDatos(
+      List<Map<String, dynamic>> registros) async {
+    // 1. Eliminar filas completamente vacías
+    registros.removeWhere((registro) =>
+        registro.values.every((value) => value == null || value == ''));
+
+
+    final Map<String, Map<String, dynamic>> registrosUnicos = {};
+
+    for (var registro in registros) {
+      final String claveUnica = registro['cod_metrica']?.toString() ?? 'N/A';
+      final String horaFinActual = registro['hora_fin']?.toString() ?? '';
+
+      if (!registrosUnicos.containsKey(claveUnica) ||
+          (registrosUnicos[claveUnica]?['hora_fin']?.toString() ?? '')
+              .compareTo(horaFinActual) < 0) {
+        registrosUnicos[claveUnica] = registro;
+      }
+    }
+
+    return registrosUnicos.values.toList();
+  }
+
+  /// Exporta datos a CSV con depuración
+  Future<void> _exportToCSV(
+      BuildContext context, List<Map<String, dynamic>> registros) async {
     if (_isExporting) return;
     _isExporting = true;
 
     try {
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 20),
-                Text('Generando archivo CSV...'),
-              ],
-            ),
-          ),
-        );
+      // 1. Depurar los datos
+      final registrosDepurados = await _depurarDatos(registros);
+
+      // 2. Generar CSV
+      final csvBytes = await _generateCSVBytes(registrosDepurados);
+
+      // 3. Crear nombre del archivo
+      final fileName =
+          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}verificaciones_internas.csv';
+
+      // 4. Guardar internamente
+      final externalDir = await getExternalStorageDirectory();
+      if (externalDir != null) {
+        final exportDir = Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
+        if (!await exportDir.exists()) await exportDir.create(recursive: true);
+
+        final internalFile = File('${exportDir.path}/$fileName');
+        await internalFile.writeAsBytes(csvBytes);
       }
 
-      // ✅ Obtener datos desde BD interna
-      final dbHelper = DatabaseHelperVerificaciones();
-      final db = await dbHelper.database;
-
-      // ✅ Consultar SOLO la tabla verificaciones_internas por session_id
-      final List<Map<String, dynamic>> registros = await db.query(
-        'verificaciones_internas',
-        where: 'session_id = ?',
-        whereArgs: [widget.sessionId],
-      );
-
-      if (registros.isEmpty) {
-        if (mounted) {
-          Navigator.of(context).pop();
-          _showSnackBar(context, 'No hay datos para exportar', isError: true);
-        }
-        return;
-      }
-
-      // ✅ Obtener headers de las columnas
-      final headers = registros.first.keys.toList();
-
-      // ✅ Construir matriz CSV
-      final matrix = <List<dynamic>>[
-        headers,
-        ...registros.map((reg) {
-          return headers.map((header) {
-            final value = reg[header];
-            return (value is num) ? value.toString() : (value?.toString() ?? '');
-          }).toList();
-        })
-      ];
-
-      // ✅ Convertir a CSV con punto y coma
-      final csvString = const ListToCsvConverter(
-        fieldDelimiter: ';',
-        textDelimiter: '"',
-      ).convert(matrix);
-
-      final csvBytes = utf8.encode(csvString);
-
-      // ✅ Nombre del archivo
-      final now = DateTime.now();
-      final csvName = '${widget.secaValue}_${widget.codMetrica}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(now)}_verificaciones_internas.csv';
-
-      // ✅ Crear respaldo automático
-      await _crearRespaldoAutomatico(csvBytes, csvName);
-
-      // ✅ Cerrar diálogo de carga
-      if (mounted) Navigator.of(context).pop();
-
-      // ✅ Pedir al usuario dónde guardar
+      // 5. Preguntar ubicación de destino
       final directoryPath = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Seleccione carpeta para guardar el CSV',
+        dialogTitle: 'Selecciona carpeta de destino para exportación',
       );
 
       if (directoryPath != null) {
-        final outFile = File(join(directoryPath, csvName));
-        await outFile.writeAsBytes(csvBytes);
-
-        if (mounted) {
-          _showSnackBar(context, 'CSV guardado en: ${outFile.path}');
-        }
+        final userFile = File('$directoryPath/$fileName');
+        await userFile.writeAsBytes(csvBytes, mode: FileMode.write);
+        _showSnackBar(context, 'Archivo CSV exportado exitosamente a: ${userFile.path}');
       } else {
-        if (mounted) {
-          _showSnackBar(context, 'Exportación cancelada');
-        }
+        _showSnackBar(context, 'Exportación cancelada.', isError: true);
       }
     } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop();
-        _showSnackBar(context, 'Error en exportación: $e', isError: true);
-      }
-      debugPrint('Error exportando CSV: $e');
+      _showSnackBar(context, 'Error al exportar CSV: $e', isError: true);
     } finally {
       _isExporting = false;
     }
   }
 
-  Future<void> _crearRespaldoAutomatico(
-      List<int> csvBytes, String fileName) async {
-    try {
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        final backupDir =
-        Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
-        if (!await backupDir.exists()) {
-          await backupDir.create(recursive: true);
+  Future<List<int>> _generateCSVBytes(
+      List<Map<String, dynamic>> registros) async {
+    final headers = registros.first.keys.toList();
+
+    final rows = registros.map((registro) {
+      return headers.map((header) {
+        final value = registro[header];
+        if (value is double || value is num) {
+          return value.toString();
+        } else {
+          return value?.toString() ?? '';
         }
-        final backupFile = File('${backupDir.path}/$fileName');
-        await backupFile.writeAsBytes(csvBytes);
-      }
-    } catch (e) {
-      debugPrint('Error al crear respaldo automático: $e');
-    }
+      }).toList();
+    }).toList();
+
+    rows.insert(0, headers);
+
+    final csv = ListToCsvConverter(
+      fieldDelimiter: ';',
+      textDelimiter: '"',
+    ).convert(rows);
+
+    return utf8.encode(csv);
   }
 
-  /// ✅ MÉTODO MEJORADO: Usa la misma lógica que las otras pantallas
   Future<void> _confirmarSeleccionOtraBalanza(BuildContext context) async {
     final bool? confirmado = await showDialog<bool>(
       context: context,
@@ -225,13 +271,11 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
     if (confirmado != true) return;
 
     try {
-      // ✅ Obtener datos existentes de la BD
       final dbHelper = DatabaseHelperVerificaciones();
       final db = await dbHelper.database;
 
-      // ✅ Buscar el último registro con este SECA en verificaciones_internas
       final List<Map<String, dynamic>> rows = await db.query(
-        widget.tableName ?? 'verificaciones_internas', // Usar la tabla correcta
+        widget.tableName ?? 'verificaciones_internas',
         where: 'otst = ?',
         whereArgs: [widget.secaValue],
         orderBy: 'session_id DESC',
@@ -239,37 +283,31 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
       );
 
       if (rows.isEmpty) {
-        throw Exception('No se encontraron datos del SECA actual en verificaciones internas');
+        throw Exception('No se encontraron datos del OTST actual');
       }
 
       final registroActual = rows.first;
-
-      // ✅ Generar nuevo session_id
       final nuevoSessionId = await dbHelper.generateSessionId(widget.secaValue);
 
-
-      // ✅ Crear nuevo registro base manteniendo datos del cliente/planta
       final nuevoRegistro = {
         'session_id': nuevoSessionId,
         'otst': widget.secaValue,
         'tipo_servicio': registroActual['tipo_servicio'],
         'fecha_servicio': registroActual['fecha_servicio'],
-        'tec_responsable': registroActual['tec_responsable'],
+        'personal': registroActual['personal'],
         'cliente': registroActual['cliente'],
-        'razon_social': registroActual['razon_social'],
+        'razon_social': registroActual['razon_social'] ?? '',
         'planta': registroActual['planta'],
-        'dep_planta': registroActual['dep_planta'],
-        'direccion_planta': registroActual['direccion_planta'],
-        'cod_metrica': '', // Vacío para nueva balanza
-        // Agrega otros campos específicos de verificaciones_internas si es necesario
+        'dep_planta': registroActual['dep_planta'] ?? '',
+        'dir_planta': registroActual['dir_planta'] ?? '',
+        'cod_planta': widget.plantaCodigo,
+        'cod_metrica': '',
       };
 
-      // ✅ Insertar nuevo registro
       await dbHelper.upsertRegistroRelevamiento(nuevoRegistro);
 
       if (!mounted) return;
 
-      // ✅ Navegar a PrecargaScreenSop con initialStep = 3 (balanza)
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -278,7 +316,7 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
             userName: widget.userName,
             clienteId: widget.clienteId,
             plantaCodigo: widget.plantaCodigo,
-            initialStep: 3, // ✅ IR DIRECTO A BALANZA
+            initialStep: 3,
             sessionId: nuevoSessionId,
             secaValue: widget.secaValue,
           ),
@@ -354,15 +392,14 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildInfoSection(
-              'EXPORTAR',
-              'Generará un archivo CSV con todos los datos de verificaciones internas. '
-                  'El archivo se guardará con separador punto y coma (;).',
+              'FINALIZAR SERVICIO',
+              'Al dar clic se finalizará el servicio de mantenimiento preventivo y se exportarán los datos en un archivo CSV.',
               textColor,
             ),
             _buildActionCard(
               'images/tarjetas/t4.png',
-              'EXPORTAR',
-                  () => _exportToCSV(context),
+              'FINALIZAR SERVICIO\nY EXPORTAR DATOS',
+                  () => _confirmarYExportar(context),
               textColor,
               cardOpacity,
             ),
@@ -379,26 +416,6 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
                   () => _confirmarSeleccionOtraBalanza(context),
               textColor,
               cardOpacity,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                // ✅ Exportar CSV antes de finalizar
-                await _exportToCSV(context);
-
-                if (!mounted) return;
-
-                // ✅ Volver al home
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                      (route) => false,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFdf0000),
-              ),
-              child: const Text('FINALIZAR SERVICIO'),
             ),
           ],
         ),
@@ -479,6 +496,7 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
                   children: [
                     Text(
                       title,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
@@ -498,6 +516,342 @@ class _FinServicioVinternasScreenState extends State<FinServicioVinternasScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ✅ PANTALLA DE RESUMEN (NUEVA)
+class _ResumenExportacionScreen extends StatefulWidget {
+  final int cantidad;
+  final String otst;
+  final List<Map<String, dynamic>> registros;
+  final Future<void> Function(List<Map<String, dynamic>>) onExport;
+
+  const _ResumenExportacionScreen({
+    required this.cantidad,
+    required this.otst,
+    required this.registros,
+    required this.onExport,
+  });
+
+  @override
+  _ResumenExportacionScreenState createState() =>
+      _ResumenExportacionScreenState();
+}
+
+class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
+  late Future<Map<String, dynamic>> _resumenFuture;
+  bool _isExporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resumenFuture = _generarResumen();
+  }
+
+  Future<Map<String, dynamic>> _generarResumen() async {
+    final balanzasUnicas = <String, Map<String, dynamic>>{};
+    int totalRegistros = widget.registros.length;
+
+    for (final registro in widget.registros) {
+      final codMetrica = registro['cod_metrica']?.toString() ?? 'N/A';
+      final marca = registro['marca']?.toString() ?? 'N/A';
+      final modelo = registro['modelo']?.toString() ?? 'N/A';
+
+      if (!balanzasUnicas.containsKey(codMetrica)) {
+        balanzasUnicas[codMetrica] = {
+          'cod_metrica': codMetrica,
+          'marca': marca,
+          'modelo': modelo,
+          'cantidad': 0,
+        };
+      }
+      balanzasUnicas[codMetrica]?['cantidad'] =
+          (balanzasUnicas[codMetrica]?['cantidad'] ?? 0) + 1;
+    }
+
+    return {
+      'totalBalanzas': balanzasUnicas.length,
+      'totalRegistros': totalRegistros,
+      'balanzas': balanzasUnicas.values.toList(),
+      'fecha': DateFormat('dd-MM-yyyy HH:mm').format(DateTime.now()),
+      'otst': widget.otst,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 70,
+        title: Text(
+          'RESUMEN DE EXPORTACIÓN',
+          style: TextStyle(
+            color: textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        backgroundColor: isDarkMode ? Colors.transparent : Colors.white,
+        elevation: 0,
+        flexibleSpace: isDarkMode
+            ? ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(color: Colors.black.withOpacity(0.4)),
+          ),
+        )
+            : null,
+        iconTheme: IconThemeData(color: textColor),
+        centerTitle: true,
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _resumenFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final resumen = snapshot.data!;
+          final balanzas =
+          resumen['balanzas'] as List<Map<String, dynamic>>;
+          final totalBalanzas = resumen['totalBalanzas'] as int;
+          final totalRegistros = resumen['totalRegistros'] as int;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Card(
+                  elevation: 4,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF46824B),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'RESUMEN GENERAL',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildResumenItem(
+                          'OTST:',
+                          resumen['otst'],
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Fecha/Hora:',
+                          resumen['fecha'],
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Balanzas realizadas:',
+                          totalBalanzas.toString(),
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Total de registros:',
+                          totalRegistros.toString(),
+                          Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'DETALLE DE BALANZAS',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: balanzas.length,
+                  itemBuilder: (context, index) {
+                    final balanza = balanzas[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Balanza ${index + 1}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildDetailItem(
+                              'Código métrica:',
+                              balanza['cod_metrica'],
+                            ),
+                            _buildDetailItem(
+                              'Marca:',
+                              balanza['marca'],
+                            ),
+                            _buildDetailItem(
+                              'Modelo:',
+                              balanza['modelo'],
+                            ),
+                            _buildDetailItem(
+                              'Registros:',
+                              balanza['cantidad'].toString(),
+                              highlight: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF46824B),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: _isExporting
+                        ? null
+                        : () async {
+                      setState(() => _isExporting = true);
+
+                      try {
+                        await widget.onExport(widget.registros);
+
+                        if (mounted) {
+                          Navigator.pop(context, true);
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error al exportar: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState
+                            (() => _isExporting = false);
+                        }
+                      }
+                    },
+                    child: _isExporting
+                        ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                        : const Text(
+                      'PROCEDER CON LA EXPORTACIÓN',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text(
+                      'CANCELAR',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildResumenItem(String label, String value, Color textColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value,
+      {bool highlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
+              color: highlight ? const Color(0xFF46824B) : Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }

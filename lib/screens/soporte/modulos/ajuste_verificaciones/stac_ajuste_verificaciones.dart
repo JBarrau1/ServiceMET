@@ -319,6 +319,8 @@ class _StacAjusteVerificacionesScreenState
         'tipo_servicio': 'ajustes y verificaciones',
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
+        'estado_servicio': 'Completo',
+
 
         // Datos de pruebas metrológicas
         ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),

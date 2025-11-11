@@ -247,6 +247,7 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
         'session_id': widget.sessionId,
         'cod_metrica': widget.codMetrica,
         'otst': widget.secaValue,
+        'estado_servicio': 'Completo',
 
         // Campos existentes
         'tipo_servicio': 'diagnostico',

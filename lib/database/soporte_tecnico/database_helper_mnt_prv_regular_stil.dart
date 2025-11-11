@@ -878,7 +878,7 @@ class DatabaseHelperMntPrvRegularStil {
         personal_apoyo TEXT DEFAULT '',
         estado_final TEXT DEFAULT '',
         conclusion TEXT DEFAULT '',
-        estado_balanza TEXT DEFAULT ''
+        estado_servicio TEXT DEFAULT ''
       )
       ''');
 

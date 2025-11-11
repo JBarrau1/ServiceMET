@@ -383,6 +383,7 @@ class _StacMntCorrectivoScreenState extends State<StacMntCorrectivoScreen> {
         'session_id': widget.sessionId,
         'cod_metrica': widget.codMetrica,
         'otst': widget.secaValue,
+        'estado_servicio': 'Completo',
 
         // Campos existentes
         'tipo_servicio': 'mnt correctivo',

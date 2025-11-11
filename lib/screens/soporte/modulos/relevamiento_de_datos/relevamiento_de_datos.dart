@@ -260,6 +260,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
       'hora_fin': _horaFinController.text,
       'comentario_general': _comentarioGeneralController.text,
       'recomendaciones': _selectedRecommendation ?? '',
+      'estado_servicio': 'Completo',
     };
 
     // Resto del código existente (MANTENER)

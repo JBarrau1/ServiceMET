@@ -281,6 +281,32 @@ class PrecargaController extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> fetchServicioData(String codMetrica) async {
+    try {
+      String path = join(await getDatabasesPath(), 'precarga_database.db');
+      final db = await openDatabase(path);
+
+      final List<Map<String, dynamic>> servicioData = await db.query(
+        'servicios',
+        where: 'cod_metrica = ?',
+        whereArgs: [codMetrica],
+        orderBy: 'fecha_servicio DESC', // Obtener el más reciente
+        limit: 1,
+      );
+
+      await db.close();
+
+      if (servicioData.isNotEmpty) {
+        return servicioData.first;
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Error al cargar datos de servicio: $e');
+      return null;
+    }
+  }
+
   // MÉTODOS DE CLIENTE
   Future<void> fetchClientes() async {
     try {

@@ -603,7 +603,7 @@ class DatabaseHelperRelevamiento {
         lin12 REAL DEFAULT '',
         ind12 REAL DEFAULT '',
         retorno_lin12 REAL DEFAULT '',
-        estado_balanza TEXT DEFAULT ''
+        estado_servicio TEXT DEFAULT ''
       )
       ''');
 
