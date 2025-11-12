@@ -10,6 +10,8 @@ import '../../../database/app_database.dart';
 
 class PrecargaController extends ChangeNotifier {
 
+  Function(Map<String, dynamic>)? onBalanzaSelected;
+
   String? _baseFotoPath;
   String? get baseFotoPath => _baseFotoPath;
 
@@ -290,7 +292,7 @@ class PrecargaController extends ChangeNotifier {
         'servicios',
         where: 'cod_metrica = ?',
         whereArgs: [codMetrica],
-        orderBy: 'fecha_servicio DESC', // Obtener el más reciente
+        orderBy: 'reg_fecha DESC',
         limit: 1,
       );
 
@@ -587,11 +589,37 @@ class PrecargaController extends ChangeNotifier {
     }
   }
 
-  void selectBalanza(Map<String, dynamic> balanza) {
+  void selectBalanza(Map<String, dynamic> balanza) async {
     _selectedBalanza = balanza;
     _isNewBalanza = false;
     updateStepErrors();
+
+    // NUEVO: Cargar datos del servicio anterior
+    final codMetrica = balanza['cod_metrica']?.toString();
+    if (codMetrica != null) {
+      await _loadServicioDataForBalanza(codMetrica);
+    }
+
+    // NUEVO: Notificar al provider
+    if (onBalanzaSelected != null) {
+      onBalanzaSelected!(balanza);
+    }
+
     notifyListeners();
+  }
+
+  Future<void> _loadServicioDataForBalanza(String codMetrica) async {
+    try {
+      final servicioData = await fetchServicioData(codMetrica);
+
+      if (servicioData != null && _selectedBalanza != null) {
+        // Agregar datos del servicio a la balanza seleccionada
+        _selectedBalanza!['servicio'] = servicioData;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error al cargar servicio: $e');
+    }
   }
 
   void createNewBalanza() {
@@ -605,6 +633,12 @@ class PrecargaController extends ChangeNotifier {
     _selectedBalanza = {
       'cod_metrica': '$_selectedPlantaCodigo-$formattedDateTime',
     };
+
+    // NUEVO: Notificar que es balanza nueva (sin servicio anterior)
+    if (onBalanzaSelected != null) {
+      onBalanzaSelected!(_selectedBalanza!);
+    }
+
     notifyListeners();
   }
 

@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/screens/calibracion/servicio_screen.dart';
 import '../../../database/app_database.dart';
+import '../../../models/balanza_model.dart';
+import '../../../provider/balanza_provider.dart';
 import 'precarga_controller.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/cliente_step.dart';
@@ -78,7 +80,62 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
+      _setupBalanzaCallback();
     });
+  }
+
+  void _setupBalanzaCallback() {
+    final balanzaProvider = Provider.of<BalanzaProvider>(context, listen: false);
+
+    controller.onBalanzaSelected = (balanzaData) async {
+      try {
+        // Crear modelo Balanza desde los datos
+        final balanza = Balanza(
+          cod_metrica: balanzaData['cod_metrica']?.toString() ?? '',
+          unidad: balanzaData['unidad']?.toString() ?? '',
+          cap_max1: balanzaData['cap_max1']?.toString() ?? '',
+          d1: _parseDouble(balanzaData['d1']),
+          e1: _parseDouble(balanzaData['e1']),
+          dec1: _parseDouble(balanzaData['dec1']),
+          cap_max2: balanzaData['cap_max2']?.toString() ?? '0',
+          d2: _parseDouble(balanzaData['d2']),
+          e2: _parseDouble(balanzaData['e2']),
+          dec2: _parseDouble(balanzaData['dec2']),
+          cap_max3: balanzaData['cap_max3']?.toString() ?? '0',
+          d3: _parseDouble(balanzaData['d3']),
+          e3: _parseDouble(balanzaData['e3']),
+          dec3: _parseDouble(balanzaData['dec3']),
+          n_celdas: balanzaData['n_celdas']?.toString() ?? '',
+          exc: _parseDouble(balanzaData['exc']),
+        );
+
+        // Actualizar provider con la balanza
+        balanzaProvider.setSelectedBalanza(balanza, isNew: controller.isNewBalanza);
+
+        // Si hay datos de servicio, cargarlos
+        if (balanzaData['servicio'] != null) {
+          balanzaProvider.setLastServiceData(balanzaData['servicio']);
+        } else if (controller.isNewBalanza) {
+          balanzaProvider.clearLastServiceData();
+        }
+
+        debugPrint('✅ BalanzaProvider actualizado: ${balanza.cod_metrica}');
+        debugPrint('   Es nueva: ${controller.isNewBalanza}');
+        debugPrint('   Tiene servicio anterior: ${balanzaData['servicio'] != null}');
+
+      } catch (e) {
+        debugPrint('❌ Error al actualizar BalanzaProvider: $e');
+      }
+    };
+  }
+
+
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 
 

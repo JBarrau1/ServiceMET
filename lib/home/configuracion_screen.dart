@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/screens/respaldo/respaldo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:package_info_plus/package_info_plus.dart'; // Paquete para obtener información de la app
+import 'package:package_info_plus/package_info_plus.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
   @override
@@ -49,38 +49,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     // para que esto afecte a toda la aplicación
   }
 
-  Future<void> _cerrarSesion(BuildContext context) async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text(
-            'CERRAR SESIÓN',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancelar'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Cerrar Sesión'),
-              onPressed: () async {
-                // Implementar lógica de cerrar sesión aquí
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/login', (Route<dynamic> route) => false);
-              },
-            )
-          ],
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

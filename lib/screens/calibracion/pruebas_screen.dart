@@ -493,78 +493,6 @@ class _PruebasScreenState extends State<PruebasScreen> {
     );
   }
 
-  void _finalizarServicio(BuildContext context) {
-    if (!_isDataSaved) {
-      _showSnackBar(
-          context,
-          'Debe guardar todos los campos para finalizar el servicio',
-          isError: true
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return AlertDialog(
-              title: const Text(
-                  AppConstants.confirmacion,
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                      '¿Está seguro de finalizar el servicio? No se registrarán los datos de Excentricidad, Repetibilidad y Linealidad.'
-                  ),
-                  const SizedBox(height: 16.0),
-                  TextFormField(
-                    controller: _comentarioController,
-                    decoration: InputDecoration(
-                      labelText: 'Comentario (máximo ${AppConstants.maxComentarioLength} caracteres)',
-                      border: const OutlineInputBorder(),
-                    ),
-                    maxLength: AppConstants.maxComentarioLength,
-                    maxLines: 3,
-                    onChanged: (value) => setModalState(() {}),
-                  ),
-                ],
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('No'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  onPressed: _comentarioController.text.trim().isEmpty ||
-                      _comentarioController.text.trim().length > AppConstants.maxComentarioLength
-                      ? null
-                      : () async {
-                    await _saveComentarioToDatabase(
-                        context,
-                        _comentarioController.text.trim()
-                    );
-                    Navigator.of(context).pop();
-                    _navigateToScreen(
-                      FinServicioScreen(
-                        secaValue: widget.secaValue,
-                        sessionId: widget.sessionId,
-                      ),
-                    );
-                  },
-                  child: const Text('Sí'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final balanza = Provider.of<BalanzaProvider>(context).selectedBalanza;
@@ -959,12 +887,6 @@ class _PruebasScreenState extends State<PruebasScreen> {
             backgroundColor: Colors.orangeAccent,
             label: 'Datos del Último Servicio',
             onTap: () => _showLastServiceData(context),
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.stop),
-            backgroundColor: Colors.red,
-            label: 'Cortar Servicio',
-            onTap: () => _finalizarServicio(context),
           ),
         ],
       ),

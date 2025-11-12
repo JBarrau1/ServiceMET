@@ -88,6 +88,10 @@ class _BalanzaStepState extends State<BalanzaStep> {
             ).animate().fadeIn(duration: 600.ms),
 
             const SizedBox(height: 30),
+            // Campos RECA y Sticker
+            _buildRecaAndStickerFields(),
+
+            const SizedBox(height: 30),
 
             // Botones de selección de balanza
             _buildBalanzaSelectionButtons(controller),
@@ -97,15 +101,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
             // Información de la balanza seleccionada o formulario para nueva
             if (controller.selectedBalanza != null || controller.isNewBalanza)
               _buildBalanzaForm(controller),
-
-            const SizedBox(height: 20),
-
-            // Sección de Datos de Servicio
-            _buildServicioSection(controller),
-
-            const SizedBox(height: 30),
-            // Campos RECA y Sticker
-            _buildRecaAndStickerFields(),
 
             const SizedBox(height: 30),
 
@@ -585,7 +580,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'RANGOS DE MEDICIÓN',
+          'RANGOS DE INTERVALO',
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.bold,

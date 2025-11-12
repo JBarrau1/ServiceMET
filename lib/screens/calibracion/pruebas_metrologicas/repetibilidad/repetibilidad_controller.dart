@@ -22,9 +22,7 @@ class RepetibilidadController {
   final TextEditingController pmax1Controller = TextEditingController();
   final TextEditingController fiftyPercentPmax1Controller = TextEditingController();
   final bool loadExisting;
-
-  // Eliminamos las variables d1, d2, d3, capMax1, capMax2, capMax3
-  // Ya no las almacenamos aquí, las obtenemos directamente de la BD cuando se necesitan
+  final List<ValueNotifier<String>> cargaNotifiers = [];
 
   bool _dataLoadedFromPrecarga = false;
   bool _dataLoadedFromAppDatabase = false;

@@ -167,7 +167,6 @@ class _LinearityTestState extends State<LinearityTest>
       }
 
       targetRow['lt']!.text = _incrementController.text;
-      targetRow['indicacion']!.text = _incrementController.text;
 
       _currentLoadController.clear();
       _incrementController.clear();
