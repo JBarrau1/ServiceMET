@@ -22,7 +22,6 @@ class DatabaseService {
         planta_id TEXT,
         cliente_id TEXT,
         dep_id TEXT,
-        unique_key TEXT PRIMARY KEY,
         codigo_planta TEXT,
         dep TEXT,
         dir TEXT
@@ -121,7 +120,6 @@ class DatabaseService {
           'planta_id': plantaId,
           'cliente_id': data['cliente_id']?.toString() ?? '',
           'dep_id': depId,
-          'unique_key': '${plantaId}_$depId',
           'codigo_planta': data['codigo_planta']?.toString() ?? '',
           'dep': data['dep']?.toString() ?? '',
           'dir': data['dir']?.toString() ?? '',

@@ -12,7 +12,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
-import 'extenciones/database_helper.dart';
 import 'detalles_seca_screen.dart';
 import 'detalles_otst_screen.dart';
 import 'home/configuracion_screen.dart';
@@ -342,32 +341,70 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchUserData() async {
     try {
-      final dbHelper = DatabaseHelper();
-      final userData = await dbHelper.getUserData();
+      // ✅ PASO 1: Obtener el usuario logueado desde SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final usuarioLogueado = prefs.getString('logged_user');
 
-      if (userData != null) {
-        final tituloAbr = userData['titulo_abr'] ?? '';
-        final nombre1 = userData['nombre1'] ?? '';
-        final apellido1 = userData['apellido1'] ?? '';
-        final apellido2 = userData['apellido2'] ?? '';
-
-        String inicialApellido2 = '';
-        if (apellido2.isNotEmpty) {
-          inicialApellido2 = '${apellido2[0]}.';
-        }
-
-        final userName = '$tituloAbr $nombre1 $apellido1 $inicialApellido2'.trim();
-
-        setState(() {
-          this.userName = userName.isNotEmpty ? userName : "Usuario";
-          photoUrl = null;
-        });
-      } else {
+      if (usuarioLogueado == null || usuarioLogueado.isEmpty) {
         setState(() {
           userName = "Usuario";
         });
+        return;
       }
+
+      // ✅ PASO 2: Buscar los datos del usuario específico en la BD
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, 'usuarios.db');
+
+      if (!await databaseExists(path)) {
+        setState(() {
+          userName = "Usuario";
+        });
+        return;
+      }
+
+      final db = await openDatabase(path);
+
+      // ✅ PASO 3: Query filtrado por usuario actual
+      final results = await db.query(
+        'usuarios',
+        where: 'usuario = ?',
+        whereArgs: [usuarioLogueado],
+        limit: 1,
+      );
+
+      await db.close();
+
+      if (results.isEmpty) {
+        setState(() {
+          userName = "Usuario";
+        });
+        return;
+      }
+
+      // ✅ PASO 4: Construir el nombre completo
+      final userData = results.first;
+      final tituloAbr = userData['titulo_abr']?.toString() ?? '';
+      final nombre1 = userData['nombre1']?.toString() ?? '';
+      final apellido1 = userData['apellido1']?.toString() ?? '';
+      final apellido2 = userData['apellido2']?.toString() ?? '';
+
+      String inicialApellido2 = '';
+      if (apellido2.isNotEmpty) {
+        inicialApellido2 = '${apellido2[0]}.';
+      }
+
+      final fullName = '$tituloAbr $nombre1 $apellido1 $inicialApellido2'.trim();
+
+      setState(() {
+        userName = fullName.isNotEmpty ? fullName : "Usuario";
+        photoUrl = null;
+      });
+
+      debugPrint('✅ Usuario cargado: $userName (ID: $usuarioLogueado)');
+
     } catch (e) {
+      debugPrint('❌ Error obteniendo datos del usuario: $e');
       setState(() {
         userName = "Usuario";
       });

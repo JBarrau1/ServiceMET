@@ -6,11 +6,13 @@ import 'package:google_fonts/google_fonts.dart';
 class PasswordField extends StatefulWidget {
   final TextEditingController controller;
   final bool isDark;
+  final bool autofocus;
 
   const PasswordField({
     super.key,
     required this.controller,
     required this.isDark,
+    this.autofocus = true,
   });
 
   @override
@@ -38,7 +40,7 @@ class _PasswordFieldState extends State<PasswordField> {
           controller: widget.controller,
           obscureText: _obscurePassword,
           keyboardType: TextInputType.number,
-          autofocus: true,
+          autofocus: widget.autofocus,
           style: GoogleFonts.inter(
             fontSize: 15,
             color: widget.isDark ? Colors.white : Colors.black87,

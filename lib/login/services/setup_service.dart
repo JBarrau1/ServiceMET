@@ -1,4 +1,4 @@
-// lib/login/services/setup_service.dart
+// lib/login/services/setup_service.dart - VERSIÓN CORREGIDA
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -167,7 +167,7 @@ class SetupService {
         'servicios': 'SELECT * FROM DATA_SERVICIOS_LEC',
       };
 
-      onProgress('Preparando base de datos...', 0.55);
+      onProgress('Preparando base de datos...', 0.05);
 
       final dbPath = await getDatabasesPath();
       final precargaDbPath = join(dbPath, 'precarga_database.db');
@@ -187,6 +187,8 @@ class SetupService {
 
       int tableIndex = 0;
       final totalTables = queries.length;
+      int totalInserted = 0;
+      int totalSkipped = 0;
 
       for (var entry in queries.entries) {
         final tableName = entry.key;
@@ -194,7 +196,7 @@ class SetupService {
 
         onProgress(
             'Descargando $tableName...',
-            0.6 + (0.3 * tableIndex / totalTables)
+            0.1 + (0.4 * tableIndex / totalTables)
         );
 
         // Ejecutar query
@@ -218,42 +220,70 @@ class SetupService {
 
         onProgress(
             'Guardando $tableName (${result.length} registros)...',
-            0.6 + (0.3 * tableIndex / totalTables)
+            0.5 + (0.4 * tableIndex / totalTables)
         );
 
         // Usar transacción para inserción masiva más rápida
         await db.transaction((txn) async {
           final batch = txn.batch();
+          int batchInserted = 0;
+          int batchSkipped = 0;
 
           for (var item in result) {
-            final itemMap = Map<String, dynamic>.from(item);
-            final rowData = _prepareRowData(tableName, itemMap);
+            try {
+              final itemMap = Map<String, dynamic>.from(item);
+              final rowData = _prepareRowData(tableName, itemMap);
 
-            if (rowData != null) {
-              batch.insert(
-                tableName,
-                rowData,
-                conflictAlgorithm: ConflictAlgorithm.replace,
-              );
+              // ✅ INSERTAR EN EL BATCH
+              if (rowData != null && rowData.isNotEmpty) {
+                batch.insert(
+                    tableName,
+                    rowData,
+                    conflictAlgorithm: ConflictAlgorithm.ignore
+                );
+                batchInserted++;
+              } else {
+                batchSkipped++;
+                if (batchSkipped < 5) { // Log solo los primeros 5 para no saturar
+                  print('⚠️ Registro saltado en $tableName: datos vacíos o nulos');
+                }
+              }
+            } catch (e) {
+              batchSkipped++;
+              if (batchSkipped < 5) { // Log solo los primeros 5 errores
+                print('❌ Error procesando registro en $tableName: $e');
+              }
             }
           }
 
-          await batch.commit(noResult: true);
+          try {
+            await batch.commit(noResult: true);
+            totalInserted += batchInserted;
+            totalSkipped += batchSkipped;
+            print('✅ Tabla $tableName: $batchInserted insertados, $batchSkipped saltados');
+          } catch (e) {
+            print('❌ Error en batch commit para $tableName: $e');
+            throw e;
+          }
         });
 
-        print('✅ Tabla $tableName: ${result.length} registros guardados');
         tableIndex++;
       }
 
       // Verificar datos guardados
       onProgress('Verificando datos guardados...', 0.95);
-      await _verifyDownloadedData(db);
+      final verification = await _verifyDownloadedData(db);
 
       await db.close();
 
+      print('\n📊 RESUMEN FINAL:');
+      print('Total insertados: $totalInserted');
+      print('Total saltados: $totalSkipped');
+      print('Tablas procesadas: $tableIndex/$totalTables\n');
+
       return SetupResult(
         success: true,
-        message: 'Datos de precarga descargados exitosamente',
+        message: 'Datos de precarga descargados: $totalInserted registros',
       );
     } catch (e) {
       print('❌ Error en downloadPrecargaData: $e');
@@ -267,94 +297,95 @@ class SetupService {
     }
   }
 
-  // Preparar datos según la tabla
+  // ✅ PREPARAR DATOS MEJORADO
   Map<String, dynamic>? _prepareRowData(String table, Map<String, dynamic> data) {
     try {
       switch (table) {
         case 'clientes':
           return {
-            'codigo_cliente': data['codigo_cliente']?.toString() ?? '',
-            'cliente_id': data['cliente_id']?.toString() ?? '',
-            'cliente': data['cliente']?.toString() ?? '',
-            'razonsocial': data['razonsocial']?.toString() ?? '',
+            'codigo_cliente': data['codigo_cliente']?.toString().trim() ?? '',
+            'cliente_id': data['cliente_id']?.toString().trim() ?? '',
+            'cliente': data['cliente']?.toString().trim() ?? '',
+            'razonsocial': data['razonsocial']?.toString().trim() ?? '',
           };
 
         case 'plantas':
-          final plantaId = data['planta_id']?.toString() ?? '';
-          final depId = data['dep_id']?.toString() ?? '';
+          final plantaId = data['planta_id']?.toString().trim() ?? '';
+          final depId = data['dep_id']?.toString().trim() ?? '';
+
           return {
-            'planta': data['planta']?.toString() ?? '',
+            'planta': data['planta']?.toString().trim() ?? '',
             'planta_id': plantaId,
-            'cliente_id': data['cliente_id']?.toString() ?? '',
+            'cliente_id': data['cliente_id']?.toString().trim() ?? '',
             'dep_id': depId,
-            'codigo_planta': data['codigo_planta']?.toString() ?? '',
-            'dep': data['dep']?.toString() ?? '',
-            'dir': data['dir']?.toString() ?? '',
+            'codigo_planta': data['codigo_planta']?.toString().trim() ?? '',
+            'dep': data['dep']?.toString().trim() ?? '',
+            'dir': data['dir']?.toString().trim() ?? '',
           };
 
         case 'balanzas':
           return {
-            'cod_metrica': data['cod_metrica']?.toString() ?? '',
-            'serie': data['serie']?.toString() ?? '',
-            'unidad': data['unidad']?.toString() ?? '',
-            'n_celdas': data['n_celdas']?.toString() ?? '',
-            'cap_max1': data['cap_max1']?.toString() ?? '',
-            'd1': data['d1']?.toString() ?? '',
-            'e1': data['e1']?.toString() ?? '',
-            'dec1': data['dec1']?.toString() ?? '',
-            'cap_max2': data['cap_max2']?.toString() ?? '',
-            'd2': data['d2']?.toString() ?? '',
-            'e2': data['e2']?.toString() ?? '',
-            'dec2': data['dec2']?.toString() ?? '',
-            'cap_max3': data['cap_max3']?.toString() ?? '',
-            'd3': data['d3']?.toString() ?? '',
-            'e3': data['e3']?.toString() ?? '',
-            'dec3': data['dec3']?.toString() ?? '',
-            'categoria': data['categoria']?.toString() ?? '',
+            'cod_metrica': data['cod_metrica']?.toString().trim() ?? '',
+            'serie': data['serie']?.toString().trim() ?? '',
+            'unidad': data['unidad']?.toString().trim() ?? '',
+            'n_celdas': data['n_celdas']?.toString().trim() ?? '',
+            'cap_max1': data['cap_max1']?.toString().trim() ?? '',
+            'd1': data['d1']?.toString().trim() ?? '',
+            'e1': data['e1']?.toString().trim() ?? '',
+            'dec1': data['dec1']?.toString().trim() ?? '',
+            'cap_max2': data['cap_max2']?.toString().trim() ?? '',
+            'd2': data['d2']?.toString().trim() ?? '',
+            'e2': data['e2']?.toString().trim() ?? '',
+            'dec2': data['dec2']?.toString().trim() ?? '',
+            'cap_max3': data['cap_max3']?.toString().trim() ?? '',
+            'd3': data['d3']?.toString().trim() ?? '',
+            'e3': data['e3']?.toString().trim() ?? '',
+            'dec3': data['dec3']?.toString().trim() ?? '',
+            'categoria': data['categoria']?.toString().trim() ?? '',
           };
 
         case 'inf':
           return {
-            'cod_interno': data['cod_interno']?.toString() ?? '',
-            'cod_metrica': data['cod_metrica']?.toString() ?? '',
-            'instrumento': data['instrumento']?.toString() ?? '',
-            'tipo_instrumento': data['tipo_instrumento']?.toString() ?? '',
-            'marca': data['marca']?.toString() ?? '',
-            'modelo': data['modelo']?.toString() ?? '',
-            'serie': data['serie']?.toString() ?? '',
-            'estado': data['estado']?.toString() ?? '',
-            'detalles': data['detalles']?.toString() ?? '',
-            'ubicacion': data['ubicacion']?.toString() ?? '',
+            'cod_interno': data['cod_interno']?.toString().trim() ?? '',
+            'cod_metrica': data['cod_metrica']?.toString().trim() ?? '',
+            'instrumento': data['instrumento']?.toString().trim() ?? '',
+            'tipo_instrumento': data['tipo_instrumento']?.toString().trim() ?? '',
+            'marca': data['marca']?.toString().trim() ?? '',
+            'modelo': data['modelo']?.toString().trim() ?? '',
+            'serie': data['serie']?.toString().trim() ?? '',
+            'estado': data['estado']?.toString().trim() ?? '',
+            'detalles': data['detalles']?.toString().trim() ?? '',
+            'ubicacion': data['ubicacion']?.toString().trim() ?? '',
           };
 
         case 'equipamientos':
           return {
-            'cod_instrumento': data['cod_instrumento']?.toString() ?? '',
-            'instrumento': data['instrumento']?.toString() ?? '',
-            'cert_fecha': data['cert_fecha']?.toString() ?? '',
-            'ente_calibrador': data['ente_calibrador']?.toString() ?? '',
-            'estado': data['estado']?.toString() ?? '',
+            'cod_instrumento': data['cod_instrumento']?.toString().trim() ?? '',
+            'instrumento': data['instrumento']?.toString().trim() ?? '',
+            'cert_fecha': data['cert_fecha']?.toString().trim() ?? '',
+            'ente_calibrador': data['ente_calibrador']?.toString().trim() ?? '',
+            'estado': data['estado']?.toString().trim() ?? '',
           };
 
         case 'servicios':
           final servicioData = <String, dynamic>{
-            'cod_metrica': data['cod_metrica']?.toString() ?? '',
-            'seca': data['seca']?.toString() ?? '',
-            'reg_fecha': data['reg_fecha']?.toString() ?? '',
-            'reg_usuario': data['reg_usuario']?.toString() ?? '',
-            'exc': data['exc']?.toString() ?? '',
+            'cod_metrica': data['cod_metrica']?.toString().trim() ?? '',
+            'seca': data['seca']?.toString().trim() ?? '',
+            'reg_fecha': data['reg_fecha']?.toString().trim() ?? '',
+            'reg_usuario': data['reg_usuario']?.toString().trim() ?? '',
+            'exc': data['exc']?.toString().trim() ?? '',
           };
 
           // Agregar campos rep dinámicamente
           for (int i = 1; i <= 30; i++) {
             final key = 'rep$i';
-            servicioData[key] = data[key]?.toString() ?? '';
+            servicioData[key] = data[key]?.toString().trim() ?? '';
           }
 
           // Agregar campos lin dinámicamente
           for (int i = 1; i <= 60; i++) {
             final key = 'lin$i';
-            servicioData[key] = data[key]?.toString() ?? '';
+            servicioData[key] = data[key]?.toString().trim() ?? '';
           }
 
           return servicioData;
@@ -365,13 +396,15 @@ class SetupService {
       }
     } catch (e) {
       print('❌ Error preparando datos para tabla $table: $e');
+      print('Datos problemáticos: $data');
       return null;
     }
   }
 
   // Verificar datos descargados
-  Future<void> _verifyDownloadedData(Database db) async {
+  Future<Map<String, int>> _verifyDownloadedData(Database db) async {
     final tables = ['clientes', 'plantas', 'balanzas', 'inf', 'equipamientos', 'servicios'];
+    final counts = <String, int>{};
 
     print('\n📊 VERIFICACIÓN DE DATOS DESCARGADOS:');
     print('═' * 50);
@@ -381,12 +414,16 @@ class SetupService {
         final count = Sqflite.firstIntValue(
             await db.rawQuery('SELECT COUNT(*) FROM $table')
         ) ?? 0;
+        counts[table] = count;
         print('✓ $table: $count registros');
       } catch (e) {
         print('✗ $table: ERROR - $e');
+        counts[table] = 0;
       }
     }
     print('═' * 50 + '\n');
+
+    return counts;
   }
 
   // Guardar configuración

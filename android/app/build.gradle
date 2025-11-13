@@ -25,7 +25,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "11.1.1_1_111125"
+        versionName = "11.1.1_2_131125"
     }
 
     buildTypes {
@@ -43,7 +43,7 @@ flutter {
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:34.4.0') // BOM de Firebase
+    implementation platform('com.google.firebase:firebase-bom:34.5.0') // BOM de Firebase
     implementation 'com.google.firebase:firebase-auth' // Firebase Authentication
     implementation 'com.google.firebase:firebase-analytics' // Firebase Analytics
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
