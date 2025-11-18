@@ -27,6 +27,9 @@ class PrecargaControllerSop extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Controllers de balanza - PERSISTENTES para evitar memory leaks
+  late final Map<String, TextEditingController> _balanzaControllers;
+
   // Tipo de Servicio
   String? _selectedTipoServicio;
   String? _selectedTipoServicioLabel;
@@ -174,7 +177,7 @@ class PrecargaControllerSop extends ChangeNotifier {
 
       case 2: // SECA
         if (!_secaConfirmed) {
-          return 'Debe confirmar el SECA';
+          return 'Debe confirmar la OTST';
         }
         return null;
 
@@ -549,7 +552,7 @@ class PrecargaControllerSop extends ChangeNotifier {
   }
 
   Future<void> confirmSeca(String userName, String fechaServicio) async {
-    if (_generatedSeca == null) throw Exception('No hay SECA generado');
+    if (_generatedSeca == null) throw Exception('No hay OTST generado');
     if (_tableName == null) throw Exception('No se ha seleccionado tipo de servicio');
 
     try {
@@ -933,5 +936,5 @@ class SecaExistsException implements Exception {
   SecaExistsException(this.fechaUltimoServicio);
 
   @override
-  String toString() => 'SECA ya existe. Último servicio: $fechaUltimoServicio';
+  String toString() => 'OTST ya existe. Último servicio: $fechaUltimoServicio';
 }

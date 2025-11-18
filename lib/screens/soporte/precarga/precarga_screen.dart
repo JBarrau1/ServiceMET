@@ -86,6 +86,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
       'modelo': TextEditingController(),
       'serie': TextEditingController(),
       'unidades': TextEditingController(),
+      'num_celdas': TextEditingController(),
       'ubicacion': TextEditingController(),
       'cap_max1': TextEditingController(),
       'd1': TextEditingController(),
@@ -174,7 +175,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
       );
 
       if (rows.isEmpty) {
-        debugPrint('No se encontró registro con SECA: ${widget.secaValue}');
+        debugPrint('No se encontró registro con OTST: ${widget.secaValue}');
         return;
       }
 
@@ -606,7 +607,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                  'El OTST "${controller.generatedSeca}" ya tiene registros anteriores.'),
+                  'La OTST "${controller.generatedSeca}" ya tiene registros anteriores.'),
               const SizedBox(height: 10),
               Text('Fecha del último servicio: $fechaServicio'),
               const SizedBox(height: 10),

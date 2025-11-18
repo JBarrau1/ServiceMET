@@ -270,6 +270,7 @@ class DatabaseHelperDiagnostico {
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',
         e1 REAL DEFAULT '',
@@ -287,6 +288,8 @@ class DatabaseHelperDiagnostico {
         fecha_servicio TEXT DEFAULT '',
         hora_inicio TEXT DEFAULT '',
         hora_fin TEXT DEFAULT '',
+        reporte TEXT DEFAULT '',
+        evaluacion TEXT DEFAULT '',
         
         --Comentarios
         comentario_1 TEXT DEFAULT '',

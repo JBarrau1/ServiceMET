@@ -44,16 +44,8 @@ class _FinServicioAjustesVerificacionesScreenState
   String? errorMessage;
   bool _isExporting = false;
 
-  // ✅ NUEVOS CONTROLADORES PARA DATOS ADICIONALES
-  String? _selectedEmp23001;
-  final TextEditingController _indicarController = TextEditingController();
-  final TextEditingController _factorSeguridadController = TextEditingController();
-  String? _selectedReglaAceptacion;
-
   @override
   void dispose() {
-    _indicarController.dispose();
-    _factorSeguridadController.dispose();
     super.dispose();
   }
 
@@ -82,7 +74,7 @@ class _FinServicioAjustesVerificacionesScreenState
 
       // ✅ CAMBIO: Usar otst y estado_balanza = 'Balanza Realizada'
       final rows = await db.query(
-        widget.tableName ?? 'ajustes_verificacion',
+        widget.tableName ?? 'ajustes_metrologicos',
         where: 'otst = ? AND estado_servicio = ?',
         whereArgs: [widget.secaValue, 'Completo'],
       );
@@ -98,7 +90,7 @@ class _FinServicioAjustesVerificacionesScreenState
 
       // 3. Obtener rows actualizados
       final updatedRows = await db.query(
-        widget.tableName ?? 'ajustes_verificacion',
+        widget.tableName ?? 'ajustes_metrologicos',
         where: 'otst = ? AND estado_servicio = ?',
         whereArgs: [widget.secaValue, 'Completo'],
       );
@@ -167,7 +159,7 @@ class _FinServicioAjustesVerificacionesScreenState
 
       // 3. Crear nombre del archivo
       final fileName =
-          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}ajustes_verificacion.csv';
+          '${widget.secaValue}_${DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now())}ajustes_metrologicos.csv';
 
       // 4. Guardar internamente
       final externalDir = await getExternalStorageDirectory();
@@ -273,7 +265,7 @@ class _FinServicioAjustesVerificacionesScreenState
       final db = await dbHelper.database;
 
       final List<Map<String, dynamic>> rows = await db.query(
-        widget.tableName ?? 'ajustes_verificacion',
+        widget.tableName ?? 'ajustes_metrologicos',
         where: 'otst = ?',
         whereArgs: [widget.secaValue],
         orderBy: 'session_id DESC',
@@ -310,7 +302,7 @@ class _FinServicioAjustesVerificacionesScreenState
         context,
         MaterialPageRoute(
           builder: (BuildContext context) => PrecargaScreenSop(
-            tableName: widget.tableName ?? 'ajustes_verificacion',
+            tableName: widget.tableName ?? 'ajustes_metrologicos',
             userName: widget.userName,
             clienteId: widget.clienteId,
             plantaCodigo: widget.plantaCodigo,
@@ -846,7 +838,7 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
-              color: highlight ? const Color(0xFF46824B) : Colors.black87,
+              color: highlight ? const Color(0xFF46824B) : Colors.white,
             ),
           ),
         ],

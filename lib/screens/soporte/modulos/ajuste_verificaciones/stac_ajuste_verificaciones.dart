@@ -18,9 +18,9 @@ class StacAjusteVerificacionesScreen extends StatefulWidget {
   final String secaValue;
   final String nReca;
   final String codMetrica;
-  final String userName; // ✅ AGREGAR
-  final String clienteId; // ✅ AGREGAR
-  final String plantaCodigo; // ✅ AGREGAR
+  final String userName;
+  final String clienteId;
+  final String plantaCodigo;
 
   const StacAjusteVerificacionesScreen({
     super.key,
@@ -28,9 +28,9 @@ class StacAjusteVerificacionesScreen extends StatefulWidget {
     required this.secaValue,
     required this.nReca,
     required this.codMetrica,
-    required this.userName, // ✅ AGREGAR
-    required this.clienteId, // ✅ AGREGAR
-    required this.plantaCodigo, // ✅ AGREGAR
+    required this.userName,
+    required this.clienteId,
+    required this.plantaCodigo,
   });
 
   @override
@@ -46,15 +46,8 @@ class _StacAjusteVerificacionesScreenState
   final List<FocusNode> _comentariosFocusNodes = [];
   int _comentariosCount = 0;
 
-  String? _selectedRecommendation;
-  String? _selectedFisico;
-  String? _selectedOperacional;
-  String? _selectedMetrologico;
-
   late Map<String, dynamic> _initialTestsData;
   late Map<String, dynamic> _finalTestsData;
-  late String _selectedUnitInicial;
-  late String _selectedUnitFinal;
 
   final ImagePicker _imagePicker = ImagePicker();
   final Map<String, Map<String, dynamic>> _fieldData = {};
@@ -67,81 +60,10 @@ class _StacAjusteVerificacionesScreenState
   void initState() {
     super.initState();
     _actualizarHora();
-    // Inicialización de unidades y datos de pruebas
-    _selectedUnitInicial = 'kg';
-    _selectedUnitFinal = 'kg';
+
     _initialTestsData = <String, dynamic>{};
     _finalTestsData = <String, dynamic>{};
 
-    // Lista de todos los campos del estado general del instrumento
-    final List<String> camposEstadoGeneral = [
-      // Sección de Lazas de aproximación y fundaciones
-      'Losas de aproximación (daños o grietas)',
-      'Fundaciones (daños o grietas)',
-
-      // Sección de limpieza y drenaje
-      'Limpieza de perímetro de balanza',
-      'Fosa libre de humedad',
-      'Drenaje libre',
-      'Bomba de sumidero funcional',
-
-      // Sección de Chequeo
-      'Corrosión',
-      'Grietas',
-      'Tapas superiores y pernos',
-      'Desgaste y estrés',
-      'Acumulación de escombros o materiales externos',
-      'Verificación de rieles laterales',
-      'Verificación de paragolpes longitudinales',
-      'Verificación de paragolpes transversales',
-
-      // Sección de Verificaciones eléctricas
-      'Condición de cable de Home Run',
-      'Condición de cable de célula a célula',
-      'Conexión segura a celdas de carga',
-      'Funda de goma y conector ajustados',
-      'Conector de terminación ajustado',
-      'Los cables están conectados de forma segura a todas las celdas de carga',
-      'La funda de goma y el conector del cable están apretados contra la celda de carga',
-      'Conector de terminación ajustado y capuchón en su lugar',
-
-      // Sección de protección contra rayos
-      'Sistema de protección contra rayos conectado a tierra',
-      'Conexión de la correa de tierra del Strike shield',
-      'Tensión entre neutro y tierra adecuada',
-      'Impresora conectada al mismo Strike Shield',
-
-      // Sección de Terminal
-      'Carcasa, lente y el teclado estan limpios, sin daños y sellados',
-      'Voltaje de la batería es adecuado',
-      'Teclado operativo correctamente',
-      'Brillo de pantalla adecuado',
-      'Registros de rendimiento de cambio PDX OK',
-      'Pantallas de servicio de MT indican operación normal',
-      'Archivos de configuración respaldados con InSite',
-      'Terminal devuelto a la disponibilidad operativo',
-
-      // Nueva seccion
-      'Elevado del puente de pesaje y retirado de las celdas de carga',
-      'Limpieza e inspección de superficies de acoplamiento de la estructura',
-      'Limpieza e inspección de bearing cups',
-      'Limpieza e inspección de celdas de carga',
-      'Lubricación de cabezas de celdas de carga',
-      'Engrasado de bearing cups',
-      'Lainas, botas de goma colocadas',
-
-      // Sección de Calibración
-      'Calibración de balanza realiza y dentro de tolerancia'
-    ];
-
-    // Inicializar TODOS los campos con "4 No aplica" y "No aplica"
-    for (final campo in camposEstadoGeneral) {
-      _fieldData[campo] = {
-        'initial_value': '4 No aplica', // Estado inicial
-        'solution_value':
-            'No aplica' // Solución (asegurar que coincida exactamente con las opciones)
-      };
-    }
     // Forzar actualización de la UI después de la inicialización
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -242,7 +164,8 @@ class _StacAjusteVerificacionesScreenState
         final zipData = zipEncoder.encode(archive);
 
         final uint8ListData = Uint8List.fromList(zipData);
-        final zipFileName = '${widget.secaValue}_${widget.codMetrica}_ajustes_verificaciones.zip';
+        final zipFileName =
+            '${widget.secaValue}_${widget.codMetrica}_ajustes_verificaciones.zip';
 
         final params = SaveFileDialogParams(
           data: uint8ListData,
@@ -303,9 +226,9 @@ class _StacAjusteVerificacionesScreenState
       final Map<String, dynamic> comentariosData = {};
       for (int i = 0; i < _comentariosControllers.length; i++) {
         comentariosData['comentario_${i + 1}'] =
-        _comentariosControllers[i].text.isNotEmpty
-            ? _comentariosControllers[i].text
-            : null;
+            _comentariosControllers[i].text.isNotEmpty
+                ? _comentariosControllers[i].text
+                : null;
       }
 
       // ✅ Convertir todos los datos a un mapa para la base de datos
@@ -320,7 +243,6 @@ class _StacAjusteVerificacionesScreenState
         'hora_inicio': _horaController.text,
         'hora_fin': _horaFinController.text,
         'estado_servicio': 'Completo',
-
 
         // Datos de pruebas metrológicas
         ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
@@ -337,7 +259,8 @@ class _StacAjusteVerificacionesScreenState
         dbData['${key}_solucion'] = fieldData['solution_value'] ?? '';
 
         // Agregar fotos si existen
-        final fotos = _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
+        final fotos =
+            _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
         if (fotos.isNotEmpty) {
           dbData['${key}_foto'] = fotos;
         }
@@ -562,12 +485,6 @@ class _StacAjusteVerificacionesScreenState
                     _initialTestsData = data;
                   });
                 },
-                selectedUnit: _selectedUnitInicial,
-                onUnitChanged: (unit) {
-                  setState(() {
-                    _selectedUnitInicial = unit;
-                  });
-                },
               ),
               const SizedBox(height: 20.0),
               // Pruebas Metrológicas Finales
@@ -577,12 +494,6 @@ class _StacAjusteVerificacionesScreenState
                 onTestsDataChanged: (data) {
                   setState(() {
                     _finalTestsData = data;
-                  });
-                },
-                selectedUnit: _selectedUnitFinal,
-                onUnitChanged: (unit) {
-                  setState(() {
-                    _selectedUnitFinal = unit;
                   });
                 },
               ),
@@ -742,7 +653,8 @@ class _StacAjusteVerificacionesScreenState
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => FinServicioAjustesVerificacionesScreen(
+                                      builder: (context) =>
+                                          FinServicioAjustesVerificacionesScreen(
                                         nReca: widget.nReca,
                                         secaValue: widget.secaValue,
                                         sessionId: widget.sessionId,
@@ -750,7 +662,7 @@ class _StacAjusteVerificacionesScreenState
                                         userName: widget.userName,
                                         clienteId: widget.clienteId,
                                         plantaCodigo: widget.plantaCodigo,
-                                        tableName: 'ajustes_verificaciones',
+                                        tableName: 'ajustes_metrologicos',
                                       ),
                                     ),
                                   );
@@ -758,7 +670,7 @@ class _StacAjusteVerificacionesScreenState
                               : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                              isSaved ? const Color(0xFF167D1D) : Colors.grey,
+                                isSaved ? const Color(0xFF167D1D) : Colors.grey,
                           ),
                           child: const Text('SIGUIENTE'),
                         ),

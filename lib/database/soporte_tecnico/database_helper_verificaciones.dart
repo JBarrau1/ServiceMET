@@ -269,6 +269,7 @@ class DatabaseHelperVerificaciones {
         modelo TEXT DEFAULT '',
         serie TEXT DEFAULT '',
         unidades TEXT DEFAULT '',
+        num_celdas TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
         cap_max1 REAL DEFAULT '',
         d1 REAL DEFAULT '',

@@ -51,6 +51,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
     widget.balanzaControllers['serie']?.text = balanza['serie']?.toString() ?? '';
     widget.balanzaControllers['unidades']?.text = balanza['unidad']?.toString() ?? '';
     widget.balanzaControllers['ubicacion']?.text = balanza['ubicacion']?.toString() ?? '';
+    widget.balanzaControllers['num_celdas']?.text = balanza['num_celdas']?.toString() ?? '';
 
     // Datos de rangos
     widget.balanzaControllers['cap_max1']?.text = balanza['cap_max1']?.toString() ?? '';
@@ -146,6 +147,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
   void _initializeNewBalanzaFields(PrecargaControllerSop controller) {
     // Inicializar campos para nueva balanza
+    widget.balanzaControllers['num_celdas']?.text = '';
     widget.balanzaControllers['cod_metrica']?.text = controller.selectedBalanza?['cod_metrica'] ?? '';
     widget.balanzaControllers['cap_max2']?.text = '0';
     widget.balanzaControllers['d2']?.text = '0';
@@ -250,6 +252,18 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['ubicacion']!,
             label: 'Ubicación',
             prefixIcon: Icons.location_on,
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildTextField(
+            controller: widget.balanzaControllers['num_celdas']!,
+            label: 'Número de Celdas',
+            prefixIcon: Icons.grid_3x3,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // Solo números enteros
+            ],
           ),
 
           const SizedBox(height: 30),
