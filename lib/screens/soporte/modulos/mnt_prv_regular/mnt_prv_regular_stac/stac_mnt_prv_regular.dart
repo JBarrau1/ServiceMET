@@ -617,7 +617,7 @@ class _StacMntPrvRegularStacScreenState extends State<StacMntPrvRegularStacScree
                           userName: widget.userName,
                           clienteId: widget.clienteId,
                           plantaCodigo: widget.plantaCodigo,
-                          tableName: 'mnt_prv_regular_stil',
+                          tableName: 'mnt_prv_regular_stac',
                         ),
                       ),
                     );

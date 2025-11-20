@@ -261,7 +261,7 @@ class DatabaseHelperMntPrvAvanzadoStil {
 
         --INF BALANZA
         foto_balanza TEXT DEFAULT '',
-        categoria_balanza TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
         cod_metrica TEXT DEFAULT '',
         cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',

@@ -44,16 +44,8 @@ class _FinServicioMntPrvStacScreenState
   String? errorMessage;
   bool _isExporting = false;
 
-  // ✅ NUEVOS CONTROLADORES PARA DATOS ADICIONALES
-  String? _selectedEmp23001;
-  final TextEditingController _indicarController = TextEditingController();
-  final TextEditingController _factorSeguridadController = TextEditingController();
-  String? _selectedReglaAceptacion;
-
   @override
   void dispose() {
-    _indicarController.dispose();
-    _factorSeguridadController.dispose();
     super.dispose();
   }
 
@@ -846,7 +838,7 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
-              color: highlight ? const Color(0xFF46824B) : Colors.black87,
+              color: highlight ? const Color(0xFF46824B) : Colors.white,
             ),
           ),
         ],

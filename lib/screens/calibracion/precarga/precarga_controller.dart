@@ -9,7 +9,6 @@ import 'package:archive/archive_io.dart';
 import '../../../database/app_database.dart';
 
 class PrecargaController extends ChangeNotifier {
-
   Function(Map<String, dynamic>)? onBalanzaSelected;
 
   String? _baseFotoPath;
@@ -84,7 +83,8 @@ class PrecargaController extends ChangeNotifier {
   // Getters equipos
   List<dynamic> get equipos => _equipos;
   List<Map<String, dynamic>> get selectedEquipos => _selectedEquipos;
-  List<Map<String, dynamic>> get selectedTermohigrometros => _selectedTermohigrometros;
+  List<Map<String, dynamic>> get selectedTermohigrometros =>
+      _selectedTermohigrometros;
 
   // Fotos
   final Map<String, List<File>> _balanzaPhotos = {};
@@ -99,26 +99,89 @@ class PrecargaController extends ChangeNotifier {
   final List<String> unidadesPermitidas = ['mg', 'g', 'kg'];
 
   final List<String> marcasBalanzas = [
-    'ACCULAB', 'AIV ELECTRONIC TECH', 'AIV-ELECTRONIC TECH', 'AND', 'ASPIRE',
-    'AVERY', 'BALPER', 'CAMRY', 'CARDINAL', 'CAS', 'CAUDURO', 'CLEVER',
-    'DAYANG', 'DIGITAL SCALE', 'DOLPHIN', 'ELECTRONIC SCALE', 'FAIRBANKS',
-    'FAIRBANKS MORSE', 'AOSAI', 'FAMOCOL', 'FERTON', 'FILIZOLA', 'GRAM',
-    'GRAM PRECISION', 'GSC', 'GUOMING', 'HBM', 'HIWEIGH', 'HOWE', 'INESA',
-    'JADEVER', 'JM', 'KERN', 'KRETZ', 'LUTRANA', 'METTLER', 'METTLER TOLEDO',
-    'MY WEIGH', 'OHAUS', 'PRECISA', 'PRECISION HISPANA', 'PT Ltd',
-    'QUANTUM SCALES', 'RADWAG', 'RINSTRUM', 'SARTORIUS', 'SCIENTECH', 'SECA',
-    'SHANGAI', 'SHIMADZU', 'SIPEL', 'STAVOL', 'SYMMETRY', 'SYSTEL', 'TOLEDO',
-    'TOP BRAND', 'TOP INSTRUMENTS', 'TRANSCELL', 'TRINER', 'TRINNER SCALES',
-    'WATERPROOF', 'WHITE BIRD', 'CONSTANT', 'JEWELLRY SCALE', 'YAOHUA', 'PRIX'
+    'ACCULAB',
+    'AIV ELECTRONIC TECH',
+    'AIV-ELECTRONIC TECH',
+    'AND',
+    'ASPIRE',
+    'AVERY',
+    'BALPER',
+    'CAMRY',
+    'CARDINAL',
+    'CAS',
+    'CAUDURO',
+    'CLEVER',
+    'DAYANG',
+    'DIGITAL SCALE',
+    'DOLPHIN',
+    'ELECTRONIC SCALE',
+    'FAIRBANKS',
+    'FAIRBANKS MORSE',
+    'AOSAI',
+    'FAMOCOL',
+    'FERTON',
+    'FILIZOLA',
+    'GRAM',
+    'GRAM PRECISION',
+    'GSC',
+    'GUOMING',
+    'HBM',
+    'HIWEIGH',
+    'HOWE',
+    'INESA',
+    'JADEVER',
+    'JM',
+    'KERN',
+    'KRETZ',
+    'LUTRANA',
+    'METTLER',
+    'METTLER TOLEDO',
+    'MY WEIGH',
+    'OHAUS',
+    'PRECISA',
+    'PRECISION HISPANA',
+    'PT Ltd',
+    'QUANTUM SCALES',
+    'RADWAG',
+    'RINSTRUM',
+    'SARTORIUS',
+    'SCIENTECH',
+    'SECA',
+    'SHANGAI',
+    'SHIMADZU',
+    'SIPEL',
+    'STAVOL',
+    'SYMMETRY',
+    'SYSTEL',
+    'TOLEDO',
+    'TOP BRAND',
+    'TOP INSTRUMENTS',
+    'TRANSCELL',
+    'TRINER',
+    'TRINNER SCALES',
+    'WATERPROOF',
+    'WHITE BIRD',
+    'CONSTANT',
+    'JEWELLRY SCALE',
+    'YAOHUA',
+    'PRIX'
   ];
 
   final List<String> tiposEquipo = [
-    'BALANZA', 'BALANZA ANALIZADORA DE HUMEDAD', 'BALANZA ANALÍTICA',
-    'BALANZA MECÁNICA', 'BALANZA ELECTROMECÁNICA',
-    'BALANZA ELECTRÓNICA DE DOBLE RANGO', 'BALANZA ELECTRÓNICA DE TRIPLE RANGO',
-    'BALANZA ELECTRÓNICA DE DOBLE INTERVALO', 'BALANZA ELECTRÓNICA DE TRIPLE INTERVALO',
-    'BALANZA SEMIMICROANALÍTICA', 'BALANZA MICROANALÍTICA',
-    'BALANZA SEMIMICROANALÍTICA DE DOBLE RANGO', 'BALANZA SEMIMICROANALÍTICA DE TRIPLE RANGO', 'BALANZA ELECTRONICA',
+    'BALANZA',
+    'BALANZA ANALIZADORA DE HUMEDAD',
+    'BALANZA ANALÍTICA',
+    'BALANZA MECÁNICA',
+    'BALANZA ELECTROMECÁNICA',
+    'BALANZA ELECTRÓNICA DE DOBLE RANGO',
+    'BALANZA ELECTRÓNICA DE TRIPLE RANGO',
+    'BALANZA ELECTRÓNICA DE DOBLE INTERVALO',
+    'BALANZA ELECTRÓNICA DE TRIPLE INTERVALO',
+    'BALANZA SEMIMICROANALÍTICA',
+    'BALANZA MICROANALÍTICA',
+    'BALANZA SEMIMICROANALÍTICA DE DOBLE RANGO',
+    'BALANZA SEMIMICROANALÍTICA DE TRIPLE RANGO',
+    'BALANZA ELECTRONICA',
   ];
 
   // MÉTODOS DE VALIDACIÓN
@@ -131,14 +194,15 @@ class PrecargaController extends ChangeNotifier {
         return null;
 
       case 1: // Planta
-        if (_selectedPlantaCodigo == null || _selectedPlantaCodigo!.isEmpty) {
-          return 'Debe seleccionar una planta';
-        }
         if (_selectedPlantaDir == null || _selectedPlantaDir!.isEmpty) {
           return 'La dirección de planta es requerida';
         }
         if (_selectedPlantaDep == null || _selectedPlantaDep!.isEmpty) {
           return 'El departamento es requerido';
+        }
+        // CAMBIO: Solo validar código si NO es cliente nuevo
+        if (!_isNewClient && (_selectedPlantaCodigo == null || _selectedPlantaCodigo!.isEmpty)) {
+          return 'Debe seleccionar una planta';
         }
         return null;
 
@@ -235,7 +299,8 @@ class PrecargaController extends ChangeNotifier {
     _secaConfirmed = true;
 
     if (clienteName != null) _selectedClienteName = clienteName;
-    if (clienteRazonSocial != null) _selectedClienteRazonSocial = clienteRazonSocial;
+    if (clienteRazonSocial != null)
+      _selectedClienteRazonSocial = clienteRazonSocial;
     if (plantaDir != null) _selectedPlantaDir = plantaDir;
     if (plantaDep != null) _selectedPlantaDep = plantaDep;
     if (plantaCodigo != null) {
@@ -251,7 +316,7 @@ class PrecargaController extends ChangeNotifier {
     required String nombrePlanta,
     required String direccion,
     required String departamento,
-    required String codigo,
+    // ELIMINAR: required String codigo,
   }) async {
     try {
       String path = join(await getDatabasesPath(), 'precarga_database.db');
@@ -260,6 +325,9 @@ class PrecargaController extends ChangeNotifier {
       final plantaId = DateTime.now().millisecondsSinceEpoch.toString();
       final depId = DateTime.now().millisecondsSinceEpoch.toString();
 
+      // CAMBIO: Generar código automático temporal
+      final codigoTemporal = 'NNNN-NN';
+
       await db.insert('plantas', {
         'cliente_id': _selectedClienteId,
         'planta_id': plantaId,
@@ -267,7 +335,7 @@ class PrecargaController extends ChangeNotifier {
         'planta': nombrePlanta,
         'dir': direccion,
         'dep': departamento,
-        'codigo_planta': codigo,
+        'codigo_planta': codigoTemporal, // USAR CÓDIGO TEMPORAL
       });
 
       await db.close();
@@ -314,7 +382,8 @@ class PrecargaController extends ChangeNotifier {
     try {
       String path = join(await getDatabasesPath(), 'precarga_database.db');
       final db = await openDatabase(path);
-      final List<Map<String, dynamic>> clientesList = await db.query('clientes');
+      final List<Map<String, dynamic>> clientesList =
+          await db.query('clientes');
 
       _clientes = clientesList;
       _filteredClientes = clientesList;
@@ -396,7 +465,7 @@ class PrecargaController extends ChangeNotifier {
 
   void selectPlanta(String uniqueKey) {
     final selectedPlanta = _plantas!.firstWhere(
-          (planta) => planta['unique_key'] == uniqueKey,
+      (planta) => planta['unique_key'] == uniqueKey,
       orElse: () => <String, dynamic>{},
     );
 
@@ -411,11 +480,17 @@ class PrecargaController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPlantaManualData(String direccion, String departamento, String codigo, dynamic controller, {String? nombrePlanta}) {
+  void setPlantaManualData(
+      String direccion,
+      String departamento,
+      dynamic controller,
+      {String? nombrePlanta}) {
     _selectedPlantaDir = direccion;
     _selectedPlantaDep = departamento;
-    _selectedPlantaCodigo = codigo;
-    _selectedPlantaNombre = nombrePlanta ?? 'Planta ${controller.selectedClienteName}'; // Nombre por defecto
+    // CAMBIO: Generar código con NNNN-NN para plantas nuevas
+    _selectedPlantaCodigo = 'NNNN-NN';
+    _selectedPlantaNombre = nombrePlanta ??
+        'Planta ${controller.selectedClienteName}';
 
     generateSugestedSeca();
     updateStepErrors();
@@ -424,15 +499,21 @@ class PrecargaController extends ChangeNotifier {
 
   // MÉTODOS DE SECA
   void generateSugestedSeca() {
-    if (_selectedPlantaCodigo != null && _selectedPlantaCodigo!.isNotEmpty) {
-      final now = DateTime.now();
-      final year = now.year.toString().substring(2);
+    final now = DateTime.now();
+    final year = now.year.toString().substring(2);
 
-      // Solo generar si NO existe un SECA o si NO está confirmado
-      if (_generatedSeca == null || !_secaConfirmed) {
-        _generatedSeca = '$year-$_selectedPlantaCodigo-C01';
-        notifyListeners();
-      }
+    // CAMBIO: Usar código de planta o NNNN-NN si no existe/es nuevo
+    String codigoBase = _selectedPlantaCodigo ?? 'NNNN-NN';
+
+    // Si el código es vacío o es el genérico, usar NNNN-NN
+    if (codigoBase.isEmpty || codigoBase == 'NNNN-NN') {
+      codigoBase = 'NNNN-NN';
+    }
+
+    // Solo generar si NO existe un SECA o si NO está confirmado
+    if (_generatedSeca == null || !_secaConfirmed) {
+      _generatedSeca = '$year-$codigoBase-C01';
+      notifyListeners();
     }
   }
 
@@ -473,7 +554,8 @@ class PrecargaController extends ChangeNotifier {
       final secaExiste = await dbHelper.secaExists(_generatedSeca!);
 
       if (secaExiste) {
-        final ultimoRegistro = await dbHelper.getUltimoRegistroPorSeca(_generatedSeca!);
+        final ultimoRegistro =
+            await dbHelper.getUltimoRegistroPorSeca(_generatedSeca!);
         throw SecaExistsException(ultimoRegistro?['fecha_servicio'] ?? 'N/A');
       } else {
         await createNewSecaSession(userName, fechaServicio);
@@ -483,7 +565,8 @@ class PrecargaController extends ChangeNotifier {
     }
   }
 
-  Future<void> createNewSecaSession(String userName, String fechaServicio) async {
+  Future<void> createNewSecaSession(
+      String userName, String fechaServicio) async {
     try {
       final dbHelper = AppDatabase();
       _generatedSessionId = await dbHelper.generateSessionId(_generatedSeca!);
@@ -560,7 +643,8 @@ class PrecargaController extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> _verificarEstadoCalibacion(String codMetrica) async {
+  Future<Map<String, dynamic>> _verificarEstadoCalibacion(
+      String codMetrica) async {
     try {
       final dbHelper = AppDatabase();
       final db = await dbHelper.database;
@@ -577,7 +661,8 @@ class PrecargaController extends ChangeNotifier {
         return {'estado': 'sin_registro', 'tiene_registro': false};
       }
 
-      final estadoServicio = registros.first['estado_servicio_bal']?.toString() ?? '';
+      final estadoServicio =
+          registros.first['estado_servicio_bal']?.toString() ?? '';
 
       if (estadoServicio == 'Balanza Calibrada') {
         return {'estado': 'calibrada', 'tiene_registro': true};
@@ -630,11 +715,22 @@ class PrecargaController extends ChangeNotifier {
         '${now.minute.toString().padLeft(2, '0')}';
 
     _isNewBalanza = true;
+
+    // CAMBIO: Usar código de planta o NNNN-NN si no existe/es nuevo
+    String codMetrica;
+    if (_selectedPlantaCodigo == null ||
+        _selectedPlantaCodigo!.isEmpty ||
+        _selectedPlantaCodigo == 'NNNN-NN') {
+      codMetrica = 'NNNN-NN-$formattedDateTime';
+    } else {
+      codMetrica = '$_selectedPlantaCodigo-$formattedDateTime';
+    }
+
     _selectedBalanza = {
-      'cod_metrica': '$_selectedPlantaCodigo-$formattedDateTime',
+      'cod_metrica': codMetrica,
     };
 
-    // NUEVO: Notificar que es balanza nueva (sin servicio anterior)
+    // Notificar que es balanza nueva (sin servicio anterior)
     if (onBalanzaSelected != null) {
       onBalanzaSelected!(_selectedBalanza!);
     }
@@ -684,24 +780,25 @@ class PrecargaController extends ChangeNotifier {
 
   void removeEquipo(String codInstrumento, String tipo) {
     if (tipo == 'pesa') {
-      _selectedEquipos.removeWhere((e) =>
-      e['cod_instrumento'] == codInstrumento && e['tipo'] == tipo);
+      _selectedEquipos.removeWhere(
+          (e) => e['cod_instrumento'] == codInstrumento && e['tipo'] == tipo);
     } else if (tipo == 'termohigrometro') {
-      _selectedTermohigrometros.removeWhere((e) =>
-      e['cod_instrumento'] == codInstrumento && e['tipo'] == tipo);
+      _selectedTermohigrometros.removeWhere(
+          (e) => e['cod_instrumento'] == codInstrumento && e['tipo'] == tipo);
     }
 
     updateStepErrors();
     notifyListeners();
   }
 
-  void updateEquipoCantidad(String codInstrumento, String tipo, String cantidad) {
-    List<Map<String, dynamic>> targetList = tipo == 'pesa'
-        ? _selectedEquipos
-        : _selectedTermohigrometros;
+  void updateEquipoCantidad(
+      String codInstrumento, String tipo, String cantidad) {
+    List<Map<String, dynamic>> targetList =
+        tipo == 'pesa' ? _selectedEquipos : _selectedTermohigrometros;
 
     for (var equipo in targetList) {
-      if (equipo['cod_instrumento'] == codInstrumento && equipo['tipo'] == tipo) {
+      if (equipo['cod_instrumento'] == codInstrumento &&
+          equipo['tipo'] == tipo) {
         equipo['cantidad'] = cantidad;
         break;
       }
@@ -744,36 +841,6 @@ class PrecargaController extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       throw Exception('Error al eliminar foto: $e');
-    }
-  }
-
-  Future<void> _renameRemainingPhotos() async {
-    try {
-      final photos = _balanzaPhotos['identificacion'] ?? [];
-
-      for (int i = 0; i < photos.length; i++) {
-        final currentFile = photos[i];
-        final photoNumber = (i + 1).toString().padLeft(2, '0');
-
-        final folderName = _baseFotoPath!.split('/').last;
-        final codMetrica = folderName.split('_').first;
-
-        final newFileName = '${codMetrica}_$photoNumber.jpg';
-        final newFilePath = join(_baseFotoPath!, newFileName);
-
-        if (currentFile.path != newFilePath) {
-          try {
-            final renamedFile = await currentFile.rename(newFilePath);
-            photos[i] = renamedFile;
-          } catch (e) {
-            final newFile = await currentFile.copy(newFilePath);
-            await currentFile.delete();
-            photos[i] = newFile;
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error al renombrar fotos: $e');
     }
   }
 
@@ -870,7 +937,8 @@ class PrecargaController extends ChangeNotifier {
         final pesa = _selectedEquipos[i];
         registro['equipo${i + 1}'] = pesa['cod_instrumento']?.toString() ?? '';
         registro['certificado${i + 1}'] = pesa['cert_fecha']?.toString() ?? '';
-        registro['ente_calibrador${i + 1}'] = pesa['ente_calibrador']?.toString() ?? '';
+        registro['ente_calibrador${i + 1}'] =
+            pesa['ente_calibrador']?.toString() ?? '';
         registro['estado${i + 1}'] = pesa['estado']?.toString() ?? '';
         registro['cantidad${i + 1}'] = pesa['cantidad']?.toString() ?? '1';
       }
@@ -879,9 +947,12 @@ class PrecargaController extends ChangeNotifier {
       for (int i = 0; i < _selectedTermohigrometros.length && i < 2; i++) {
         final equipoNum = i + 6;
         final termo = _selectedTermohigrometros[i];
-        registro['equipo$equipoNum'] = termo['cod_instrumento']?.toString() ?? '';
-        registro['certificado$equipoNum'] = termo['cert_fecha']?.toString() ?? '';
-        registro['ente_calibrador$equipoNum'] = termo['ente_calibrador']?.toString() ?? '';
+        registro['equipo$equipoNum'] =
+            termo['cod_instrumento']?.toString() ?? '';
+        registro['certificado$equipoNum'] =
+            termo['cert_fecha']?.toString() ?? '';
+        registro['ente_calibrador$equipoNum'] =
+            termo['ente_calibrador']?.toString() ?? '';
         registro['estado$equipoNum'] = termo['estado']?.toString() ?? '';
         registro['cantidad$equipoNum'] = termo['cantidad']?.toString() ?? '1';
       }

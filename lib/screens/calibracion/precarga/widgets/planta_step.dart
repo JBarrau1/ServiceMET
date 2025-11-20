@@ -15,7 +15,6 @@ class PlantaStep extends StatefulWidget {
 class _PlantaStepState extends State<PlantaStep> {
   final TextEditingController _plantaDirController = TextEditingController();
   final TextEditingController _plantaDepController = TextEditingController();
-  final TextEditingController _codigoPlantaController = TextEditingController();
   final TextEditingController _nombrePlantaController = TextEditingController();
 
 
@@ -23,7 +22,7 @@ class _PlantaStepState extends State<PlantaStep> {
   void dispose() {
     _plantaDirController.dispose();
     _plantaDepController.dispose();
-    _codigoPlantaController.dispose();
+    // ELIMINAR: _codigoPlantaController.dispose();
     _nombrePlantaController.dispose();
     super.dispose();
   }
@@ -194,21 +193,6 @@ class _PlantaStepState extends State<PlantaStep> {
 
         const SizedBox(height: 16),
 
-        TextField(
-          controller: _codigoPlantaController,
-          decoration: InputDecoration(
-            labelText: 'Código de la Planta *',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            prefixIcon: const Icon(Icons.code),
-            helperText: 'Ej: 1234, ABCD',
-          ),
-          onChanged: (value) => _updatePlantaData(controller),
-        ).animate(delay: 600.ms).fadeIn().slideX(begin: -0.3),
-
-        const SizedBox(height: 16),
-
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -222,7 +206,7 @@ class _PlantaStepState extends State<PlantaStep> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'El código de planta se utilizará para generar el código SECA automáticamente.',
+                  'El código de planta se asignará después en el sistema de gestión. Por ahora se usará un código temporal.', // CAMBIO DE TEXTO
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: Colors.amber[800],
@@ -231,7 +215,7 @@ class _PlantaStepState extends State<PlantaStep> {
               ),
             ],
           ),
-        ).animate(delay: 700.ms).fadeIn().scale(begin: const Offset(0.8, 0.8)),
+        ).animate(delay: 600.ms).fadeIn().scale(begin: const Offset(0.8, 0.8)),
       ],
     );
   }
@@ -521,7 +505,7 @@ class _PlantaStepState extends State<PlantaStep> {
     final TextEditingController nombrePlantaController = TextEditingController();
     final TextEditingController direccionController = TextEditingController();
     final TextEditingController departamentoController = TextEditingController();
-    final TextEditingController codigoController = TextEditingController();
+    // ELIMINAR: final TextEditingController codigoController = TextEditingController();
 
     showDialog(
       context: context,
@@ -561,14 +545,27 @@ class _PlantaStepState extends State<PlantaStep> {
                     prefixIcon: const Icon(Icons.map),
                   ),
                 ),
+                // ELIMINAR COMPLETAMENTE este TextField:
+                /*
+              const SizedBox(height: 16),
+              TextField(
+                controller: codigoController,
+                ...
+              ),
+              */
                 const SizedBox(height: 16),
-                TextField(
-                  controller: codigoController,
-                  decoration: InputDecoration(
-                    labelText: 'Código de Planta *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    prefixIcon: const Icon(Icons.code),
-                    helperText: 'Ej: 1234, ABCD',
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'ℹ️ El código se asignará automáticamente',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: Colors.blue[700],
+                    ),
                   ),
                 ),
               ],
@@ -580,7 +577,7 @@ class _PlantaStepState extends State<PlantaStep> {
                 nombrePlantaController.dispose();
                 direccionController.dispose();
                 departamentoController.dispose();
-                codigoController.dispose();
+                // ELIMINAR: codigoController.dispose();
                 Navigator.of(dialogContext).pop();
               },
               child: const Text('Cancelar'),
@@ -590,8 +587,7 @@ class _PlantaStepState extends State<PlantaStep> {
               onPressed: () async {
                 if (nombrePlantaController.text.trim().isEmpty ||
                     direccionController.text.trim().isEmpty ||
-                    departamentoController.text.trim().isEmpty ||
-                    codigoController.text.trim().isEmpty) {
+                    departamentoController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Complete todos los campos')),
                   );
@@ -603,13 +599,13 @@ class _PlantaStepState extends State<PlantaStep> {
                     nombrePlanta: nombrePlantaController.text.trim(),
                     direccion: direccionController.text.trim(),
                     departamento: departamentoController.text.trim(),
-                    codigo: codigoController.text.trim(),
+                    // ELIMINAR: codigo: codigoController.text.trim(),
                   );
 
                   nombrePlantaController.dispose();
                   direccionController.dispose();
                   departamentoController.dispose();
-                  codigoController.dispose();
+                  // ELIMINAR: codigoController.dispose();
 
                   Navigator.of(dialogContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -636,8 +632,9 @@ class _PlantaStepState extends State<PlantaStep> {
     controller.setPlantaManualData(
       _plantaDirController.text,
       _plantaDepController.text,
-      _codigoPlantaController.text,
-      _nombrePlantaController.text,
+      controller, // Pasar el controller completo
+      nombrePlanta: _nombrePlantaController.text,
+      // ELIMINAR: _codigoPlantaController.text,
     );
   }
 }

@@ -591,7 +591,7 @@ class _MntPrvAvanzadoStilScreenState extends State<MntPrvAvanzadoStilScreen> {
                           userName: widget.userName,
                           clienteId: widget.clienteId,
                           plantaCodigo: widget.plantaCodigo,
-                          tableName: 'mnt_prv_regular_stil',
+                          tableName: 'mnt_prv_avanzado_stil',
                         ),
                       ),
                     );

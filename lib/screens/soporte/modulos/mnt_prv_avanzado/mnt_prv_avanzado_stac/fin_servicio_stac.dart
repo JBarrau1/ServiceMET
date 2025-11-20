@@ -846,7 +846,7 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
-              color: highlight ? const Color(0xFF46824B) : Colors.black87,
+              color: highlight ? const Color(0xFF46824B) : Colors.white,
             ),
           ),
         ],

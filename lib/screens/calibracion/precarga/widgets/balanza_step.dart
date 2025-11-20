@@ -14,15 +14,16 @@ class BalanzaStep extends StatefulWidget {
   final TextEditingController stickerController;
 
   const BalanzaStep({
-    Key? key,
+    super.key,
     required this.balanzaControllers,
     required this.nRecaController,
     required this.stickerController,
     required String secaValue,
     required String sessionId,
     required String selectedPlantaCodigo,
-    required String selectedCliente, required bool loadFromSharedPreferences,
-  }) : super(key: key);
+    required String selectedCliente,
+    required bool loadFromSharedPreferences,
+  });
 
   @override
   State<BalanzaStep> createState() => _BalanzaStepState();
@@ -34,7 +35,8 @@ class _BalanzaStepState extends State<BalanzaStep> {
     super.initState();
     // Actualizar el código métrica cuando se selecciona una balanza
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final controller = Provider.of<PrecargaController>(context, listen: false);
+      final controller =
+          Provider.of<PrecargaController>(context, listen: false);
       if (controller.selectedBalanza != null) {
         _fillBalanzaData(controller.selectedBalanza!);
       }
@@ -42,31 +44,45 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   void _fillBalanzaData(Map<String, dynamic> balanza) {
-    widget.balanzaControllers['cod_metrica']?.text = balanza['cod_metrica']?.toString() ?? '';
-    widget.balanzaControllers['categoria_balanza']?.text = balanza['categoria']?.toString() ?? '';
-    widget.balanzaControllers['cod_int']?.text = balanza['cod_interno']?.toString() ?? '';
-    widget.balanzaControllers['tipo_equipo']?.text = balanza['tipo_instrumento']?.toString() ?? '';
-    widget.balanzaControllers['marca']?.text = balanza['marca']?.toString() ?? '';
-    widget.balanzaControllers['modelo']?.text = balanza['modelo']?.toString() ?? '';
-    widget.balanzaControllers['serie']?.text = balanza['serie']?.toString() ?? '';
-    widget.balanzaControllers['unidades']?.text = balanza['unidad']?.toString() ?? '';
-    widget.balanzaControllers['ubicacion']?.text = balanza['ubicacion']?.toString() ?? '';
+    widget.balanzaControllers['cod_metrica']?.text =
+        balanza['cod_metrica']?.toString() ?? '';
+    widget.balanzaControllers['categoria_balanza']?.text =
+        balanza['categoria']?.toString() ?? '';
+    widget.balanzaControllers['cod_int']?.text =
+        balanza['cod_interno']?.toString() ?? '';
+    widget.balanzaControllers['tipo_equipo']?.text =
+        balanza['tipo_instrumento']?.toString() ?? '';
+    widget.balanzaControllers['marca']?.text =
+        balanza['marca']?.toString() ?? '';
+    widget.balanzaControllers['modelo']?.text =
+        balanza['modelo']?.toString() ?? '';
+    widget.balanzaControllers['serie']?.text =
+        balanza['serie']?.toString() ?? '';
+    widget.balanzaControllers['unidades']?.text =
+        balanza['unidad']?.toString() ?? '';
+    widget.balanzaControllers['ubicacion']?.text =
+        balanza['ubicacion']?.toString() ?? '';
 
     // Datos de rangos
-    widget.balanzaControllers['cap_max1']?.text = balanza['cap_max1']?.toString() ?? '';
+    widget.balanzaControllers['cap_max1']?.text =
+        balanza['cap_max1']?.toString() ?? '';
     widget.balanzaControllers['d1']?.text = balanza['d1']?.toString() ?? '';
     widget.balanzaControllers['e1']?.text = balanza['e1']?.toString() ?? '';
     widget.balanzaControllers['dec1']?.text = balanza['dec1']?.toString() ?? '';
 
-    widget.balanzaControllers['cap_max2']?.text = balanza['cap_max2']?.toString() ?? '0';
+    widget.balanzaControllers['cap_max2']?.text =
+        balanza['cap_max2']?.toString() ?? '0';
     widget.balanzaControllers['d2']?.text = balanza['d2']?.toString() ?? '0';
     widget.balanzaControllers['e2']?.text = balanza['e2']?.toString() ?? '0';
-    widget.balanzaControllers['dec2']?.text = balanza['dec2']?.toString() ?? '0';
+    widget.balanzaControllers['dec2']?.text =
+        balanza['dec2']?.toString() ?? '0';
 
-    widget.balanzaControllers['cap_max3']?.text = balanza['cap_max3']?.toString() ?? '0';
+    widget.balanzaControllers['cap_max3']?.text =
+        balanza['cap_max3']?.toString() ?? '0';
     widget.balanzaControllers['d3']?.text = balanza['d3']?.toString() ?? '0';
     widget.balanzaControllers['e3']?.text = balanza['e3']?.toString() ?? '0';
-    widget.balanzaControllers['dec3']?.text = balanza['dec3']?.toString() ?? '0';
+    widget.balanzaControllers['dec3']?.text =
+        balanza['dec3']?.toString() ?? '0';
   }
 
   @override
@@ -140,7 +156,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
               backgroundColor: const Color(0xFF327734),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-
             ),
           ),
         ),
@@ -150,7 +165,8 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
   void _initializeNewBalanzaFields(PrecargaController controller) {
     // Inicializar campos para nueva balanza
-    widget.balanzaControllers['cod_metrica']?.text = controller.selectedBalanza?['cod_metrica'] ?? '';
+    widget.balanzaControllers['cod_metrica']?.text =
+        controller.selectedBalanza?['cod_metrica'] ?? '';
     widget.balanzaControllers['cap_max2']?.text = '0';
     widget.balanzaControllers['d2']?.text = '0';
     widget.balanzaControllers['e2']?.text = '0';
@@ -161,163 +177,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
     widget.balanzaControllers['dec3']?.text = '0';
   }
 
-  Widget _buildServicioSection(PrecargaController controller) {
-    final balanza = controller.selectedBalanza;
-    final servicioData = balanza?['servicio'] as Map<String, dynamic>?;
-
-    if (servicioData == null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Center(
-          child: Text(
-            'No hay datos de servicio previos',
-            style: GoogleFonts.inter(
-              color: Colors.grey[600],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.purple[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Título
-          Row(
-            children: [
-              Icon(Icons.history, color: Colors.purple[700], size: 24),
-              const SizedBox(width: 8),
-              Text(
-                'DATOS DE SERVICIO ANTERIOR',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.purple[700],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Errores de centrado (EXC)
-          _buildServicioCard(
-            'ERRORES DE CENTRADO (EXC)',
-            [
-              _buildServicioRow('EXC', servicioData['exc']?.toString() ?? 'N/A'),
-            ],
-            Colors.purple,
-          ),
-
-          const SizedBox(height: 16),
-
-          // Repetibilidad
-          _buildServicioCard(
-            'REPETIBILIDAD',
-            [
-              _buildServicioRow('Rep 1', servicioData['rep1']?.toString() ?? 'N/A'),
-              _buildServicioRow('Rep 2', servicioData['rep2']?.toString() ?? 'N/A'),
-              _buildServicioRow('Rep 3', servicioData['rep3']?.toString() ?? 'N/A'),
-            ],
-            Colors.blue,
-          ),
-
-          const SizedBox(height: 16),
-
-          // Linealidad
-          _buildServicioCard(
-            'LINEALIDAD',
-            _buildLinealidadRows(servicioData),
-            Colors.green,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServicioCard(String title, List<Widget> rows, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...rows,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServicioRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.grey[800],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildLinealidadRows(Map<String, dynamic> servicioData) {
-    List<Widget> rows = [];
-
-    // LIN1 a LIN13
-    for (int i = 1; i <= 13; i++) {
-      final linKey = 'lin$i';
-      final value = servicioData[linKey]?.toString() ?? 'N/A';
-      rows.add(_buildServicioRow('LIN$i', value));
-    }
-
-    return rows;
-  }
-
   Widget _buildBalanzaForm(PrecargaController controller) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -326,6 +185,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -340,7 +200,9 @@ class _BalanzaStepState extends State<BalanzaStep> {
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: controller.isNewBalanza ? Colors.green[700] : Colors.blue[700],
+              color: controller.isNewBalanza
+                  ? Colors.green[700]
+                  : Colors.blue[700],
             ),
           ),
 
@@ -489,17 +351,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   Widget _buildMarcaField(PrecargaController controller) {
-    // Si es balanza existente, mostrar campo de solo lectura
-    if (!controller.isNewBalanza) {
-      return _buildTextField(
-        controller: widget.balanzaControllers['marca']!,
-        label: 'Marca',
-        readOnly: true,
-        prefixIcon: Icons.business,
-      );
-    }
-
-    // Si es balanza nueva, mostrar TypeAheadField
+    // Siempre permitir edición con TypeAheadField
     return TypeAheadField<String>(
       controller: widget.balanzaControllers['marca']!,
       suggestionsCallback: (pattern) async {
@@ -539,17 +391,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
   }
 
   Widget _buildUnidadField(PrecargaController controller) {
-    // Si es balanza existente, mostrar campo de solo lectura
-    if (!controller.isNewBalanza) {
-      return _buildTextField(
-        controller: widget.balanzaControllers['unidades']!,
-        label: 'Unidad',
-        readOnly: true,
-        prefixIcon: Icons.straighten,
-      );
-    }
-
-    // Si es balanza nueva, mostrar dropdown
+    // Siempre mostrar dropdown editable
     return DropdownButtonFormField<String>(
       value: widget.balanzaControllers['unidades']!.text.isNotEmpty
           ? widget.balanzaControllers['unidades']!.text
@@ -591,26 +433,35 @@ class _BalanzaStepState extends State<BalanzaStep> {
         const SizedBox(height: 20),
 
         // Rango 1
-        _buildRangoCard('RANGO 1', [
-          ['cap_max1', 'd1'],
-          ['e1', 'dec1'],
-        ], Colors.blue),
+        _buildRangoCard(
+            'RANGO 1',
+            [
+              ['cap_max1', 'd1'],
+              ['e1', 'dec1'],
+            ],
+            Colors.blue),
 
         const SizedBox(height: 16),
 
         // Rango 2 (Opcional)
-        _buildRangoCard('RANGO 2', [
-          ['cap_max2', 'd2'],
-          ['e2', 'dec2'],
-        ], Colors.orange),
+        _buildRangoCard(
+            'RANGO 2',
+            [
+              ['cap_max2', 'd2'],
+              ['e2', 'dec2'],
+            ],
+            Colors.orange),
 
         const SizedBox(height: 16),
 
         // Rango 3 (Opcional)
-        _buildRangoCard('RANGO 3', [
-          ['cap_max3', 'd3'],
-          ['e3', 'dec3'],
-        ], Colors.green),
+        _buildRangoCard(
+            'RANGO 3',
+            [
+              ['cap_max3', 'd3'],
+              ['e3', 'dec3'],
+            ],
+            Colors.green),
       ],
     );
   }
@@ -665,24 +516,33 @@ class _BalanzaStepState extends State<BalanzaStep> {
             ),
           ),
           const SizedBox(height: 12),
-          ...fields.map((row) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: row.map((fieldKey) => Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _buildTextField(
-                    controller: widget.balanzaControllers[fieldKey]!,
-                    label: fieldKey.toUpperCase(),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                    ],
-                  ),
-                ),
-              )).toList(),
-            ),
-          )).toList(),
+          ...fields
+              .map((row) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: row
+                          .map((fieldKey) => Expanded(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  child: _buildTextField(
+                                    controller:
+                                        widget.balanzaControllers[fieldKey]!,
+                                    label: fieldKey.toUpperCase(),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(
+                                          RegExp(r'^\d*\.?\d*')),
+                                    ],
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  ))
+              .toList(),
         ],
       ),
     );
@@ -720,7 +580,8 @@ class _BalanzaStepState extends State<BalanzaStep> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: controller.fotosTomadas ? Colors.green[300]! : Colors.grey[300]!,
+          color:
+              controller.fotosTomadas ? Colors.green[300]! : Colors.grey[300]!,
           width: 2,
         ),
       ),
@@ -731,7 +592,9 @@ class _BalanzaStepState extends State<BalanzaStep> {
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: controller.fotosTomadas ? Colors.green[700] : Colors.grey[600],
+              color: controller.fotosTomadas
+                  ? Colors.green[700]
+                  : Colors.grey[600],
             ),
           ),
 
@@ -794,58 +657,61 @@ class _BalanzaStepState extends State<BalanzaStep> {
           ElevatedButton.icon(
             onPressed: photos.length < 5
                 ? () async {
-              try {
-                await controller.takePhoto();
+                    try {
+                      await controller.takePhoto();
 
-                final currentCount = controller.balanzaPhotos['identificacion']?.length ?? 0;
-                final savedPath = controller.baseFotoPath;
+                      final currentCount =
+                          controller.balanzaPhotos['identificacion']?.length ??
+                              0;
+                      final savedPath = controller.baseFotoPath;
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.check_circle,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Foto guardada ($currentCount/5)',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Foto guardada ($currentCount/5)',
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                        if (savedPath != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '📁 $savedPath',
-                            style: GoogleFonts.robotoMono(fontSize: 10),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                              if (savedPath != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '📁 $savedPath',
+                                  style: GoogleFonts.robotoMono(fontSize: 10),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
-                    backgroundColor: Colors.green,
-                    duration: const Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al tomar foto: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            }
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 3),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error al tomar foto: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 : null,
             icon: const Icon(Icons.camera_alt),
             label: const Text('Tomar Foto'),
@@ -980,14 +846,14 @@ class _BalanzaStepState extends State<BalanzaStep> {
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: searchController.text.isNotEmpty
                             ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            searchController.clear();
-                            setDialogState(() {
-                              filteredBalanzas = controller.balanzas;
-                            });
-                          },
-                        )
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  searchController.clear();
+                                  setDialogState(() {
+                                    filteredBalanzas = controller.balanzas;
+                                  });
+                                },
+                              )
                             : null,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -998,10 +864,19 @@ class _BalanzaStepState extends State<BalanzaStep> {
                           if (value.isEmpty) {
                             filteredBalanzas = controller.balanzas;
                           } else {
-                            filteredBalanzas = controller.balanzas.where((balanza) {
-                              final codMetrica = balanza['cod_metrica']?.toString().toLowerCase() ?? '';
-                              final codInterno = balanza['cod_interno']?.toString().toLowerCase() ?? '';
-                              final serie = balanza['serie']?.toString().toLowerCase() ?? '';
+                            filteredBalanzas =
+                                controller.balanzas.where((balanza) {
+                              final codMetrica = balanza['cod_metrica']
+                                      ?.toString()
+                                      .toLowerCase() ??
+                                  '';
+                              final codInterno = balanza['cod_interno']
+                                      ?.toString()
+                                      .toLowerCase() ??
+                                  '';
+                              final serie =
+                                  balanza['serie']?.toString().toLowerCase() ??
+                                      '';
                               final searchLower = value.toLowerCase();
 
                               return codMetrica.contains(searchLower) ||
@@ -1019,77 +894,92 @@ class _BalanzaStepState extends State<BalanzaStep> {
                     Expanded(
                       child: filteredBalanzas.isEmpty
                           ? const Center(
-                        child: Text('No se encontraron balanzas'),
-                      )
+                              child: Text('No se encontraron balanzas'),
+                            )
                           : ListView.builder(
-                        itemCount: filteredBalanzas.length,
-                        itemBuilder: (context, index) {
-                          final balanza = filteredBalanzas[index];
-                          final estadoCalibacion = balanza['estado_calibracion'] ?? 'sin_registro';
-                          final tieneRegistro = balanza['tiene_registro'] ?? false;
+                              itemCount: filteredBalanzas.length,
+                              itemBuilder: (context, index) {
+                                final balanza = filteredBalanzas[index];
+                                final estadoCalibacion =
+                                    balanza['estado_calibracion'] ??
+                                        'sin_registro';
+                                final tieneRegistro =
+                                    balanza['tiene_registro'] ?? false;
 
-                          return Container(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: estadoCalibacion == 'calibrada'
-                                    ? Colors.green[300]!
-                                    : estadoCalibacion == 'no_calibrada'
-                                    ? Colors.orange[300]!
-                                    : Colors.grey[300]!,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ListTile(
-                              leading: _buildEstadoIcon(estadoCalibacion),
-                              title: Text(
-                                'CÓDIGO: ${balanza['cod_metrica']}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Cod. Interno: ${balanza['cod_interno'] ?? 'N/A'}'),
-                                  Text('Serie: ${balanza['serie'] ?? 'N/A'}'),
-                                  Text('Marca: ${balanza['marca'] ?? 'N/A'}'),
-                                  Text('Modelo: ${balanza['modelo'] ?? 'N/A'}'),
-                                  if (tieneRegistro)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        estadoCalibacion == 'calibrada'
-                                            ? '✓ Balanza Calibrada'
-                                            : '⚠ Requiere Concluir',
-                                        style: TextStyle(
-                                          color: estadoCalibacion == 'calibrada'
-                                              ? Colors.green[700]
-                                              : Colors.orange[700],
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
+                                return Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: estadoCalibacion == 'calibrada'
+                                          ? Colors.green[300]!
+                                          : estadoCalibacion == 'no_calibrada'
+                                              ? Colors.orange[300]!
+                                              : Colors.grey[300]!,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ListTile(
+                                    leading: _buildEstadoIcon(estadoCalibacion),
+                                    title: Text(
+                                      'CÓDIGO: ${balanza['cod_metrica']}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                ],
-                              ),
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                              onTap: () {
-                                // Mostrar alerta si la balanza no está calibrada
-                                if (tieneRegistro && estadoCalibacion == 'no_calibrada') {
-                                  _showCalibrationWarningDialog(balanza, controller);
-                                } else {
-                                  controller.selectBalanza(balanza);
-                                  _fillBalanzaData(balanza);
-                                  Navigator.pop(context);
-                                }
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                            'Cod. Interno: ${balanza['cod_interno'] ?? 'N/A'}'),
+                                        Text(
+                                            'Serie: ${balanza['serie'] ?? 'N/A'}'),
+                                        Text(
+                                            'Marca: ${balanza['marca'] ?? 'N/A'}'),
+                                        Text(
+                                            'Modelo: ${balanza['modelo'] ?? 'N/A'}'),
+                                        if (tieneRegistro)
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              estadoCalibacion == 'calibrada'
+                                                  ? '✓ Balanza Calibrada'
+                                                  : '⚠ Requiere Concluir',
+                                              style: TextStyle(
+                                                color: estadoCalibacion ==
+                                                        'calibrada'
+                                                    ? Colors.green[700]
+                                                    : Colors.orange[700],
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    trailing: const Icon(
+                                        Icons.arrow_forward_ios,
+                                        size: 16),
+                                    onTap: () {
+                                      // Mostrar alerta si la balanza no está calibrada
+                                      if (tieneRegistro &&
+                                          estadoCalibacion == 'no_calibrada') {
+                                        _showCalibrationWarningDialog(
+                                            balanza, controller);
+                                      } else {
+                                        controller.selectBalanza(balanza);
+                                        _fillBalanzaData(balanza);
+                                        Navigator.pop(context);
+                                      }
+                                    },
+                                  ),
+                                );
                               },
                             ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),
@@ -1154,7 +1044,8 @@ class _BalanzaStepState extends State<BalanzaStep> {
     }
   }
 
-  void _showCalibrationWarningDialog(Map<String, dynamic> balanza, PrecargaController controller) {
+  void _showCalibrationWarningDialog(
+      Map<String, dynamic> balanza, PrecargaController controller) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

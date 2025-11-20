@@ -261,7 +261,7 @@ class DatabaseHelperMntPrvAvanzadoStac {
         
         --INF BALANZA
         foto_balanza TEXT DEFAULT '',
-        categoria_balanza TEXT DEFAULT '',
+        categoria TEXT DEFAULT '',
         cod_metrica TEXT DEFAULT '',
         cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
@@ -775,29 +775,29 @@ class DatabaseHelperMntPrvAvanzadoStac {
         desgaste_estres_comentario TEXT DEFAULT '',
         desgaste_estres_foto TEXT DEFAULT '',
         
-        -- Escombros
-        escombros_estado TEXT DEFAULT '',
-        escombros_solucion TEXT DEFAULT '',
-        escombros_comentario TEXT DEFAULT '',
-        escombros_foto TEXT DEFAULT '',
+        -- Acumulacion
+        acumulacion_escombros_estado TEXT DEFAULT '',
+        acumulacion_escombros_solucion TEXT DEFAULT '',
+        acumulacion_escombros_comentario TEXT DEFAULT '',
+        acumulacion_escombros_foto TEXT DEFAULT '',
         
         -- Rieles Laterales
-        rieles_laterales_estado TEXT DEFAULT '',
-        rieles_laterales_solucion TEXT DEFAULT '',
-        rieles_laterales_comentario TEXT DEFAULT '',
-        rieles_laterales_foto TEXT DEFAULT '',
+        verificacion_rieles_estado TEXT DEFAULT '',
+        verificacion_rieles_solucion TEXT DEFAULT '',
+        verificacion_rieles_comentario TEXT DEFAULT '',
+        verificacion_rieles_foto TEXT DEFAULT '',
         
         -- Paragolpes Longitudinales
-        paragolpes_long_estado TEXT DEFAULT '',
-        paragolpes_long_solucion TEXT DEFAULT '',
-        paragolpes_long_comentario TEXT DEFAULT '',
-        paragolpes_long_foto TEXT DEFAULT '',
+        paragolpes_longitudinales_estado TEXT DEFAULT '',
+        paragolpes_longitudinales_solucion TEXT DEFAULT '',
+        paragolpes_longitudinales_comentario TEXT DEFAULT '',
+        paragolpes_longitudinales_foto TEXT DEFAULT '',
         
         -- Paragolpes Transversales
-        paragolpes_transv_estado TEXT DEFAULT '',
-        paragolpes_transv_solucion TEXT DEFAULT '',
-        paragolpes_transv_comentario TEXT DEFAULT '',
-        paragolpes_transv_foto TEXT DEFAULT '',
+        paragolpes_transversales_estado TEXT DEFAULT '',
+        paragolpes_transversales_solucion TEXT DEFAULT '',
+        paragolpes_transversales_comentario TEXT DEFAULT '',
+        paragolpes_transversales_foto TEXT DEFAULT '',
         
         -- Cable Homerun
         cable_homerun_estado TEXT DEFAULT '',
@@ -842,28 +842,34 @@ class DatabaseHelperMntPrvAvanzadoStac {
         proteccion_rayos_foto TEXT DEFAULT '',
         
         -- Conexión a Tierra
-        conexion_tierra_estado TEXT DEFAULT '',
-        conexion_tierra_solucion TEXT DEFAULT '',
-        conexion_tierra_comentario TEXT DEFAULT '',
-        conexion_tierra_foto TEXT DEFAULT '',
+        sistema_tierra_estado TEXT DEFAULT '',
+        sistema_tierra_solucion TEXT DEFAULT '',
+        sistema_tierra_comentario TEXT DEFAULT '',
+        sistema_tierra_foto TEXT DEFAULT '',
+        
+        -- Conexion Strike
+        conexion_strike_shield_estado TEXT DEFAULT '',
+        conexion_strike_shield_solucion TEXT DEFAULT '',
+        conexion_strike_shield_comentario TEXT DEFAULT '',
+        conexion_strike_shield_foto TEXT DEFAULT '',
         
         -- Tensión entre Neutro y Tierra
-        tension_neutro_estado TEXT DEFAULT '',
-        tension_neutro_solucion TEXT DEFAULT '',
-        tension_neutro_comentario TEXT DEFAULT '',
-        tension_neutro_foto TEXT DEFAULT '',
+        tension_neutro_tierra_estado TEXT DEFAULT '',
+        tension_neutro_tierra_solucion TEXT DEFAULT '',
+        tension_neutro_tierra_comentario TEXT DEFAULT '',
+        tension_neutro_tierra_foto TEXT DEFAULT '',
         
         -- Impresión Conectada
-        impresion_conectada_estado TEXT DEFAULT '',
-        impresion_conectada_solucion TEXT DEFAULT '',
-        impresion_conectada_comentario TEXT DEFAULT '',
-        impresion_conectada_foto TEXT DEFAULT '',
+        impresora_strike_shield_estado TEXT DEFAULT '',
+        impresora_strike_shield_solucion TEXT DEFAULT '',
+        impresora_strike_shield_comentario TEXT DEFAULT '',
+        impresora_strike_shield_foto TEXT DEFAULT '',
         
         -- Carcasa Limpia
-        carcasa_limpia_estado TEXT DEFAULT '',
-        carcasa_limpia_solucion TEXT DEFAULT '',
-        carcasa_limpia_comentario TEXT DEFAULT '',
-        carcasa_limpia_foto TEXT DEFAULT '',
+        carcasa_lente_teclado_estado TEXT DEFAULT '',
+        carcasa_lente_teclado_solucion TEXT DEFAULT '',
+        carcasa_lente_teclado_comentario TEXT DEFAULT '',
+        carcasa_lente_teclado_foto TEXT DEFAULT '',
         
         -- Voltaje de Batería (si aplica)
         voltaje_bateria_estado TEXT DEFAULT '',
@@ -872,10 +878,10 @@ class DatabaseHelperMntPrvAvanzadoStac {
         voltaje_bateria_foto TEXT DEFAULT '',
         
         -- Teclado Funcional
-        teclado_funcional_estado TEXT DEFAULT '',
-        teclado_funcional_solucion TEXT DEFAULT '',
-        teclado_funcional_comentario TEXT DEFAULT '',
-        teclado_funcional_foto TEXT DEFAULT '',
+        teclado_operativo_estado TEXT DEFAULT '',
+        teclado_operativo_solucion TEXT DEFAULT '',
+        teclado_operativo_comentario TEXT DEFAULT '',
+        teclado_operativo_foto TEXT DEFAULT '',
         
         -- Brillo de Pantalla
         brillo_pantalla_estado TEXT DEFAULT '',
@@ -884,16 +890,22 @@ class DatabaseHelperMntPrvAvanzadoStac {
         brillo_pantalla_foto TEXT DEFAULT '',
         
         -- Registro de Rendimiento
-        registro_rendimiento_estado TEXT DEFAULT '',
-        registro_rendimiento_solucion TEXT DEFAULT '',
-        registro_rendimiento_comentario TEXT DEFAULT '',
-        registro_rendimiento_foto TEXT DEFAULT '',
+        registros_pdx_estado TEXT DEFAULT '',
+        registros_pdx_solucion TEXT DEFAULT '',
+        registros_pdx_comentario TEXT DEFAULT '',
+        registros_pdx_foto TEXT DEFAULT '',
         
         -- Pantallas MT (si aplica)
-        pantallas_mt_estado TEXT DEFAULT '',
-        pantallas_mt_solucion TEXT DEFAULT '',
-        pantallas_mt_comentario TEXT DEFAULT '',
-        pantallas_mt_foto TEXT DEFAULT '',
+        pantallas_servicio_estado TEXT DEFAULT '',
+        pantallas_servicio_solucion TEXT DEFAULT '',
+        pantallas_servicio_comentario TEXT DEFAULT '',
+        pantallas_servicio_foto TEXT DEFAULT '',
+        
+        -- Archivos Respaldos
+        archivos_respaldados_estado TEXT DEFAULT '',
+        archivos_respaldados_solucion TEXT DEFAULT '',
+        archivos_respaldados_comentario TEXT DEFAULT '',
+        archivos_respaldados_foto TEXT DEFAULT '',
         
         -- Backup InSite (si aplica)
         backup_insite_estado TEXT DEFAULT '',
@@ -902,10 +914,10 @@ class DatabaseHelperMntPrvAvanzadoStac {
         backup_insite_foto TEXT DEFAULT '',
         
         -- Terminal Operativo
-        terminal_operativo_estado TEXT DEFAULT '',
-        terminal_operativo_solucion TEXT DEFAULT '',
-        terminal_operativo_comentario TEXT DEFAULT '',
-        terminal_operativo_foto TEXT '',
+        terminal_disponibilidad_estado TEXT DEFAULT '',
+        terminal_disponibilidad_solucion TEXT DEFAULT '',
+        terminal_disponibilidad_comentario TEXT DEFAULT '',
+        terminal_disponibilidad_foto TEXT '',
         
         -- Nuevo
         elevado_puente_estado TEXT DEFAULT '',
@@ -944,10 +956,10 @@ class DatabaseHelperMntPrvAvanzadoStac {
         lainas_botas_foto TEXT DEFAULT '',
         
         -- Calibracion
-        calibracion_estado TEXT DEFAULT '',
-        calibracion_solucion TEXT DEFAULT '',
-        calibracion_comentario TEXT DEFAULT '',
-        calibracion_foto TEXT DEFAULT '',
+        calibracion_balanza_estado TEXT DEFAULT '',
+        calibracion_balanza_solucion TEXT DEFAULT '',
+        calibracion_balanza_comentario TEXT DEFAULT '',
+        calibracion_balanza_foto TEXT DEFAULT '',
         
         otros TEXT DEFAULT '',
         otros_foto TEXT DEFAULT '',

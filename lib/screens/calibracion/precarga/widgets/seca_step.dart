@@ -422,9 +422,57 @@ class _SecaStepState extends State<SecaStep> {
 
   Widget _buildAdditionalInfo(
       PrecargaController controller, BuildContext context) {
+    // NUEVO: Detectar si tiene códigos temporales
+    final tieneCodigoTemporal = controller.generatedSeca?.contains('NNNN-NN') ?? false;
+
     return Column(
       children: [
-        // Información sobre formato SECA
+        // NUEVO: Alerta para códigos temporales
+        if (tieneCodigoTemporal)
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue[300]!),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.blue[700],
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Código Temporal',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[800],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Este SECA contiene "NNNN-NN" porque el cliente o planta es nuevo. El código definitivo se asignará desde el sistema de gestión.',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ).animate(delay: 400.ms).fadeIn().scale(begin: const Offset(0.95, 0.95)),
+
+        // Información sobre formato SECA (código existente)
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -455,7 +503,7 @@ class _SecaStepState extends State<SecaStep> {
                     const SizedBox(height: 4),
                     Text(
                       'El código se genera automáticamente usando:\n'
-                          '• Código de planta seleccionado\n'
+                          '• Código de planta ${tieneCodigoTemporal ? "(temporal: NNNN-NN)" : "seleccionado"}\n'
                           '• Numeración correlativa (C01, C02...)\n'
                           '• Año actual (${DateTime.now().year.toString().substring(2)})',
                       style: GoogleFonts.inter(
@@ -470,9 +518,9 @@ class _SecaStepState extends State<SecaStep> {
           ),
         ).animate(delay: 500.ms).fadeIn().slideX(begin: -0.3),
 
+        // Resto del código existente...
         const SizedBox(height: 20),
 
-        // Siguiente paso
         if (controller.secaConfirmed)
           Container(
             padding: const EdgeInsets.all(16),
@@ -516,7 +564,6 @@ class _SecaStepState extends State<SecaStep> {
             ),
           ).animate(delay: 600.ms).fadeIn().slideY(begin: 0.3),
 
-        // Datos guardados
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(16),
