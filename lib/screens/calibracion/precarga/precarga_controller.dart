@@ -316,16 +316,15 @@ class PrecargaController extends ChangeNotifier {
     required String nombrePlanta,
     required String direccion,
     required String departamento,
-    // ELIMINAR: required String codigo,
   }) async {
     try {
       String path = join(await getDatabasesPath(), 'precarga_database.db');
       final db = await openDatabase(path);
 
       final plantaId = DateTime.now().millisecondsSinceEpoch.toString();
-      final depId = DateTime.now().millisecondsSinceEpoch.toString();
+      final depId = (DateTime.now().millisecondsSinceEpoch + 1).toString(); // +1 para evitar duplicados
 
-      // CAMBIO: Generar código automático temporal
+      // Código temporal para plantas nuevas
       final codigoTemporal = 'NNNN-NN';
 
       await db.insert('plantas', {
@@ -335,13 +334,15 @@ class PrecargaController extends ChangeNotifier {
         'planta': nombrePlanta,
         'dir': direccion,
         'dep': departamento,
-        'codigo_planta': codigoTemporal, // USAR CÓDIGO TEMPORAL
+        'codigo_planta': codigoTemporal,
       });
 
       await db.close();
 
+      // Recargar plantas
       await fetchPlantas(_selectedClienteId!);
 
+      // Seleccionar la planta recién creada
       final uniqueKey = '${plantaId}_${depId}';
       selectPlanta(uniqueKey);
 
@@ -408,6 +409,10 @@ class PrecargaController extends ChangeNotifier {
     _selectedClienteId = cliente['cliente_id']?.toString() ?? '';
     _selectedClienteName = cliente['cliente']?.toString() ?? '';
     _selectedClienteRazonSocial = cliente['razonsocial']?.toString() ?? '';
+
+    // NUEVO: Limpiar selección de planta al cambiar de cliente
+    clearPlantaSelection();
+
     updateStepErrors();
     notifyListeners();
 
@@ -421,6 +426,10 @@ class PrecargaController extends ChangeNotifier {
     _selectedClienteRazonSocial = razonSocial;
     _selectedClienteId = null;
     _plantas = null;
+
+    // NUEVO: Limpiar selección de planta al cambiar a cliente nuevo
+    clearPlantaSelection();
+
     updateStepErrors();
     notifyListeners();
   }
@@ -432,6 +441,25 @@ class PrecargaController extends ChangeNotifier {
     _isNewClient = false;
     _plantas = null;
     _selectedPlantaKey = null;
+
+    // NUEVO: Limpiar también los datos de planta manual
+    _selectedPlantaNombre = null;
+    _selectedPlantaDir = null;
+    _selectedPlantaDep = null;
+    _selectedPlantaCodigo = null;
+
+    updateStepErrors();
+    notifyListeners();
+  }
+
+  void clearPlantaSelection() {
+    _selectedPlantaKey = null;
+    _selectedPlantaNombre = null;
+    _selectedPlantaDir = null;
+    _selectedPlantaDep = null;
+    _selectedPlantaCodigo = null;
+    _generatedSeca = null;
+    _secaConfirmed = false;
     updateStepErrors();
     notifyListeners();
   }
@@ -487,10 +515,15 @@ class PrecargaController extends ChangeNotifier {
       {String? nombrePlanta}) {
     _selectedPlantaDir = direccion;
     _selectedPlantaDep = departamento;
-    // CAMBIO: Generar código con NNNN-NN para plantas nuevas
     _selectedPlantaCodigo = 'NNNN-NN';
-    _selectedPlantaNombre = nombrePlanta ??
-        'Planta ${controller.selectedClienteName}';
+
+    // Solo actualizar nombre si se proporciona y no está vacío
+    if (nombrePlanta != null && nombrePlanta.isNotEmpty) {
+      _selectedPlantaNombre = nombrePlanta;
+    } else if (_selectedPlantaNombre == null || _selectedPlantaNombre!.isEmpty) {
+      // Fallback: usar nombre del cliente si está disponible
+      _selectedPlantaNombre = 'Planta ${controller.selectedClienteName ?? "Nueva"}';
+    }
 
     generateSugestedSeca();
     updateStepErrors();

@@ -691,7 +691,6 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
           'planta_id': plantaId,
           'cliente_id': clienteId,
           'dep_id': depId,
-          'unique_key': '${plantaId}_$depId',
           'codigo_planta': data['codigo_planta']?.toString() ?? '',
           'dep': data['dep']?.toString() ?? '',
           'dir': data['dir']?.toString() ?? '',
@@ -725,12 +724,8 @@ class _DescargaDeDatosScreenState extends State<DescargaDeDatosScreen> {
         break;
 
       case 'inf':
-        final codInterno = data['cod_interno']?.toString();
-        if (codInterno == null) {
-          throw Exception('Datos inválidos para inf');
-        }
         await txn.insert('inf', {
-          'cod_interno': codInterno,
+          'cod_interno': data['cod_interno']?.toString() ?? '',
           'cod_metrica': data['cod_metrica']?.toString() ?? '',
           'instrumento': data['instrumento']?.toString() ?? '',
           'tipo_instrumento': data['tipo_instrumento']?.toString() ?? '',

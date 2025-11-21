@@ -16,7 +16,6 @@ import 'database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
 import 'database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
 import 'database/soporte_tecnico/database_helper_relevamiento.dart';
 import 'database/soporte_tecnico/database_helper_verificaciones.dart';
-import 'package:service_met/screens/calibracion/selec_cliente.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:provider/provider.dart';
 import 'login/screens/initial_setup_screen.dart';
@@ -79,12 +78,6 @@ class MyApp extends StatelessWidget {
           '/setup': (context) => const InitialSetupScreen(), // NUEVO
           '/login': (context) => const LoginScreen(),
           '/home': (context) => const HomeScreen(),
-          '/calibracion': (context) => const CalibracionScreen(
-            dbName: '',
-            userName: '',
-            secaValue: '',
-            sessionId: '',
-          ),
         },
       ),
     );

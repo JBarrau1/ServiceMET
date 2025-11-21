@@ -72,8 +72,8 @@ class DatabaseHelperPrecarga {
       dep TEXT,
       dir TEXT,
       cliente_id TEXT,
-      dep_id TEXT,
-      unique_key TEXT
+      dep_id TEXT
+     
     )
   ''');
     await db.execute('''
@@ -126,6 +126,7 @@ class DatabaseHelperPrecarga {
     await db.execute('''
     CREATE TABLE IF NOT EXISTS servicios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cod_interno TEXT,
       cod_metrica TEXT,
       seca TEXT,
       reg_fecha TEXT,

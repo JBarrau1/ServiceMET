@@ -13,16 +13,50 @@ class PlantaStep extends StatefulWidget {
 }
 
 class _PlantaStepState extends State<PlantaStep> {
-  final TextEditingController _plantaDirController = TextEditingController();
-  final TextEditingController _plantaDepController = TextEditingController();
-  final TextEditingController _nombrePlantaController = TextEditingController();
+  late TextEditingController _plantaDirController;
+  late TextEditingController _plantaDepController;
+  late TextEditingController _nombrePlantaController;
 
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _plantaDirController = TextEditingController();
+    _plantaDepController = TextEditingController();
+    _nombrePlantaController = TextEditingController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isInitialized) {
+      final controller = Provider.of<PrecargaController>(context, listen: false);
+      _initializeControllers(controller);
+      _isInitialized = true;
+    }
+  }
+
+  void _initializeControllers(PrecargaController controller) {
+    if (controller.isNewClient) {
+      // Solo inicializar si hay datos disponibles
+      if (controller.selectedPlantaNombre != null) {
+        _nombrePlantaController.text = controller.selectedPlantaNombre!;
+      }
+      if (controller.selectedPlantaDir != null) {
+        _plantaDirController.text = controller.selectedPlantaDir!;
+      }
+      if (controller.selectedPlantaDep != null) {
+        _plantaDepController.text = controller.selectedPlantaDep!;
+      }
+    }
+  }
 
   @override
   void dispose() {
     _plantaDirController.dispose();
     _plantaDepController.dispose();
-    // ELIMINAR: _codigoPlantaController.dispose();
     _nombrePlantaController.dispose();
     super.dispose();
   }
@@ -31,6 +65,19 @@ class _PlantaStepState extends State<PlantaStep> {
   Widget build(BuildContext context) {
     return Consumer<PrecargaController>(
       builder: (context, controller, child) {
+        // Resetear controllers cuando se cambia de cliente nuevo a existente
+        if (!controller.isNewClient && _nombrePlantaController.text.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _nombrePlantaController.clear();
+                _plantaDirController.clear();
+                _plantaDepController.clear();
+              });
+            }
+          });
+        }
+
         return Column(
           children: [
             // Título
@@ -151,7 +198,9 @@ class _PlantaStepState extends State<PlantaStep> {
 
         const SizedBox(height: 20),
 
-        TextField(
+        // CAMPO: Nombre de Planta
+        TextFormField(
+          key: const ValueKey('nombre_planta_nuevo'),
           controller: _nombrePlantaController,
           decoration: InputDecoration(
             labelText: 'Nombre de la Planta *',
@@ -160,12 +209,16 @@ class _PlantaStepState extends State<PlantaStep> {
             ),
             prefixIcon: const Icon(Icons.factory),
           ),
-          onChanged: (value) => _updatePlantaData(controller),
+          onChanged: (value) {
+            _updatePlantaData(controller);
+          },
         ).animate(delay: 350.ms).fadeIn().slideX(begin: -0.3),
 
         const SizedBox(height: 20),
 
-        TextField(
+        // CAMPO: Dirección
+        TextFormField(
+          key: const ValueKey('direccion_planta_nuevo'),
           controller: _plantaDirController,
           decoration: InputDecoration(
             labelText: 'Dirección de la Planta *',
@@ -174,12 +227,16 @@ class _PlantaStepState extends State<PlantaStep> {
             ),
             prefixIcon: const Icon(Icons.location_on),
           ),
-          onChanged: (value) => _updatePlantaData(controller),
+          onChanged: (value) {
+            _updatePlantaData(controller);
+          },
         ).animate(delay: 400.ms).fadeIn().slideX(begin: -0.3),
 
         const SizedBox(height: 16),
 
-        TextField(
+        // CAMPO: Departamento
+        TextFormField(
+          key: const ValueKey('departamento_planta_nuevo'),
           controller: _plantaDepController,
           decoration: InputDecoration(
             labelText: 'Departamento de la Planta *',
@@ -188,11 +245,14 @@ class _PlantaStepState extends State<PlantaStep> {
             ),
             prefixIcon: const Icon(Icons.map),
           ),
-          onChanged: (value) => _updatePlantaData(controller),
+          onChanged: (value) {
+            _updatePlantaData(controller);
+          },
         ).animate(delay: 500.ms).fadeIn().slideX(begin: 0.3),
 
         const SizedBox(height: 16),
 
+        // Información sobre código temporal
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -206,7 +266,7 @@ class _PlantaStepState extends State<PlantaStep> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'El código de planta se asignará después en el sistema de gestión. Por ahora se usará un código temporal.', // CAMBIO DE TEXTO
+                  'El código de planta se asignará después en el sistema de gestión. Por ahora se usará un código temporal (NNNN-NN).',
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: Colors.amber[800],
@@ -225,48 +285,6 @@ class _PlantaStepState extends State<PlantaStep> {
       return const Center(
         child: CircularProgressIndicator(),
       );
-    }
-
-    if (controller.plantas!.isEmpty) {
-      return Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange[200]!),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.warning,
-                  color: Colors.orange[600],
-                  size: 48,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No hay plantas registradas',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange[800],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Este cliente no tiene plantas registradas en el sistema.',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.orange[700],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ).animate(delay: 300.ms).fadeIn().scale(begin: const Offset(0.8, 0.8));
     }
 
     return Column(
@@ -298,75 +316,116 @@ class _PlantaStepState extends State<PlantaStep> {
 
         const SizedBox(height: 20),
 
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: controller.plantas!.map((planta) {
-              final uniqueKey = planta['unique_key'];
-              final isSelected = controller.selectedPlantaKey == uniqueKey;
+        // Si no hay plantas, mostrar mensaje
+        if (controller.plantas!.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange[200]!),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.warning,
+                  color: Colors.orange[600],
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No hay plantas registradas',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange[800],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Este cliente no tiene plantas registradas.\nUse el botón "Nueva Planta" para agregar una.',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.orange[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ).animate(delay: 400.ms).fadeIn().scale(begin: const Offset(0.9, 0.9))
+        else
+        // Lista de plantas
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: controller.plantas!.map((planta) {
+                final uniqueKey = planta['unique_key'];
+                final isSelected = controller.selectedPlantaKey == uniqueKey;
 
-              return Container(
-                margin: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).primaryColor.withOpacity(0.1)
-                      : null,
-                  borderRadius: BorderRadius.circular(8),
-                  border: isSelected
-                      ? Border.all(
-                    color: Theme.of(context).primaryColor,
-                    width: 2,
-                  )
-                      : null,
-                ),
-                child: ListTile(
-                  title: Text(
-                    planta['planta']?.toString() ?? 'Planta sin nombre',
-                    style: GoogleFonts.poppins(
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                return Container(
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Theme.of(context).primaryColor.withOpacity(0.1)
+                        : null,
+                    borderRadius: BorderRadius.circular(8),
+                    border: isSelected
+                        ? Border.all(
+                      color: Theme.of(context).primaryColor,
+                      width: 2,
+                    )
+                        : null,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      planta['planta']?.toString() ?? 'Planta sin nombre',
+                      style: GoogleFonts.poppins(
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
                     ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (planta['dir'] != null)
-                        Text(
-                          'Dirección: ${planta['dir']}',
-                          style: GoogleFonts.inter(fontSize: 12),
-                        ),
-                      if (planta['dep'] != null)
-                        Text(
-                          'Departamento: ${planta['dep']}',
-                          style: GoogleFonts.inter(fontSize: 12),
-                        ),
-                      if (planta['codigo_planta'] != null)
-                        Text(
-                          'Código: ${planta['codigo_planta']}',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[600],
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (planta['dir'] != null)
+                          Text(
+                            'Dirección: ${planta['dir']}',
+                            style: GoogleFonts.inter(fontSize: 12),
                           ),
-                        ),
-                    ],
+                        if (planta['dep'] != null)
+                          Text(
+                            'Departamento: ${planta['dep']}',
+                            style: GoogleFonts.inter(fontSize: 12),
+                          ),
+                        if (planta['codigo_planta'] != null)
+                          Text(
+                            'Código: ${planta['codigo_planta']}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: planta['codigo_planta'] == 'NNNN-NN'
+                                  ? Colors.orange[600]
+                                  : Colors.blue[600],
+                            ),
+                          ),
+                      ],
+                    ),
+                    trailing: isSelected
+                        ? Icon(
+                      Icons.check_circle,
+                      color: Theme.of(context).primaryColor,
+                    )
+                        : const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => controller.selectPlanta(uniqueKey),
                   ),
-                  trailing: isSelected
-                      ? Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).primaryColor,
-                  )
-                      : const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => controller.selectPlanta(uniqueKey),
-                ),
-              );
-            }).toList(),
-          ),
-        ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.3),
+                );
+              }).toList(),
+            ),
+          ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.3),
       ],
     );
   }
@@ -505,10 +564,10 @@ class _PlantaStepState extends State<PlantaStep> {
     final TextEditingController nombrePlantaController = TextEditingController();
     final TextEditingController direccionController = TextEditingController();
     final TextEditingController departamentoController = TextEditingController();
-    // ELIMINAR: final TextEditingController codigoController = TextEditingController();
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(
@@ -545,14 +604,6 @@ class _PlantaStepState extends State<PlantaStep> {
                     prefixIcon: const Icon(Icons.map),
                   ),
                 ),
-                // ELIMINAR COMPLETAMENTE este TextField:
-                /*
-              const SizedBox(height: 16),
-              TextField(
-                controller: codigoController,
-                ...
-              ),
-              */
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -561,7 +612,7 @@ class _PlantaStepState extends State<PlantaStep> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'ℹ️ El código se asignará automáticamente',
+                    'ℹ️ El código se asignará automáticamente (NNNN-NN)',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: Colors.blue[700],
@@ -577,47 +628,67 @@ class _PlantaStepState extends State<PlantaStep> {
                 nombrePlantaController.dispose();
                 direccionController.dispose();
                 departamentoController.dispose();
-                // ELIMINAR: codigoController.dispose();
                 Navigator.of(dialogContext).pop();
               },
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3e7732)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3e7732),
+              ),
               onPressed: () async {
                 if (nombrePlantaController.text.trim().isEmpty ||
                     direccionController.text.trim().isEmpty ||
                     departamentoController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Complete todos los campos')),
+                    const SnackBar(
+                      content: Text('Complete todos los campos'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                   return;
                 }
 
                 try {
+                  final nombre = nombrePlantaController.text.trim();
+                  final direccion = direccionController.text.trim();
+                  final departamento = departamentoController.text.trim();
+
                   await controller.addNewPlanta(
-                    nombrePlanta: nombrePlantaController.text.trim(),
-                    direccion: direccionController.text.trim(),
-                    departamento: departamentoController.text.trim(),
-                    // ELIMINAR: codigo: codigoController.text.trim(),
+                    nombrePlanta: nombre,
+                    direccion: direccion,
+                    departamento: departamento,
                   );
 
                   nombrePlantaController.dispose();
                   direccionController.dispose();
                   departamentoController.dispose();
-                  // ELIMINAR: codigoController.dispose();
 
-                  Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Planta agregada correctamente'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Planta agregada correctamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                  );
+                  nombrePlantaController.dispose();
+                  direccionController.dispose();
+                  departamentoController.dispose();
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
               child: const Text('Guardar'),
@@ -629,12 +700,21 @@ class _PlantaStepState extends State<PlantaStep> {
   }
 
   void _updatePlantaData(PrecargaController controller) {
+    if (!controller.isNewClient) return;
+
+    final nombre = _nombrePlantaController.text.trim();
+    final direccion = _plantaDirController.text.trim();
+    final departamento = _plantaDepController.text.trim();
+
+    if (nombre.isEmpty || direccion.isEmpty || departamento.isEmpty) {
+      return;
+    }
+
     controller.setPlantaManualData(
-      _plantaDirController.text,
-      _plantaDepController.text,
-      controller, // Pasar el controller completo
-      nombrePlanta: _nombrePlantaController.text,
-      // ELIMINAR: _codigoPlantaController.text,
+      direccion,
+      departamento,
+      controller,
+      nombrePlanta: nombre,
     );
   }
 }
