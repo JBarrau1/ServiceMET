@@ -7,7 +7,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/screens/calibracion/servicio_screen.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/stac_mnt_prv_regular.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/stac_mnt_prv_regular.dart'
+    hide StepData;
 import '../../../database/soporte_tecnico/database_helper_ajustes.dart';
 import '../../../database/soporte_tecnico/database_helper_diagnostico.dart';
 import '../../../database/soporte_tecnico/database_helper_instalacion.dart';
@@ -22,9 +23,12 @@ import '../modulos/ajuste_verificaciones/stac_ajuste_verificaciones.dart';
 import '../modulos/diagnostico/stac_diagnostico.dart';
 import '../modulos/instalacion/stac_instalacion.dart';
 import '../modulos/mnt_correctivo/stac_mnt_correctivo.dart';
-import '../modulos/mnt_prv_avanzado/mnt_prv_avanzado_stac/stac_mnt_prv_avanzado.dart';
-import '../modulos/mnt_prv_avanzado/mnt_prv_avanzado_stil/stil_mnt_prv_avanzado.dart';
-import '../modulos/mnt_prv_regular/mnt_prv_regular_stil/stil_mnt_prv_regular.dart';
+import '../modulos/mnt_prv_avanzado/mnt_prv_avanzado_stac/stac_mnt_prv_avanzado.dart'
+    hide StepData;
+import '../modulos/mnt_prv_avanzado/mnt_prv_avanzado_stil/stil_mnt_prv_avanzado.dart'
+    hide StepData;
+import '../modulos/mnt_prv_regular/mnt_prv_regular_stil/stil_mnt_prv_regular.dart'
+    hide StepData;
 import '../modulos/relevamiento_de_datos/relevamiento_de_datos.dart';
 import '../modulos/verificaciones_internas/stac_verificaciones_internas.dart';
 import 'precarga_controller.dart';
@@ -242,7 +246,41 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
 
             return Column(
               children: [
-                const StepIndicator(),
+                StepIndicator(
+                  currentStep: controller.currentStep + 1,
+                  steps: const [
+                    StepData(
+                      title: 'Servicio',
+                      subtitle: 'Tipo de servicio',
+                      icon: Icons.build_circle_outlined,
+                    ),
+                    StepData(
+                      title: 'Cliente',
+                      subtitle: 'Selección',
+                      icon: Icons.business,
+                    ),
+                    StepData(
+                      title: 'Planta',
+                      subtitle: 'Ubicación',
+                      icon: Icons.factory,
+                    ),
+                    StepData(
+                      title: 'OTST',
+                      subtitle: 'Orden de trabajo',
+                      icon: Icons.confirmation_number_outlined,
+                    ),
+                    StepData(
+                      title: 'Balanza',
+                      subtitle: 'Datos del equipo',
+                      icon: Icons.scale_outlined,
+                    ),
+                    StepData(
+                      title: 'Confirmar',
+                      subtitle: 'Resumen final',
+                      icon: Icons.check_circle_outline,
+                    ),
+                  ],
+                ),
 
                 // Mostrar alerta de error si hay validación fallida
                 if (stepError != null)

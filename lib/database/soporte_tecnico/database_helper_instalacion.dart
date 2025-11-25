@@ -5,12 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-
 class DatabaseHelperInstalacion {
-  static final DatabaseHelperInstalacion _instance = DatabaseHelperInstalacion._internal();
+  static final DatabaseHelperInstalacion _instance =
+      DatabaseHelperInstalacion._internal();
   factory DatabaseHelperInstalacion() => _instance;
   static Database? _database;
-  static bool _isInitializing = false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
+  static bool _isInitializing =
+      false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
   String get tableName => 'instalacion';
 
   DatabaseHelperInstalacion._internal();
@@ -27,7 +28,8 @@ class DatabaseHelperInstalacion {
     await upsertRegistroRelevamiento(registro);
   }
 
-  Future<Map<String, dynamic>?> getRegistroByCodMetrica(String codMetrica) async {
+  Future<Map<String, dynamic>?> getRegistroByCodMetrica(
+      String codMetrica) async {
     try {
       final db = await database;
 
@@ -40,7 +42,6 @@ class DatabaseHelperInstalacion {
       );
 
       return result.isNotEmpty ? result.first : null;
-
     } catch (e) {
       debugPrint('Error al buscar registro por codMetrica: $e');
       return null;
@@ -92,7 +93,6 @@ class DatabaseHelperInstalacion {
 
       // Formatear con ceros a la izquierda (0001, 0002, etc.)
       return nextNumber.toString().padLeft(4, '0');
-
     } catch (e) {
       debugPrint('Error generando sessionId: $e');
       // En caso de error, generar uno basado en timestamp
@@ -139,7 +139,8 @@ class DatabaseHelperInstalacion {
     }
   }
 
-  Future<Map<String, dynamic>?> getRegistroBySeca(String otst, String sessionId) async {
+  Future<Map<String, dynamic>?> getRegistroBySeca(
+      String otst, String sessionId) async {
     try {
       final db = await database;
       final result = await db.query(
@@ -172,10 +173,12 @@ class DatabaseHelperInstalacion {
           where: 'otst = ? AND session_id = ?',
           whereArgs: [registro['otst'], registro['session_id']],
         );
-        debugPrint('Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
+        debugPrint(
+            'Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       } else {
         await db.insert('instalacion', registro);
-        debugPrint('NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
+        debugPrint(
+            'NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       }
     } catch (e) {
       debugPrint('Error en upsertRegistroCalibracion: $e');
@@ -261,7 +264,7 @@ class DatabaseHelperInstalacion {
 
         --INF BALANZA
         foto_balanza TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
         cod_metrica TEXT DEFAULT '',
         cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
@@ -546,7 +549,7 @@ class DatabaseHelperInstalacion {
     try {
       final db = await database;
       final List<Map<String, dynamic>> registros =
-      await db.query('instalacion');
+          await db.query('instalacion');
 
       if (registros.isEmpty) {
         debugPrint('No hay datos para exportar');

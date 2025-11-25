@@ -5,12 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-
 class DatabaseHelperVerificaciones {
-  static final DatabaseHelperVerificaciones _instance = DatabaseHelperVerificaciones._internal();
+  static final DatabaseHelperVerificaciones _instance =
+      DatabaseHelperVerificaciones._internal();
   factory DatabaseHelperVerificaciones() => _instance;
   static Database? _database;
-  static bool _isInitializing = false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
+  static bool _isInitializing =
+      false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
   String get tableName => 'verificaciones_internas';
 
   DatabaseHelperVerificaciones._internal();
@@ -27,7 +28,8 @@ class DatabaseHelperVerificaciones {
     await upsertRegistroRelevamiento(registro);
   }
 
-  Future<Map<String, dynamic>?> getRegistroByCodMetrica(String codMetrica) async {
+  Future<Map<String, dynamic>?> getRegistroByCodMetrica(
+      String codMetrica) async {
     try {
       final db = await database;
 
@@ -40,7 +42,6 @@ class DatabaseHelperVerificaciones {
       );
 
       return result.isNotEmpty ? result.first : null;
-
     } catch (e) {
       debugPrint('Error al buscar registro por codMetrica: $e');
       return null;
@@ -92,7 +93,6 @@ class DatabaseHelperVerificaciones {
 
       // Formatear con ceros a la izquierda (0001, 0002, etc.)
       return nextNumber.toString().padLeft(4, '0');
-
     } catch (e) {
       debugPrint('Error generando sessionId: $e');
       // En caso de error, generar uno basado en timestamp
@@ -103,7 +103,8 @@ class DatabaseHelperVerificaciones {
   Future<List<Map<String, dynamic>>> getAllRegistrosRelevamiento() async {
     try {
       final db = await database;
-      return await db.query('verificaciones_internas', orderBy: 'fecha_servicio DESC');
+      return await db.query('verificaciones_internas',
+          orderBy: 'fecha_servicio DESC');
     } catch (e) {
       debugPrint('Error al obtener todos los registros: $e');
       return [];
@@ -139,7 +140,8 @@ class DatabaseHelperVerificaciones {
     }
   }
 
-  Future<Map<String, dynamic>?> getRegistroBySeca(String otst, String sessionId) async {
+  Future<Map<String, dynamic>?> getRegistroBySeca(
+      String otst, String sessionId) async {
     try {
       final db = await database;
       final result = await db.query(
@@ -172,10 +174,12 @@ class DatabaseHelperVerificaciones {
           where: 'otst = ? AND session_id = ?',
           whereArgs: [registro['otst'], registro['session_id']],
         );
-        debugPrint('Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
+        debugPrint(
+            'Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       } else {
         await db.insert('verificaciones_internas', registro);
-        debugPrint('NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
+        debugPrint(
+            'NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       }
     } catch (e) {
       debugPrint('Error en upsertRegistroCalibracion: $e');
@@ -213,7 +217,8 @@ class DatabaseHelperVerificaciones {
     _isInitializing = true;
 
     try {
-      String path = join(await getDatabasesPath(), 'verificaciones_internas.db');
+      String path =
+          join(await getDatabasesPath(), 'verificaciones_internas.db');
 
       // Crear directorio si no existe
       final directory = Directory(dirname(path));
@@ -261,7 +266,7 @@ class DatabaseHelperVerificaciones {
 
         --INF BALANZA
         foto_balanza TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
         cod_metrica TEXT DEFAULT '',
         cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
@@ -594,7 +599,7 @@ class DatabaseHelperVerificaciones {
     try {
       final db = await database;
       final List<Map<String, dynamic>> registros =
-      await db.query('verificaciones_internas');
+          await db.query('verificaciones_internas');
 
       if (registros.isEmpty) {
         debugPrint('No hay datos para exportar');
@@ -612,7 +617,8 @@ class DatabaseHelperVerificaciones {
 
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Guardar archivo CSV',
-        fileName: 'verificaciones_internas${DateTime.now().toIso8601String()}.csv',
+        fileName:
+            'verificaciones_internas${DateTime.now().toIso8601String()}.csv',
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );

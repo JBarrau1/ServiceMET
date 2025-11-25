@@ -5,12 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-
 class DatabaseHelperMntPrvAvanzadoStac {
-  static final DatabaseHelperMntPrvAvanzadoStac _instance = DatabaseHelperMntPrvAvanzadoStac._internal();
+  static final DatabaseHelperMntPrvAvanzadoStac _instance =
+      DatabaseHelperMntPrvAvanzadoStac._internal();
   factory DatabaseHelperMntPrvAvanzadoStac() => _instance;
   static Database? _database;
-  static bool _isInitializing = false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
+  static bool _isInitializing =
+      false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
   String get tableName => 'mnt_prv_avanzado_stac';
 
   DatabaseHelperMntPrvAvanzadoStac._internal();
@@ -27,7 +28,8 @@ class DatabaseHelperMntPrvAvanzadoStac {
     await upsertRegistroRelevamiento(registro);
   }
 
-  Future<Map<String, dynamic>?> getRegistroByCodMetrica(String codMetrica) async {
+  Future<Map<String, dynamic>?> getRegistroByCodMetrica(
+      String codMetrica) async {
     try {
       final db = await database;
 
@@ -40,7 +42,6 @@ class DatabaseHelperMntPrvAvanzadoStac {
       );
 
       return result.isNotEmpty ? result.first : null;
-
     } catch (e) {
       debugPrint('Error al buscar registro por codMetrica: $e');
       return null;
@@ -92,7 +93,6 @@ class DatabaseHelperMntPrvAvanzadoStac {
 
       // Formatear con ceros a la izquierda (0001, 0002, etc.)
       return nextNumber.toString().padLeft(4, '0');
-
     } catch (e) {
       debugPrint('Error generando sessionId: $e');
       // En caso de error, generar uno basado en timestamp
@@ -103,7 +103,8 @@ class DatabaseHelperMntPrvAvanzadoStac {
   Future<List<Map<String, dynamic>>> getAllRegistrosRelevamiento() async {
     try {
       final db = await database;
-      return await db.query('mnt_prv_avanzado_stac', orderBy: 'fecha_servicio DESC');
+      return await db.query('mnt_prv_avanzado_stac',
+          orderBy: 'fecha_servicio DESC');
     } catch (e) {
       debugPrint('Error al obtener todos los registros: $e');
       return [];
@@ -139,7 +140,8 @@ class DatabaseHelperMntPrvAvanzadoStac {
     }
   }
 
-  Future<Map<String, dynamic>?> getRegistroBySeca(String otst, String sessionId) async {
+  Future<Map<String, dynamic>?> getRegistroBySeca(
+      String otst, String sessionId) async {
     try {
       final db = await database;
       final result = await db.query(
@@ -172,10 +174,12 @@ class DatabaseHelperMntPrvAvanzadoStac {
           where: 'otst = ? AND session_id = ?',
           whereArgs: [registro['otst'], registro['session_id']],
         );
-        debugPrint('Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
+        debugPrint(
+            'Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       } else {
         await db.insert('mnt_prv_avanzado_stac', registro);
-        debugPrint('NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
+        debugPrint(
+            'NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       }
     } catch (e) {
       debugPrint('Error en upsertRegistroCalibracion: $e');
@@ -261,7 +265,7 @@ class DatabaseHelperMntPrvAvanzadoStac {
         
         --INF BALANZA
         foto_balanza TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
         cod_metrica TEXT DEFAULT '',
         cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
@@ -989,7 +993,7 @@ class DatabaseHelperMntPrvAvanzadoStac {
     try {
       final db = await database;
       final List<Map<String, dynamic>> registros =
-      await db.query('mnt_prv_avanzado_stac');
+          await db.query('mnt_prv_avanzado_stac');
 
       if (registros.isEmpty) {
         debugPrint('No hay datos para exportar');
@@ -1007,7 +1011,8 @@ class DatabaseHelperMntPrvAvanzadoStac {
 
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Guardar archivo CSV',
-        fileName: 'mnt_prv_avanzado_stac${DateTime.now().toIso8601String()}.csv',
+        fileName:
+            'mnt_prv_avanzado_stac${DateTime.now().toIso8601String()}.csv',
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );

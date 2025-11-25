@@ -201,7 +201,8 @@ class PrecargaController extends ChangeNotifier {
           return 'El departamento es requerido';
         }
         // CAMBIO: Solo validar código si NO es cliente nuevo
-        if (!_isNewClient && (_selectedPlantaCodigo == null || _selectedPlantaCodigo!.isEmpty)) {
+        if (!_isNewClient &&
+            (_selectedPlantaCodigo == null || _selectedPlantaCodigo!.isEmpty)) {
           return 'Debe seleccionar una planta';
         }
         return null;
@@ -293,6 +294,7 @@ class PrecargaController extends ChangeNotifier {
     String? plantaDir,
     String? plantaDep,
     String? plantaCodigo,
+    String? plantaNombre, // NUEVO
   }) {
     _generatedSessionId = sessionId;
     _generatedSeca = seca;
@@ -303,6 +305,7 @@ class PrecargaController extends ChangeNotifier {
       _selectedClienteRazonSocial = clienteRazonSocial;
     if (plantaDir != null) _selectedPlantaDir = plantaDir;
     if (plantaDep != null) _selectedPlantaDep = plantaDep;
+    if (plantaNombre != null) _selectedPlantaNombre = plantaNombre; // NUEVO
     if (plantaCodigo != null) {
       _selectedPlantaCodigo = plantaCodigo;
       fetchBalanzas(plantaCodigo);
@@ -322,7 +325,8 @@ class PrecargaController extends ChangeNotifier {
       final db = await openDatabase(path);
 
       final plantaId = DateTime.now().millisecondsSinceEpoch.toString();
-      final depId = (DateTime.now().millisecondsSinceEpoch + 1).toString(); // +1 para evitar duplicados
+      final depId = (DateTime.now().millisecondsSinceEpoch + 1)
+          .toString(); // +1 para evitar duplicados
 
       // Código temporal para plantas nuevas
       final codigoTemporal = 'NNNN-NN';
@@ -509,9 +513,7 @@ class PrecargaController extends ChangeNotifier {
   }
 
   void setPlantaManualData(
-      String direccion,
-      String departamento,
-      dynamic controller,
+      String direccion, String departamento, dynamic controller,
       {String? nombrePlanta}) {
     _selectedPlantaDir = direccion;
     _selectedPlantaDep = departamento;
@@ -520,9 +522,11 @@ class PrecargaController extends ChangeNotifier {
     // Solo actualizar nombre si se proporciona y no está vacío
     if (nombrePlanta != null && nombrePlanta.isNotEmpty) {
       _selectedPlantaNombre = nombrePlanta;
-    } else if (_selectedPlantaNombre == null || _selectedPlantaNombre!.isEmpty) {
+    } else if (_selectedPlantaNombre == null ||
+        _selectedPlantaNombre!.isEmpty) {
       // Fallback: usar nombre del cliente si está disponible
-      _selectedPlantaNombre = 'Planta ${controller.selectedClienteName ?? "Nueva"}';
+      _selectedPlantaNombre =
+          'Planta ${controller.selectedClienteName ?? "Nueva"}';
     }
 
     generateSugestedSeca();

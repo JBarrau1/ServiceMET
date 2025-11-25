@@ -1,136 +1,114 @@
-// widgets/step_indicator.dart
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import '../precarga_controller.dart';
+
+class StepData {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const StepData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+}
 
 class StepIndicator extends StatelessWidget {
-  const StepIndicator({Key? key}) : super(key: key);
+  final int currentStep;
+  final List<StepData> steps;
+
+  const StepIndicator({
+    Key? key,
+    required this.currentStep,
+    required this.steps,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PrecargaControllerSop>(
-      builder: (context, controller, child) {
-        final steps = ['Servicio', 'Cliente', 'Planta', 'OTST', 'Balanza', 'Confirmar'];
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-        // Mapear step interno a índice visual
-        int getVisualIndex(int internalStep) {
-          return internalStep + 1; // -1 -> 0, 0 -> 1, 1 -> 2, etc.
-        }
+    // Validar que el paso actual esté dentro de los límites
+    final safeCurrentStep = currentStep.clamp(0, steps.length - 1);
 
-        final currentVisualIndex = getVisualIndex(controller.currentStep);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.black26 : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-          child: Column(
+        ],
+      ),
+      child: Column(
+        children: [
+          // Título del paso actual
+          Row(
             children: [
-              // Línea de progreso
-              Container(
-                height: 4,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                child: LinearProgressIndicator(
-                  value: currentVisualIndex / (steps.length - 1),
-                  backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).primaryColor,
-                  ),
+              Icon(
+                steps[safeCurrentStep].icon,
+                color: Theme.of(context).primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Paso ${safeCurrentStep + 1} de ${steps.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                    Text(
+                      steps[safeCurrentStep].title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      steps[safeCurrentStep].subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.white60 : Colors.black45,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 16),
-
-              // Indicadores de pasos
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(steps.length, (visualIndex) {
-                  final isActive = visualIndex <= currentVisualIndex;
-                  final isCompleted = visualIndex < currentVisualIndex;
-                  final isCurrent = visualIndex == currentVisualIndex;
-
-                  return Expanded(
-                    child: Column(
-                      children: [
-                        // Círculo del paso
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isCompleted
-                                ? Colors.green
-                                : isCurrent
-                                ? Theme.of(context).primaryColor
-                                : Colors.grey[300],
-                            border: Border.all(
-                              color: isActive
-                                  ? (isCompleted ? Colors.green : Theme.of(context).primaryColor)
-                                  : Colors.grey[300]!,
-                              width: 2,
-                            ),
-                          ),
-                          child: Center(
-                            child: isCompleted
-                                ? const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 16,
-                            )
-                                : Text(
-                              '${visualIndex + 1}',
-                              style: GoogleFonts.inter(
-                                color: isActive ? Colors.white : Colors.grey[600],
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        // Texto del paso
-                        Text(
-                          steps[visualIndex],
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            color: isActive
-                                ? (isCurrent ? Theme.of(context).primaryColor : Colors.green)
-                                : Colors.grey[600],
-                            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        // Indicador de validación
-                        if (isCompleted)
-                          Container(
-                            margin: const EdgeInsets.only(top: 2),
-                            width: 4,
-                            height: 4,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.green,
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                }),
-              ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 12),
+
+          // Barra de progreso visual
+          Row(
+            children: List.generate(steps.length, (index) {
+              final isCompleted = index < safeCurrentStep;
+              final isCurrent = index == safeCurrentStep;
+
+              return Expanded(
+                child: Container(
+                  height: 4,
+                  margin: EdgeInsets.only(
+                    left: index == 0 ? 0 : 4,
+                    right: index == steps.length - 1 ? 0 : 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isCompleted || isCurrent
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 }

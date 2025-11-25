@@ -52,8 +52,8 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
         .replaceAll('_', ' ')
         .split(' ')
         .map((palabra) => palabra.isEmpty
-        ? ''
-        : palabra[0].toUpperCase() + palabra.substring(1).toLowerCase())
+            ? ''
+            : palabra[0].toUpperCase() + palabra.substring(1).toLowerCase())
         .join(' ');
   }
 
@@ -141,7 +141,8 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
         throw Exception('No se pudo acceder al directorio de descargas');
       }
 
-      final fileName = 'OTST_${widget.servicioOtst.otst}_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final fileName =
+          'OTST_${widget.servicioOtst.otst}_${DateTime.now().millisecondsSinceEpoch}.csv';
       final filePath = '$path/$fileName';
       final File file = File(filePath);
       await file.writeAsString(csv);
@@ -153,14 +154,16 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(FontAwesomeIcons.circleCheck, color: Colors.white, size: 20),
+                const Icon(FontAwesomeIcons.circleCheck,
+                    color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Archivo exportado: $fileName')),
               ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -170,21 +173,24 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(FontAwesomeIcons.circleXmark, color: Colors.white, size: 20),
+                const Icon(FontAwesomeIcons.circleXmark,
+                    color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Error al exportar: $e')),
               ],
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
     }
   }
 
-  Widget _buildServicioCard(BuildContext context, int index, Map<String, dynamic> servicio) {
+  Widget _buildServicioCard(
+      BuildContext context, int index, Map<String, dynamic> servicio) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final camposConDatos = _obtenerCamposConDatos(servicio);
     final isExpanded = servicioExpandido == index;
@@ -225,7 +231,10 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [colorServicio, _darkenColor(colorServicio, 0.2)],
+                            colors: [
+                              colorServicio,
+                              _darkenColor(colorServicio, 0.2)
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
@@ -255,14 +264,17 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : const Color(0xFF2C3E50),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF2C3E50),
                               ),
                             ),
                             const SizedBox(height: 4),
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: colorServicio.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(6),
@@ -331,14 +343,21 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
                       ),
 
                       // Información del servicio
-                      _buildInfoServicio(context, servicio, isDark, colorServicio),
+                      _buildInfoServicio(
+                          context, servicio, isDark, colorServicio),
 
                       const SizedBox(height: 16),
 
                       // Campos de datos
                       ...camposConDatos.entries.map((entry) {
                         // Excluir campos ya mostrados en la información del servicio
-                        if (['tipo_servicio', 'cod_metrica', 'modelo', 'equipo', 'otst'].contains(entry.key)) {
+                        if ([
+                          'tipo_servicio',
+                          'cod_metrica',
+                          'modelo',
+                          'equipo',
+                          'otst'
+                        ].contains(entry.key)) {
                           return const SizedBox.shrink();
                         }
                         return _buildDataField(
@@ -347,7 +366,7 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
                           entry.value.toString(),
                           isDark,
                         );
-                      }).toList(),
+                      }),
 
                       const SizedBox(height: 16),
 
@@ -355,8 +374,10 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () => _mostrarDialogoEdicion(context, index, servicio),
-                          icon: const Icon(FontAwesomeIcons.penToSquare, size: 16),
+                          onPressed: () =>
+                              _mostrarDialogoEdicion(context, index, servicio),
+                          icon: const Icon(FontAwesomeIcons.penToSquare,
+                              size: 16),
                           label: const Text('Editar datos'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: colorServicio,
@@ -381,12 +402,14 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
           ),
         ),
       ),
-    ).animate(delay: Duration(milliseconds: index * 100))
+    )
+        .animate(delay: Duration(milliseconds: index * 100))
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.2, end: 0);
   }
 
-  Widget _buildInfoServicio(BuildContext context, Map<String, dynamic> servicio, bool isDark, Color color) {
+  Widget _buildInfoServicio(BuildContext context, Map<String, dynamic> servicio,
+      bool isDark, Color color) {
     final tipoServicio = _obtenerTipoServicio(servicio);
 
     return Container(
@@ -421,10 +444,16 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          if (servicio['cod_metrica'] != null) _buildInfoRow('Código Métrica', servicio['cod_metrica'].toString(), isDark),
-          if (servicio['modelo_balanza'] != null) _buildInfoRow('Modelo', servicio['modelo_balanza'].toString(), isDark),
-          if (servicio['equipo'] != null) _buildInfoRow('Equipo', servicio['equipo'].toString(), isDark),
-          if (servicio['otst'] != null) _buildInfoRow('OTST', servicio['otst'].toString(), isDark),
+          if (servicio['cod_metrica'] != null)
+            _buildInfoRow(
+                'Código Métrica', servicio['cod_metrica'].toString(), isDark),
+          if (servicio['modelo_balanza'] != null)
+            _buildInfoRow(
+                'Modelo', servicio['modelo_balanza'].toString(), isDark),
+          if (servicio['equipo'] != null)
+            _buildInfoRow('Equipo', servicio['equipo'].toString(), isDark),
+          if (servicio['otst'] != null)
+            _buildInfoRow('OTST', servicio['otst'].toString(), isDark),
         ],
       ),
     );
@@ -463,14 +492,14 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
     );
   }
 
-  Widget _buildDataField(BuildContext context, String label, String value, bool isDark) {
+  Widget _buildDataField(
+      BuildContext context, String label, String value, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.05)
-            : const Color(0xFFF5F7FA),
+        color:
+            isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark
@@ -588,38 +617,40 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
       body: SafeArea(
         child: serviciosEditados.isEmpty
             ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                FontAwesomeIcons.boxOpen,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No hay servicios técnicos registrados',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[600],
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      FontAwesomeIcons.boxOpen,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No hay servicios técnicos registrados',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        )
+              )
             : ListView.builder(
-          padding: const EdgeInsets.all(20),
-          itemCount: serviciosEditados.length,
-          itemBuilder: (context, index) {
-            return _buildServicioCard(context, index, serviciosEditados[index]);
-          },
-        ),
+                padding: const EdgeInsets.all(20),
+                itemCount: serviciosEditados.length,
+                itemBuilder: (context, index) {
+                  return _buildServicioCard(
+                      context, index, serviciosEditados[index]);
+                },
+              ),
       ),
     );
   }
 
-  void _mostrarDialogoEdicion(BuildContext context, int index, Map<String, dynamic> servicio) {
+  void _mostrarDialogoEdicion(
+      BuildContext context, int index, Map<String, dynamic> servicio) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final camposConDatos = _obtenerCamposConDatos(servicio);
     final Map<String, TextEditingController> controllers = {};
@@ -734,14 +765,16 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
                 SnackBar(
                   content: Row(
                     children: [
-                      const Icon(FontAwesomeIcons.circleCheck, color: Colors.white, size: 20),
+                      const Icon(FontAwesomeIcons.circleCheck,
+                          color: Colors.white, size: 20),
                       const SizedBox(width: 12),
                       const Text('Cambios guardados correctamente'),
                     ],
                   ),
                   backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
               );
             },

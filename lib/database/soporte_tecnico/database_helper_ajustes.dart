@@ -5,12 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-
 class DatabaseHelperAjustes {
-  static final DatabaseHelperAjustes _instance = DatabaseHelperAjustes._internal();
+  static final DatabaseHelperAjustes _instance =
+      DatabaseHelperAjustes._internal();
   factory DatabaseHelperAjustes() => _instance;
   static Database? _database;
-  static bool _isInitializing = false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
+  static bool _isInitializing =
+      false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
   String get tableName => 'ajustes_metrologicos';
 
   DatabaseHelperAjustes._internal();
@@ -27,7 +28,8 @@ class DatabaseHelperAjustes {
     await upsertRegistroRelevamiento(registro);
   }
 
-  Future<Map<String, dynamic>?> getRegistroByCodMetrica(String codMetrica) async {
+  Future<Map<String, dynamic>?> getRegistroByCodMetrica(
+      String codMetrica) async {
     try {
       final db = await database;
 
@@ -40,7 +42,6 @@ class DatabaseHelperAjustes {
       );
 
       return result.isNotEmpty ? result.first : null;
-
     } catch (e) {
       debugPrint('Error al buscar registro por codMetrica: $e');
       return null;
@@ -92,7 +93,6 @@ class DatabaseHelperAjustes {
 
       // Formatear con ceros a la izquierda (0001, 0002, etc.)
       return nextNumber.toString().padLeft(4, '0');
-
     } catch (e) {
       debugPrint('Error generando sessionId: $e');
       // En caso de error, generar uno basado en timestamp
@@ -103,7 +103,8 @@ class DatabaseHelperAjustes {
   Future<List<Map<String, dynamic>>> getAllRegistrosRelevamiento() async {
     try {
       final db = await database;
-      return await db.query('ajustes_metrologicos', orderBy: 'fecha_servicio DESC');
+      return await db.query('ajustes_metrologicos',
+          orderBy: 'fecha_servicio DESC');
     } catch (e) {
       debugPrint('Error al obtener todos los registros: $e');
       return [];
@@ -139,7 +140,8 @@ class DatabaseHelperAjustes {
     }
   }
 
-  Future<Map<String, dynamic>?> getRegistroBySeca(String otst, String sessionId) async {
+  Future<Map<String, dynamic>?> getRegistroBySeca(
+      String otst, String sessionId) async {
     try {
       final db = await database;
       final result = await db.query(
@@ -172,10 +174,12 @@ class DatabaseHelperAjustes {
           where: 'otst = ? AND session_id = ?',
           whereArgs: [registro['otst'], registro['session_id']],
         );
-        debugPrint('Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
+        debugPrint(
+            'Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       } else {
         await db.insert('ajustes_metrologicos', registro);
-        debugPrint('NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
+        debugPrint(
+            'NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       }
     } catch (e) {
       debugPrint('Error en upsertRegistroCalibracion: $e');
@@ -261,7 +265,7 @@ class DatabaseHelperAjustes {
         
         --INF BALANZA
         foto_balanza TEXT DEFAULT '',
-        categoria TEXT DEFAULT '',
+        categoria_balanza TEXT DEFAULT '',
         cod_metrica TEXT DEFAULT '',
         cod_int TEXT DEFAULT '',
         tipo_equipo TEXT DEFAULT '',
@@ -743,7 +747,7 @@ class DatabaseHelperAjustes {
     try {
       final db = await database;
       final List<Map<String, dynamic>> registros =
-      await db.query('ajustes_metrologicos');
+          await db.query('ajustes_metrologicos');
 
       if (registros.isEmpty) {
         debugPrint('No hay datos para exportar');

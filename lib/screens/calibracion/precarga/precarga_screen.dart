@@ -17,7 +17,6 @@ import 'widgets/seca_step.dart';
 import 'widgets/balanza_step.dart';
 import 'widgets/equipos_step.dart';
 
-
 class PrecargaScreen extends StatefulWidget {
   final String userName;
   final int initialStep;
@@ -85,7 +84,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
   }
 
   void _setupBalanzaCallback() {
-    final balanzaProvider = Provider.of<BalanzaProvider>(context, listen: false);
+    final balanzaProvider =
+        Provider.of<BalanzaProvider>(context, listen: false);
 
     controller.onBalanzaSelected = (balanzaData) async {
       try {
@@ -110,7 +110,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
         );
 
         // Actualizar provider con la balanza
-        balanzaProvider.setSelectedBalanza(balanza, isNew: controller.isNewBalanza);
+        balanzaProvider.setSelectedBalanza(balanza,
+            isNew: controller.isNewBalanza);
 
         // Si hay datos de servicio, cargarlos
         if (balanzaData['servicio'] != null) {
@@ -121,14 +122,13 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
 
         debugPrint('✅ BalanzaProvider actualizado: ${balanza.cod_metrica}');
         debugPrint('   Es nueva: ${controller.isNewBalanza}');
-        debugPrint('   Tiene servicio anterior: ${balanzaData['servicio'] != null}');
-
+        debugPrint(
+            '   Tiene servicio anterior: ${balanzaData['servicio'] != null}');
       } catch (e) {
         debugPrint('❌ Error al actualizar BalanzaProvider: $e');
       }
     };
   }
-
 
   double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
@@ -137,7 +137,6 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
   }
-
 
   Future<void> _initializeData() async {
     try {
@@ -171,6 +170,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           plantaDir: registro['dir_planta']?.toString(),
           plantaDep: registro['dep_planta']?.toString(),
           plantaCodigo: registro['cod_planta']?.toString(),
+          plantaNombre: registro['planta']?.toString(), // NUEVO
         );
 
         await Future.delayed(const Duration(milliseconds: 200));
@@ -212,7 +212,36 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
 
             return Column(
               children: [
-                const StepIndicator(),
+                StepIndicator(
+                  currentStep: controller.currentStep,
+                  steps: const [
+                    StepData(
+                      title: 'Cliente',
+                      subtitle: 'Selección',
+                      icon: Icons.business,
+                    ),
+                    StepData(
+                      title: 'Planta',
+                      subtitle: 'Ubicación',
+                      icon: Icons.factory,
+                    ),
+                    StepData(
+                      title: 'SECA',
+                      subtitle: 'Orden de trabajo',
+                      icon: Icons.confirmation_number_outlined,
+                    ),
+                    StepData(
+                      title: 'Balanza',
+                      subtitle: 'Datos del equipo',
+                      icon: Icons.scale_outlined,
+                    ),
+                    StepData(
+                      title: 'Equipos',
+                      subtitle: 'Patrones',
+                      icon: Icons.precision_manufacturing_outlined,
+                    ),
+                  ],
+                ),
 
                 // Mostrar alerta de error si hay validación fallida
                 if (stepError != null)
@@ -226,7 +255,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red[700], size: 24),
+                        Icon(Icons.error_outline,
+                            color: Colors.red[700], size: 24),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -385,9 +415,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             : null;
 
       case 4: // Equipos
-        return controller.canProceedToStep(4)
-            ? () => _saveAndNavigate()
-            : null;
+        return controller.canProceedToStep(4) ? () => _saveAndNavigate() : null;
 
       default:
         return null;
@@ -419,7 +447,9 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
   Color _getNextButtonColor(PrecargaController controller) {
     switch (controller.currentStep) {
       case 2:
-        return controller.secaConfirmed ? const Color(0xFF667EEA) : Colors.green;
+        return controller.secaConfirmed
+            ? const Color(0xFF667EEA)
+            : Colors.green;
       case 4:
         return Colors.green;
       default:
@@ -456,7 +486,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('El SECA "${controller.generatedSeca}" ya tiene registros anteriores.'),
+              Text(
+                  'El SECA "${controller.generatedSeca}" ya tiene registros anteriores.'),
               const SizedBox(height: 10),
               Text('Fecha del último servicio: $fechaServicio'),
               const SizedBox(height: 10),
@@ -497,11 +528,10 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
               onPressed: () async {
                 try {
                   await controller.createNewSecaSession(
-                      widget.userName,
-                      _fechaController.text
-                  );
+                      widget.userName, _fechaController.text);
                   Navigator.of(dialogContext).pop();
-                  _showSnackBar('Nueva sesión creada: ${controller.generatedSessionId}');
+                  _showSnackBar(
+                      'Nueva sesión creada: ${controller.generatedSessionId}');
                 } catch (e) {
                   Navigator.of(dialogContext).pop();
                   _showSnackBar('Error al crear sesión: $e', isError: true);
@@ -539,7 +569,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
 
       // NUEVO: Mostrar confirmación de guardado de fotos
       if (controller.fotosTomadas && controller.baseFotoPath != null) {
-        final photoCount = controller.balanzaPhotos['identificacion']?.length ?? 0;
+        final photoCount =
+            controller.balanzaPhotos['identificacion']?.length ?? 0;
 
         // Diálogo de confirmación con detalles
         await _showPhotosSavedDialog(
@@ -631,7 +662,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(Icons.folder_open,
+                        Icon(
+                          Icons.folder_open,
                           color: Colors.green[600],
                           size: 20,
                         ),

@@ -24,16 +24,18 @@ class SetupService {
     try {
       _connection = MssqlConnection.getInstance();
 
-      final connected = await _connection!.connect(
-        ip: ip,
-        port: port,
-        databaseName: database,
-        username: username,
-        password: password,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => false,
-      );
+      final connected = await _connection!
+          .connect(
+            ip: ip,
+            port: port,
+            databaseName: database,
+            username: username,
+            password: password,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => false,
+          );
 
       if (!connected) {
         return SetupResult(
@@ -54,11 +56,48 @@ class SetupService {
     }
   }
 
+  // ✅ NUEVO: Conectar usando configuración guardada
+  Future<SetupResult> connectFromSavedConfiguration() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final ip = prefs.getString('ip');
+      final port = prefs.getString('port');
+      final database = prefs.getString('database');
+      final dbUser = prefs.getString('dbuser');
+      final dbPass = prefs.getString('dbpass');
+
+      if (ip == null ||
+          port == null ||
+          database == null ||
+          dbUser == null ||
+          dbPass == null) {
+        return SetupResult(
+          success: false,
+          message:
+              'No hay configuración guardada. Por favor reconfigure la aplicación.',
+        );
+      }
+
+      return await validateConnection(
+        ip: ip,
+        port: port,
+        database: database,
+        username: dbUser,
+        password: dbPass,
+      );
+    } catch (e) {
+      return SetupResult(
+        success: false,
+        message: 'Error al leer configuración: ${e.toString()}',
+      );
+    }
+  }
+
   // Validar usuario en SQL Server
   Future<UserValidationResult> validateUserInServer(
-      String usuario,
-      String pass,
-      ) async {
+    String usuario,
+    String pass,
+  ) async {
     if (_connection == null) {
       return UserValidationResult(
         success: false,
@@ -74,8 +113,8 @@ class SetupService {
       ''';
 
       final resultJson = await _connection!.getData(query).timeout(
-        const Duration(seconds: 15),
-      );
+            const Duration(seconds: 15),
+          );
 
       if (resultJson.isEmpty || resultJson == '[]') {
         return UserValidationResult(
@@ -93,7 +132,8 @@ class SetupService {
         );
       }
 
-      final userData = UserModel.fromMap(Map<String, dynamic>.from(result.first));
+      final userData =
+          UserModel.fromMap(Map<String, dynamic>.from(result.first));
 
       if (!userData.isActive) {
         return UserValidationResult(
@@ -146,8 +186,8 @@ class SetupService {
 
   // Descargar datos de precarga
   Future<SetupResult> downloadPrecargaData(
-      Function(String message, double progress) onProgress,
-      ) async {
+    Function(String message, double progress) onProgress,
+  ) async {
     if (_connection == null) {
       return SetupResult(
         success: false,
@@ -159,8 +199,10 @@ class SetupService {
 
     try {
       final queries = {
-        'clientes': 'SELECT codigo_cliente, cliente, cliente_id, razonsocial FROM DATA_CLIENTES',
-        'plantas': 'SELECT cliente_id, codigo_planta, planta_id, dep, dep_id, planta, dir FROM DATA_PLANTAS',
+        'clientes':
+            'SELECT codigo_cliente, cliente, cliente_id, razonsocial FROM DATA_CLIENTES',
+        'plantas':
+            'SELECT cliente_id, codigo_planta, planta_id, dep, dep_id, planta, dir FROM DATA_PLANTAS',
         'balanzas': 'SELECT * FROM DATA_EQUIPOS_BALANZAS',
         'inf': 'SELECT * FROM DATA_EQUIPOS',
         'equipamientos': 'SELECT * FROM DATA_EQUIPOS_CAL',
@@ -194,15 +236,13 @@ class SetupService {
         final tableName = entry.key;
         final query = entry.value;
 
-        onProgress(
-            'Descargando $tableName...',
-            0.1 + (0.4 * tableIndex / totalTables)
-        );
+        onProgress('Descargando $tableName...',
+            0.1 + (0.4 * tableIndex / totalTables));
 
         // Ejecutar query
         final resultJson = await _connection!.getData(query).timeout(
-          const Duration(seconds: 90),
-        );
+              const Duration(seconds: 90),
+            );
 
         if (resultJson.isEmpty || resultJson == '[]') {
           print('⚠️ Tabla $tableName sin datos o vacía');
@@ -218,10 +258,8 @@ class SetupService {
           continue;
         }
 
-        onProgress(
-            'Guardando $tableName (${result.length} registros)...',
-            0.5 + (0.4 * tableIndex / totalTables)
-        );
+        onProgress('Guardando $tableName (${result.length} registros)...',
+            0.5 + (0.4 * tableIndex / totalTables));
 
         // Usar transacción para inserción masiva más rápida
         await db.transaction((txn) async {
@@ -236,21 +274,21 @@ class SetupService {
 
               // ✅ INSERTAR EN EL BATCH
               if (rowData != null && rowData.isNotEmpty) {
-                batch.insert(
-                    tableName,
-                    rowData,
-                    conflictAlgorithm: ConflictAlgorithm.ignore
-                );
+                batch.insert(tableName, rowData,
+                    conflictAlgorithm: ConflictAlgorithm.ignore);
                 batchInserted++;
               } else {
                 batchSkipped++;
-                if (batchSkipped < 5) { // Log solo los primeros 5 para no saturar
-                  print('⚠️ Registro saltado en $tableName: datos vacíos o nulos');
+                if (batchSkipped < 5) {
+                  // Log solo los primeros 5 para no saturar
+                  print(
+                      '⚠️ Registro saltado en $tableName: datos vacíos o nulos');
                 }
               }
             } catch (e) {
               batchSkipped++;
-              if (batchSkipped < 5) { // Log solo los primeros 5 errores
+              if (batchSkipped < 5) {
+                // Log solo los primeros 5 errores
                 print('❌ Error procesando registro en $tableName: $e');
               }
             }
@@ -260,7 +298,8 @@ class SetupService {
             await batch.commit(noResult: true);
             totalInserted += batchInserted;
             totalSkipped += batchSkipped;
-            print('✅ Tabla $tableName: $batchInserted insertados, $batchSkipped saltados');
+            print(
+                '✅ Tabla $tableName: $batchInserted insertados, $batchSkipped saltados');
           } catch (e) {
             print('❌ Error en batch commit para $tableName: $e');
             throw e;
@@ -298,7 +337,8 @@ class SetupService {
   }
 
   // ✅ PREPARAR DATOS MEJORADO
-  Map<String, dynamic>? _prepareRowData(String table, Map<String, dynamic> data) {
+  Map<String, dynamic>? _prepareRowData(
+      String table, Map<String, dynamic> data) {
     try {
       switch (table) {
         case 'clientes':
@@ -349,7 +389,8 @@ class SetupService {
             'cod_interno': data['cod_interno']?.toString().trim() ?? '',
             'cod_metrica': data['cod_metrica']?.toString().trim() ?? '',
             'instrumento': data['instrumento']?.toString().trim() ?? '',
-            'tipo_instrumento': data['tipo_instrumento']?.toString().trim() ?? '',
+            'tipo_instrumento':
+                data['tipo_instrumento']?.toString().trim() ?? '',
             'marca': data['marca']?.toString().trim() ?? '',
             'modelo': data['modelo']?.toString().trim() ?? '',
             'serie': data['serie']?.toString().trim() ?? '',
@@ -403,7 +444,14 @@ class SetupService {
 
   // Verificar datos descargados
   Future<Map<String, int>> _verifyDownloadedData(Database db) async {
-    final tables = ['clientes', 'plantas', 'balanzas', 'inf', 'equipamientos', 'servicios'];
+    final tables = [
+      'clientes',
+      'plantas',
+      'balanzas',
+      'inf',
+      'equipamientos',
+      'servicios'
+    ];
     final counts = <String, int>{};
 
     print('\n📊 VERIFICACIÓN DE DATOS DESCARGADOS:');
@@ -412,8 +460,8 @@ class SetupService {
     for (var table in tables) {
       try {
         final count = Sqflite.firstIntValue(
-            await db.rawQuery('SELECT COUNT(*) FROM $table')
-        ) ?? 0;
+                await db.rawQuery('SELECT COUNT(*) FROM $table')) ??
+            0;
         counts[table] = count;
         print('✓ $table: $count registros');
       } catch (e) {
