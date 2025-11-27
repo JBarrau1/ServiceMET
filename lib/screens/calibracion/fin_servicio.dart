@@ -33,7 +33,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
   String? _selectedEmp23001;
   final TextEditingController _indicarController = TextEditingController();
-  final TextEditingController _factorSeguridadController = TextEditingController();
+  final TextEditingController _factorSeguridadController =
+      TextEditingController();
   String? _selectedReglaAceptacion;
 
   @override
@@ -43,7 +44,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
     super.dispose();
   }
 
-  Future<Map<String, String>?> _showAdditionalDataDialog(BuildContext context) async {
+  Future<Map<String, String>?> _showAdditionalDataDialog(
+      BuildContext context) async {
     return await showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
@@ -64,7 +66,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
                         labelText: 'EMP NB 23001',
                         border: OutlineInputBorder(),
                       ),
-                      value: _selectedEmp23001,
+                      initialValue: _selectedEmp23001,
                       items: ['Sí', 'No'].map((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
@@ -80,9 +82,11 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _indicarController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\.?\d*')),
                       ],
                       decoration: const InputDecoration(
                         labelText: 'Indicar (%)',
@@ -92,9 +96,11 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _factorSeguridadController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\.?\d*')),
                       ],
                       decoration: const InputDecoration(
                         labelText: 'Factor Seguridad',
@@ -107,8 +113,9 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
                         labelText: 'Regla de Aceptación',
                         border: OutlineInputBorder(),
                       ),
-                      value: _selectedReglaAceptacion,
-                      items: ['Ninguna', 'Simple', 'Conservadora'].map((String value) {
+                      initialValue: _selectedReglaAceptacion,
+                      items: ['Ninguna', 'Simple', 'Conservadora']
+                          .map((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
@@ -266,7 +273,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
 
       if (!registrosUnicos.containsKey(claveUnica) ||
           (registrosUnicos[claveUnica]?['hora_fin']?.toString() ?? '')
-              .compareTo(horaFinActual) <
+                  .compareTo(horaFinActual) <
               0) {
         registrosUnicos[claveUnica] = registro;
       }
@@ -307,7 +314,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
       if (directoryPath != null) {
         final userFile = File('$directoryPath/$fileName');
         await userFile.writeAsBytes(csvBytes, mode: FileMode.write);
-        _showSnackBar(context, 'Archivo CSV exportado exitosamente a: ${userFile.path}');
+        _showSnackBar(
+            context, 'Archivo CSV exportado exitosamente a: ${userFile.path}');
       } else {
         _showSnackBar(context, 'Exportación cancelada.', isError: true);
       }
@@ -352,7 +360,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
             'CONFIRMAR ACCIÓN',
             style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w900),
           ),
-          content: const Text('¿Está seguro que desea seleccionar otra balanza?'),
+          content:
+              const Text('¿Está seguro que desea seleccionar otra balanza?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancelar'),
@@ -437,7 +446,8 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         ),
       );
     } catch (e) {
-      _showSnackBar(context, 'Error al preparar nueva balanza: $e', isError: true);
+      _showSnackBar(context, 'Error al preparar nueva balanza: $e',
+          isError: true);
     }
   }
 
@@ -462,11 +472,11 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(color: Colors.black.withOpacity(0.4)),
+                ),
+              )
             : null,
         iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
@@ -486,7 +496,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
               _buildActionCard(
                 'images/tarjetas/t4.png',
                 'FINALIZAR SERVICIO\nY EXPORTAR DATOS',
-                    () => _confirmarYExportar(context),
+                () => _confirmarYExportar(context),
                 textColor,
                 cardOpacity,
               ),
@@ -499,7 +509,7 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
               _buildActionCard(
                 'images/tarjetas/t7.png',
                 'SELECCIONAR\nOTRA BALANZA',
-                    () => _confirmarSeleccionOtraBalanza(context),
+                () => _confirmarSeleccionOtraBalanza(context),
                 textColor,
                 cardOpacity,
               ),
@@ -546,12 +556,12 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   }
 
   Widget _buildActionCard(
-      String imagePath,
-      String title,
-      VoidCallback onTap,
-      Color textColor,
-      double opacity,
-      ) {
+    String imagePath,
+    String title,
+    VoidCallback onTap,
+    Color textColor,
+    double opacity,
+  ) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       child: InkWell(
@@ -688,11 +698,11 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(color: Colors.black.withOpacity(0.4)),
+                ),
+              )
             : null,
         iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
@@ -705,8 +715,7 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
           }
 
           final resumen = snapshot.data!;
-          final balanzas =
-          resumen['balanzas'] as List<Map<String, dynamic>>;
+          final balanzas = resumen['balanzas'] as List<Map<String, dynamic>>;
           final totalBalanzas = resumen['totalBalanzas'] as int;
           final totalRegistros = resumen['totalRegistros'] as int;
 
@@ -822,47 +831,50 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
                       backgroundColor: const Color(0xFF46824B),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed: _isExporting ? null : () async {
-                      setState(() => _isExporting = true);
+                    onPressed: _isExporting
+                        ? null
+                        : () async {
+                            setState(() => _isExporting = true);
 
-                      try {
-                        await widget.onExport(widget.registros);
+                            try {
+                              await widget.onExport(widget.registros);
 
-                        if (mounted) {
-                          Navigator.pop(context, true);
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error al exportar: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() => _isExporting = false);
-                        }
-                      }
-                    },
+                              if (mounted) {
+                                Navigator.pop(context, true);
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error al exportar: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isExporting = false);
+                              }
+                            }
+                          },
                     child: _isExporting
                         ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
                         : const Text(
-                      'PROCEDER CON LA EXPORTACIÓN',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
+                            'PROCEDER CON LA EXPORTACIÓN',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 12),

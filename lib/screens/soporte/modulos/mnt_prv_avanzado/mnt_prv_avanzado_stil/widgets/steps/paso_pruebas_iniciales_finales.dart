@@ -3,7 +3,6 @@ import '../../controllers/mnt_prv_avanzado_stil_controller.dart';
 import '../../models/mnt_prv_avanzado_stil_model.dart';
 import '../pruebas_metrologicas_widget.dart';
 
-
 // PASO 0: PRUEBAS METROLÓGICAS INICIALES
 
 class PasoPruebasIniciales extends StatelessWidget {
@@ -13,12 +12,12 @@ class PasoPruebasIniciales extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoPruebasIniciales({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.getD1FromDatabase,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -169,12 +168,12 @@ class PasoPruebasFinales extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoPruebasFinales({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.getD1FromDatabase,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

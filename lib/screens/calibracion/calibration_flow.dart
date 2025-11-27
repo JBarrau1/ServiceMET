@@ -4,10 +4,12 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:service_met/screens/calibracion/pruebas_metrologicas/excentricidad/excentricidad_screen.dart';
-import 'package:service_met/screens/calibracion/pruebas_metrologicas/linealidad/linealidad_screen.dart';
-import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/repetibilidad_screen.dart';
-import 'package:service_met/screens/calibracion/rca_final_screen.dart';
+import 'package:service_met/screens/calibracion/pruebas_metrologicas/excentricidad/excentricidad_form.dart';
+import 'package:service_met/screens/calibracion/pruebas_metrologicas/linealidad/linealidad_form.dart';
+import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/repetibilidad_form.dart';
+import 'package:service_met/screens/calibracion/pruebas_metrologicas/pruebas_metrologicas_controller.dart';
+import 'package:service_met/screens/calibracion/fin_servicios/fin_servicios_screen.dart';
+import 'package:service_met/screens/calibracion/precarga/widgets/step_indicator.dart';
 import '../../provider/balanza_provider.dart';
 
 class CalibrationFlowScreen extends StatefulWidget {
@@ -29,13 +31,24 @@ class CalibrationFlowScreen extends StatefulWidget {
 }
 
 class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
-  int _currentStep = 0;
   DateTime? _lastPressedTime;
 
-  final List<Map<String, dynamic>> _stepInfo = [
-    {'title': 'Exc', 'icon': Icons.center_focus_strong},
-    {'title': 'Rep', 'icon': Icons.repeat},
-    {'title': 'Lin', 'icon': Icons.show_chart},
+  final List<StepData> _steps = const [
+    StepData(
+      title: 'Excentricidad',
+      subtitle: 'Pruebas de Excentricidad',
+      icon: Icons.center_focus_strong,
+    ),
+    StepData(
+      title: 'Repetibilidad',
+      subtitle: 'Pruebas de Repetibilidad',
+      icon: Icons.repeat,
+    ),
+    StepData(
+      title: 'Linealidad',
+      subtitle: 'Pruebas de Linealidad',
+      icon: Icons.show_chart,
+    ),
   ];
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -66,7 +79,7 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
   Future<void> _showConfirmationDialog() async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: true, // Cambiar a true para mejor UX
+      barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
@@ -74,7 +87,8 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
           ),
           title: Row(
             children: [
-              const Icon(Icons.check_circle_outline, color: Colors.green, size: 28),
+              const Icon(Icons.check_circle_outline,
+                  color: Colors.green, size: 28),
               const SizedBox(width: 12),
               Text(
                 'FINALIZAR PRUEBAS',
@@ -104,7 +118,8 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
@@ -128,57 +143,57 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RcaFinalScreen(
+        builder: (context) => FinServiciosScreen(
+          selectedBalanza: widget.selectedBalanza,
           secaValue: widget.secaValue,
           sessionId: widget.sessionId,
-          selectedBalanza: widget.selectedBalanza,
           codMetrica: widget.codMetrica,
         ),
       ),
     );
   }
 
-  void _navigateToStep(int stepIndex) {
-    if (stepIndex >= 0 && stepIndex < _stepInfo.length) {
-      setState(() {
-        _currentStep = stepIndex;
-      });
-    }
-  }
-
-  void _onStepCompleted() {
-    _showSnackBar('Datos de ${_stepInfo[_currentStep]['title']} guardados correctamente');
-
-    // Navegar automáticamente al siguiente paso si no es el último
-    if (_currentStep < _stepInfo.length - 1) {
-      Future.delayed(const Duration(milliseconds: 800), () {
-        _navigateToStep(_currentStep + 1);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        appBar: _buildAppBar(isDarkMode),
-        body: Column(
-          children: [
-            _buildStepIndicator(),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: _buildCurrentStepContent(),
-              ),
-            ),
-            _buildBottomButtons(),
-          ],
+    return ChangeNotifierProvider(
+      create: (_) => PruebasMetrologicasController(
+        codMetrica: widget.codMetrica,
+        secaValue: widget.secaValue,
+        sessionId: widget.sessionId,
+        context: context,
+      ),
+      child: WillPopScope(
+        onWillPop: _onWillPop,
+        child: Scaffold(
+          appBar: _buildAppBar(isDarkMode),
+          body: Consumer<PruebasMetrologicasController>(
+            builder: (context, controller, child) {
+              if (controller.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return Column(
+                children: [
+                  StepIndicator(
+                    currentStep: controller.currentStep,
+                    steps: _steps,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: _buildCurrentStepContent(controller),
+                    ),
+                  ),
+                  _buildBottomButtons(context, controller),
+                ],
+              );
+            },
+          ),
+          floatingActionButton: _buildSpeedDial(),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
         ),
-        floatingActionButton: _buildSpeedDial(),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       ),
     );
   }
@@ -222,138 +237,23 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
     );
   }
 
-  Widget _buildStepIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          // Fila de círculos conectados
-          SizedBox(
-            height: 40,
-            child: Stack(
-              children: [
-                // Línea de fondo continua
-                Positioned(
-                  top: 19,
-                  left: 40,
-                  right: 40,
-                  child: Container(
-                    height: 2,
-                    color: Colors.grey[300],
-                  ),
-                ),
-                // Círculos
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(_stepInfo.length, (index) {
-                    return GestureDetector(
-                      onTap: () => _navigateToStep(index),
-                      child: _buildStepCircle(index),
-                    );
-                  }),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Fila de títulos
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(_stepInfo.length, (index) {
-              final isActive = index == _currentStep;
-
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => _navigateToStep(index),
-                  child: Text(
-                    _stepInfo[index]['title'],
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      height: 1.2,
-                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                      color: isActive ? const Color(0xFF667EEA) : Colors.grey[600],
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepCircle(int index) {
-    final isActive = index == _currentStep;
-
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isActive ? const Color(0xFF667EEA) : Colors.grey[300],
-        border: Border.all(
-          color: isActive ? const Color(0xFF667EEA) : Colors.transparent,
-          width: 3,
-        ),
-        boxShadow: isActive
-            ? [
-          BoxShadow(
-            color: const Color(0xFF667EEA).withOpacity(0.3),
-            blurRadius: 8,
-            spreadRadius: 2,
-          ),
-        ]
-            : null,
-      ),
-      child: Center(
-        child: Icon(
-          _stepInfo[index]['icon'],
-          color: isActive ? Colors.white : Colors.grey[600],
-          size: 24,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCurrentStepContent() {
-    switch (_currentStep) {
+  Widget _buildCurrentStepContent(PruebasMetrologicasController controller) {
+    switch (controller.currentStep) {
       case 0:
-        return ExcentricidadScreen(
-          sessionId: widget.sessionId,
-          codMetrica: widget.codMetrica,
-          secaValue: widget.secaValue,
-          selectedBalanza: widget.selectedBalanza,
-          onDataSaved: _onStepCompleted, // Cambiar por la nueva función
-        );
+        return ExcentricidadForm(
+            controller: controller.excentricidadController);
       case 1:
-        return RepetibilidadScreen(
-          sessionId: widget.sessionId,
-          codMetrica: widget.codMetrica,
-          secaValue: widget.secaValue,
-          onDataSaved: _onStepCompleted, // Cambiar por la nueva función
-        );
+        return RepetibilidadForm(
+            controller: controller.repetibilidadController);
       case 2:
-        return LinealidadScreen(
-          sessionId: widget.sessionId,
-          codMetrica: widget.codMetrica,
-          secaValue: widget.secaValue,
-          onDataSaved: _onStepCompleted, // Cambiar por la nueva función
-        );
+        return LinealidadForm(controller: controller.linealidadController);
       default:
         return const Center(child: Text('Paso no disponible'));
     }
   }
 
-  Widget _buildBottomButtons() {
+  Widget _buildBottomButtons(
+      BuildContext context, PruebasMetrologicasController controller) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
@@ -370,10 +270,10 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
         child: Row(
           children: [
             // Botón Anterior
-            if (_currentStep > 0)
+            if (controller.currentStep > 0)
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _navigateToStep(_currentStep - 1),
+                  onPressed: controller.previousStep,
                   icon: const Icon(Icons.arrow_back, size: 18),
                   label: const Text('Anterior'),
                   style: OutlinedButton.styleFrom(
@@ -388,41 +288,59 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
                 ),
               ),
 
-            if (_currentStep > 0) const SizedBox(width: 12),
+            if (controller.currentStep > 0) const SizedBox(width: 12),
 
             // Botón Siguiente o Finalizar
             Expanded(
-              child: _currentStep < _stepInfo.length - 1
+              child: controller.currentStep < _steps.length - 1
                   ? ElevatedButton.icon(
-                onPressed: () => _navigateToStep(_currentStep + 1),
-                icon: const Icon(Icons.arrow_forward, size: 18),
-                label: const Text('Siguiente'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF667EEA),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 2,
-                  textStyle: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )
+                      onPressed: () async {
+                        // Guardar datos del paso actual antes de avanzar
+                        if (controller.currentStep == 0) {
+                          await controller.excentricidadController
+                              .saveDataToDatabase(context);
+                        } else if (controller.currentStep == 1) {
+                          await controller.repetibilidadController
+                              .saveDataToDatabase();
+                        } else if (controller.currentStep == 2) {
+                          await controller.linealidadController
+                              .saveDataToDatabase();
+                        }
+                        controller.nextStep();
+                      },
+                      icon: const Icon(Icons.arrow_forward, size: 18),
+                      label: const Text('Siguiente'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF667EEA),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 2,
+                        textStyle: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
                   : ElevatedButton.icon(
-                onPressed: _showConfirmationDialog,
-                icon: const Icon(Icons.check_circle, size: 18),
-                label: const Text('Finalizar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 2,
-                  textStyle: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+                      onPressed: () async {
+                        // Guardar último paso
+                        await controller.linealidadController
+                            .saveDataToDatabase();
+                        _showConfirmationDialog();
+                      },
+                      icon: const Icon(Icons.check_circle, size: 18),
+                      label: const Text('Finalizar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 2,
+                        textStyle: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),
@@ -478,8 +396,8 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
   }
 
   void _showBalanzaInfo() {
-    final balanza = Provider.of<BalanzaProvider>(context, listen: false)
-        .selectedBalanza;
+    final balanza =
+        Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
 
     showModalBottomSheet(
       context: context,
@@ -495,7 +413,8 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
@@ -511,7 +430,8 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
                   ),
                   // Header
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Row(
                       children: [
                         Icon(Icons.scale, color: Colors.blue, size: 28),
@@ -538,37 +458,47 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
                   Expanded(
                     child: balanza != null
                         ? ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      children: [
-                        _buildDetailContainer(
-                            'Código Métrica', balanza.cod_metrica),
-                        _buildDetailContainer(
-                            'Unidades', balanza.unidad.toString()),
-                        _buildSectionHeader('Rango 1'),
-                        _buildDetailContainer('pmax1', balanza.cap_max1),
-                        _buildDetailContainer('d1', balanza.d1.toString()),
-                        _buildDetailContainer('e1', balanza.e1.toString()),
-                        _buildDetailContainer('dec1', balanza.dec1.toString()),
-                        _buildSectionHeader('Rango 2'),
-                        _buildDetailContainer('pmax2', balanza.cap_max2),
-                        _buildDetailContainer('d2', balanza.d2.toString()),
-                        _buildDetailContainer('e2', balanza.e2.toString()),
-                        _buildDetailContainer('dec2', balanza.dec2.toString()),
-                        _buildSectionHeader('Rango 3'),
-                        _buildDetailContainer('pmax3', balanza.cap_max3),
-                        _buildDetailContainer('d3', balanza.d3.toString()),
-                        _buildDetailContainer('e3', balanza.e3.toString()),
-                        _buildDetailContainer('dec3', balanza.dec3.toString()),
-                        const SizedBox(height: 20),
-                      ],
-                    )
+                            controller: scrollController,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 8),
+                            children: [
+                              _buildDetailContainer(
+                                  'Código Métrica', balanza.cod_metrica),
+                              _buildDetailContainer(
+                                  'Unidades', balanza.unidad.toString()),
+                              _buildSectionHeader('Rango 1'),
+                              _buildDetailContainer('pmax1', balanza.cap_max1),
+                              _buildDetailContainer(
+                                  'd1', balanza.d1.toString()),
+                              _buildDetailContainer(
+                                  'e1', balanza.e1.toString()),
+                              _buildDetailContainer(
+                                  'dec1', balanza.dec1.toString()),
+                              _buildSectionHeader('Rango 2'),
+                              _buildDetailContainer('pmax2', balanza.cap_max2),
+                              _buildDetailContainer(
+                                  'd2', balanza.d2.toString()),
+                              _buildDetailContainer(
+                                  'e2', balanza.e2.toString()),
+                              _buildDetailContainer(
+                                  'dec2', balanza.dec2.toString()),
+                              _buildSectionHeader('Rango 3'),
+                              _buildDetailContainer('pmax3', balanza.cap_max3),
+                              _buildDetailContainer(
+                                  'd3', balanza.d3.toString()),
+                              _buildDetailContainer(
+                                  'e3', balanza.e3.toString()),
+                              _buildDetailContainer(
+                                  'dec3', balanza.dec3.toString()),
+                              const SizedBox(height: 20),
+                            ],
+                          )
                         : Center(
-                      child: Text(
-                        'No hay información disponible',
-                        style: GoogleFonts.inter(fontSize: 15),
-                      ),
-                    ),
+                            child: Text(
+                              'No hay información disponible',
+                              style: GoogleFonts.inter(fontSize: 15),
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -617,7 +547,8 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
@@ -633,7 +564,8 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
                   ),
                   // Header
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Row(
                       children: [
                         Icon(Icons.history, color: Colors.orange, size: 28),
@@ -660,19 +592,19 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
                   Expanded(
                     child: ListView(
                       controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 8),
                       children: [
                         ...lastServiceData.entries
                             .where((entry) =>
-                        entry.value != null &&
-                            fieldLabels.containsKey(entry.key))
+                                entry.value != null &&
+                                fieldLabels.containsKey(entry.key))
                             .map((entry) => _buildDetailContainer(
-                            fieldLabels[entry.key]!,
-                            entry.key == 'reg_fecha'
-                                ? DateFormat('dd/MM/yyyy')
-                                .format(DateTime.parse(entry.value))
-                                : entry.value.toString()))
-                            .toList(),
+                                fieldLabels[entry.key]!,
+                                entry.key == 'reg_fecha'
+                                    ? DateFormat('dd/MM/yyyy')
+                                        .format(DateTime.parse(entry.value))
+                                    : entry.value.toString())),
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -701,7 +633,8 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
   }
 
   Widget _buildDetailContainer(String label, String value) {
-    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final textColor =
+        Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
     final borderColor = Theme.of(context).brightness == Brightness.dark
         ? Colors.white.withOpacity(0.1)
         : Colors.grey.withOpacity(0.2);

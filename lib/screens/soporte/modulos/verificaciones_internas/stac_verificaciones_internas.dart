@@ -278,7 +278,8 @@ class _StacVerificacionesInternasScreenState
       final dbHelper = DatabaseHelperVerificaciones();
 
       String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
+        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
+            '';
       }
 
       final Map<String, dynamic> comentariosData = {};
@@ -638,7 +639,9 @@ class _StacVerificacionesInternasScreenState
         ),
         body: SingleChildScrollView(
           padding: EdgeInsets.only(
-            top: kToolbarHeight + MediaQuery.of(context).padding.top + 40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
+            top: kToolbarHeight +
+                MediaQuery.of(context).padding.top +
+                40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
             left: 16.0, // Tu padding horizontal original
             right: 16.0, // Tu padding horizontal original
             bottom: 16.0, // Tu padding inferior original
@@ -827,7 +830,7 @@ class _StacVerificacionesInternasScreenState
               ),
               const SizedBox(height: 15.0),
               DropdownButtonFormField<String>(
-                value: _excentricidadValue,
+                initialValue: _excentricidadValue,
                 decoration: _buildInputDecoration(
                   'Excentricidad',
                 ),
@@ -844,7 +847,7 @@ class _StacVerificacionesInternasScreenState
               ),
               const SizedBox(height: 15.0),
               DropdownButtonFormField<String>(
-                value: _repetibilidadValue,
+                initialValue: _repetibilidadValue,
                 decoration: _buildInputDecoration(
                   'Repetibilidad',
                 ),
@@ -861,7 +864,7 @@ class _StacVerificacionesInternasScreenState
               ),
               const SizedBox(height: 15.0),
               DropdownButtonFormField<String>(
-                value: _linealidadValue,
+                initialValue: _linealidadValue,
                 decoration: _buildInputDecoration(
                   'Linealidad',
                 ),
@@ -946,7 +949,7 @@ class _StacVerificacionesInternasScreenState
                               : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                            isSaved ? const Color(0xFF167D1D) : Colors.grey,
+                                isSaved ? const Color(0xFF167D1D) : Colors.grey,
                           ),
                           child: const Text('SIGUIENTE'),
                         ),

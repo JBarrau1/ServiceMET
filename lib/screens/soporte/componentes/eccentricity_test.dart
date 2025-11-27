@@ -192,7 +192,7 @@ class _EccentricityTestState extends State<EccentricityTest> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<String>(
-          value: _selectedPlatform,
+          initialValue: _selectedPlatform,
           decoration: _buildInputDecoration('Tipo de Plataforma'),
           items: _platformOptions.keys.map((String value) {
             return DropdownMenuItem<String>(
@@ -215,7 +215,7 @@ class _EccentricityTestState extends State<EccentricityTest> {
         if (_selectedPlatform != 'Báscula de camión') ...[
           if (_selectedPlatform != null)
             DropdownButtonFormField<String>(
-              value: _selectedOption,
+              initialValue: _selectedOption,
               decoration: _buildInputDecoration('Puntos e Indicador'),
               items: _platformOptions[_selectedPlatform]!.map((String value) {
                 return DropdownMenuItem<String>(
@@ -243,7 +243,6 @@ class _EccentricityTestState extends State<EccentricityTest> {
                 ),
               ),
             ),
-
           const SizedBox(height: 20),
           TextFormField(
             controller: _loadController,
@@ -340,7 +339,8 @@ class _EccentricityTestState extends State<EccentricityTest> {
   }
 
   Widget _buildPositionRow(int index) {
-    final balanza = Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
+    final balanza =
+        Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
     final d1 = balanza?.d1 ?? 0.1;
 
     return Padding(

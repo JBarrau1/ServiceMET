@@ -40,12 +40,13 @@ class _LinearityTestState extends State<LinearityTest> {
   final List<String> _metodocargaOptions = ['Método 1', 'Método 2'];
 
   final List<Map<String, TextEditingController>> _rows = List.generate(
-    6, (index) => {
-    'lt': TextEditingController(),
-    'indicacion': TextEditingController(),
-    'retorno': TextEditingController(text: '0'),
-    'difference': TextEditingController(),
-  },
+    6,
+    (index) => {
+      'lt': TextEditingController(),
+      'indicacion': TextEditingController(),
+      'retorno': TextEditingController(text: '0'),
+      'difference': TextEditingController(),
+    },
   );
 
   void _calculateLsubn() {
@@ -100,7 +101,8 @@ class _LinearityTestState extends State<LinearityTest> {
         builder: (context) => AlertDialog(
           title: const Text(
             'ADVERTENCIA',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Colors.red),
+            style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w900, color: Colors.red),
           ),
           content: const Text('Las primeras 6 filas no se pueden eliminar.'),
           actions: [
@@ -125,7 +127,8 @@ class _LinearityTestState extends State<LinearityTest> {
         builder: (context) => AlertDialog(
           title: const Text(
             '¡ADVERTENCIA!',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Colors.red),
+            style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w900, color: Colors.red),
           ),
           content: const Text('Está excediendo las 12 filas sugeridas.'),
           actions: [
@@ -151,7 +154,9 @@ class _LinearityTestState extends State<LinearityTest> {
 
   bool _areAllFieldsFilled() {
     for (var row in _rows) {
-      if (row['lt']?.text.isEmpty ?? true || row['indicacion']!.text.isEmpty ?? true) {
+      if (row['lt']?.text.isEmpty ??
+          true || row['indicacion']!.text.isEmpty ??
+          true) {
         return false;
       }
     }
@@ -159,11 +164,13 @@ class _LinearityTestState extends State<LinearityTest> {
   }
 
   void _calculateDifferenceForRow(int index) {
-    final balanza = Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
+    final balanza =
+        Provider.of<BalanzaProvider>(context, listen: false).selectedBalanza;
     final decimals = balanza?.d1.toString().split('.').last.length ?? 5;
 
     final lt = double.tryParse(_rows[index]['lt']?.text ?? '') ?? 0.0;
-    final indicacion = double.tryParse(_rows[index]['indicacion']?.text ?? '') ?? 0.0;
+    final indicacion =
+        double.tryParse(_rows[index]['indicacion']?.text ?? '') ?? 0.0;
     final newDifference = (indicacion - lt).toStringAsFixed(decimals);
 
     if (_rows[index]['difference']?.text != newDifference) {
@@ -184,10 +191,10 @@ class _LinearityTestState extends State<LinearityTest> {
       final Map<String, dynamic> registro = {};
 
       for (int i = 0; i < _rows.length; i++) {
-        registro['lin${i+1}'] = _rows[i]['lt']?.text ?? '';
-        registro['lin_ind${i+1}'] = _rows[i]['indicacion']?.text ?? '';
-        registro['lin_ret${i+1}'] = _rows[i]['retorno']?.text ?? '';
-        registro['lin_diff${i+1}'] = _rows[i]['difference']?.text ?? '';
+        registro['lin${i + 1}'] = _rows[i]['lt']?.text ?? '';
+        registro['lin_ind${i + 1}'] = _rows[i]['indicacion']?.text ?? '';
+        registro['lin_ret${i + 1}'] = _rows[i]['retorno']?.text ?? '';
+        registro['lin_diff${i + 1}'] = _rows[i]['difference']?.text ?? '';
       }
 
       registro['metodo_linealidad'] = _selectedMetodo ?? '';
@@ -212,7 +219,8 @@ class _LinearityTestState extends State<LinearityTest> {
     );
   }
 
-  InputDecoration _buildInputDecoration(String labelText, {Widget? suffixIcon, String? suffixText}) {
+  InputDecoration _buildInputDecoration(String labelText,
+      {Widget? suffixIcon, String? suffixText}) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -253,10 +261,15 @@ class _LinearityTestState extends State<LinearityTest> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'))
+                          ],
                           controller: ltController,
-                          decoration: _buildInputDecoration('LT ${index + 1}').copyWith(
+                          decoration:
+                              _buildInputDecoration('LT ${index + 1}').copyWith(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(20.0),
                               borderSide: const BorderSide(color: Colors.green),
@@ -267,7 +280,8 @@ class _LinearityTestState extends State<LinearityTest> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(20.0),
-                              borderSide: const BorderSide(color: Colors.green, width: 2.0),
+                              borderSide: const BorderSide(
+                                  color: Colors.green, width: 2.0),
                             ),
                           ),
                           onChanged: (value) {
@@ -278,24 +292,35 @@ class _LinearityTestState extends State<LinearityTest> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextFormField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'))
+                          ],
                           controller: _rows[index]['difference'],
-                          decoration: _buildInputDecoration('Diferencia en ${_rows[index]['lt']?.text ?? ''}').copyWith(
+                          decoration: _buildInputDecoration(
+                                  'Diferencia en ${_rows[index]['lt']?.text ?? ''}')
+                              .copyWith(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(20.0),
-                              borderSide: const BorderSide(color: Colors.orange),
+                              borderSide:
+                                  const BorderSide(color: Colors.orange),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(20.0),
-                              borderSide: const BorderSide(color: Colors.orange),
+                              borderSide:
+                                  const BorderSide(color: Colors.orange),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(20.0),
-                              borderSide: const BorderSide(color: Colors.orange, width: 2.0),
+                              borderSide: const BorderSide(
+                                  color: Colors.orange, width: 2.0),
                             ),
                           ),
-                          style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w500),
                           readOnly: true,
                           enabled: false,
                         ),
@@ -314,17 +339,25 @@ class _LinearityTestState extends State<LinearityTest> {
                             int getSignificantDecimals(double value) {
                               final parts = value.toString().split('.');
                               return parts.length > 1
-                                  ? parts[1].replaceAll(RegExp(r'0+$'), '').length
+                                  ? parts[1]
+                                      .replaceAll(RegExp(r'0+$'), '')
+                                      .length
                                   : 0;
                             }
 
                             final decimalPlaces = getSignificantDecimals(d1);
 
-                            String formatValue(double value) => value.toStringAsFixed(decimalPlaces);
+                            String formatValue(double value) =>
+                                value.toStringAsFixed(decimalPlaces);
 
                             return TextFormField(
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d*\.?\d*'))
+                              ],
                               controller: indicacionController,
                               decoration: _buildInputDecoration(
                                 'Indicación ${index + 1}',
@@ -336,13 +369,17 @@ class _LinearityTestState extends State<LinearityTest> {
                                     });
                                   },
                                   itemBuilder: (context) {
-                                    final baseValue = indicacionController!.text.isNotEmpty
-                                        ? double.tryParse(indicacionController!.text) ?? 0.0
+                                    final baseValue = indicacionController!
+                                            .text.isNotEmpty
+                                        ? double.tryParse(
+                                                indicacionController.text) ??
+                                            0.0
                                         : 0.0;
 
                                     return List.generate(11, (index) {
                                       final multiplier = index - 5;
-                                      final value = baseValue + (multiplier * d1);
+                                      final value =
+                                          baseValue + (multiplier * d1);
                                       return PopupMenuItem<String>(
                                         value: formatValue(value),
                                         child: Text(formatValue(value)),
@@ -358,10 +395,15 @@ class _LinearityTestState extends State<LinearityTest> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextFormField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'))
+                          ],
                           controller: _rows[index]['retorno'],
-                          decoration: _buildInputDecoration('Retorno ${index + 1}'),
+                          decoration:
+                              _buildInputDecoration('Retorno ${index + 1}'),
                         ),
                       ),
                     ],
@@ -385,7 +427,7 @@ class _LinearityTestState extends State<LinearityTest> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.only(
-        top: kToolbarHeight + MediaQuery.of(context).padding.top -25,
+        top: kToolbarHeight + MediaQuery.of(context).padding.top - 25,
         left: 16.0,
         right: 16.0,
         bottom: 16.0,
@@ -400,7 +442,8 @@ class _LinearityTestState extends State<LinearityTest> {
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
                 color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white : Colors.black,
+                    ? Colors.white
+                    : Colors.black,
               ),
               children: const <TextSpan>[
                 TextSpan(
@@ -448,7 +491,8 @@ class _LinearityTestState extends State<LinearityTest> {
               Icon(
                 Icons.info,
                 color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white70 : Colors.black,
+                    ? Colors.white70
+                    : Colors.black,
                 size: 16.0,
               ),
               const SizedBox(width: 8.0),
@@ -459,7 +503,8 @@ class _LinearityTestState extends State<LinearityTest> {
                     fontSize: 12.0,
                     fontWeight: FontWeight.w400,
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70 : Colors.black,
+                        ? Colors.white70
+                        : Colors.black,
                   ),
                 ),
               )
@@ -490,8 +535,12 @@ class _LinearityTestState extends State<LinearityTest> {
                   children: [
                     Expanded(
                       child: TextFormField(
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d*'))
+                        ],
                         controller: _iLsubnController,
                         decoration: _buildInputDecoration('I(Lsubn)'),
                         onChanged: (value) {
@@ -500,11 +549,15 @@ class _LinearityTestState extends State<LinearityTest> {
                           double closestDifference = 0.0;
 
                           for (var row in _rows) {
-                            final lt = double.tryParse(row['lt']?.text ?? '') ?? 0.0;
-                            final indicacion = double.tryParse(row['indicacion']?.text ?? '') ?? 0.0;
+                            final lt =
+                                double.tryParse(row['lt']?.text ?? '') ?? 0.0;
+                            final indicacion = double.tryParse(
+                                    row['indicacion']?.text ?? '') ??
+                                0.0;
                             final difference = indicacion - lt;
 
-                            if ((iLsubn - lt).abs() < (iLsubn - closestLt).abs()) {
+                            if ((iLsubn - lt).abs() <
+                                (iLsubn - closestLt).abs()) {
                               closestLt = lt;
                               closestDifference = difference;
                             }
@@ -513,10 +566,13 @@ class _LinearityTestState extends State<LinearityTest> {
                           final lsubn = iLsubn - closestDifference;
                           _lsubnController.text = lsubn.toString();
 
-                          if (_rows.isNotEmpty && (_rows[0]['lt']?.text.isEmpty ?? true)) {
+                          if (_rows.isNotEmpty &&
+                              (_rows[0]['lt']?.text.isEmpty ?? true)) {
                             _ltnController.text = (lsubn + 500).toString();
                           } else {
-                            final lastLt = double.tryParse(_rows.last['lt']?.text ?? '') ?? 0.0;
+                            final lastLt =
+                                double.tryParse(_rows.last['lt']?.text ?? '') ??
+                                    0.0;
                             _ltnController.text = (lsubn + lastLt).toString();
                           }
                         },
@@ -543,7 +599,8 @@ class _LinearityTestState extends State<LinearityTest> {
                         decoration: _buildInputDecoration('Io'),
                         onChanged: (value) {
                           final cp = double.tryParse(_cpController.text) ?? 0.0;
-                          final lsubn = double.tryParse(_lsubnController.text) ?? 0.0;
+                          final lsubn =
+                              double.tryParse(_lsubnController.text) ?? 0.0;
                           final io = double.tryParse(value) ?? 0.0;
 
                           final ltn = (cp + lsubn) - io;
@@ -571,7 +628,8 @@ class _LinearityTestState extends State<LinearityTest> {
                     _ioController.clear();
                     _ltnController.clear();
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
                   child: const Text('Guardar LTn'),
                 )
               ],
@@ -586,7 +644,8 @@ class _LinearityTestState extends State<LinearityTest> {
                   alignment: Alignment.centerRight,
                   child: ElevatedButton(
                     onPressed: _saveData,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.green),
                     child: const Text('Guardar Datos'),
                   ),
                 ),
@@ -595,8 +654,12 @@ class _LinearityTestState extends State<LinearityTest> {
                   children: [
                     Expanded(
                       child: TextFormField(
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d*'))
+                        ],
                         controller: _ltnController,
                         decoration: _buildInputDecoration('LTn'),
                         onChanged: (value) => _calculateLsubn(),
@@ -605,8 +668,12 @@ class _LinearityTestState extends State<LinearityTest> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextFormField(
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d*'))
+                        ],
                         controller: _iLtnController,
                         decoration: _buildInputDecoration('I(LTn)'),
                         onChanged: (value) => _calculateLsubn(),
@@ -680,7 +747,8 @@ class _LinearityTestState extends State<LinearityTest> {
                     fontSize: 12.0,
                     fontWeight: FontWeight.w400,
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70 : Colors.black,
+                        ? Colors.white70
+                        : Colors.black,
                   ),
                 ),
               )

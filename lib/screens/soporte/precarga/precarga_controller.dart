@@ -18,7 +18,6 @@ import '../../../database/soporte_tecnico/database_helper_relevamiento.dart';
 import '../../../database/soporte_tecnico/database_helper_verificaciones.dart';
 
 class PrecargaControllerSop extends ChangeNotifier {
-
   String? _baseFotoPath;
   String? get baseFotoPath => _baseFotoPath;
 
@@ -47,7 +46,14 @@ class PrecargaControllerSop extends ChangeNotifier {
   bool _secaConfirmed = false;
 
   // Validación por paso
-  Map<int, String?> _stepErrors = {-1: null, 0: null, 1: null, 2: null, 3: null, 4: null};
+  Map<int, String?> _stepErrors = {
+    -1: null,
+    0: null,
+    1: null,
+    2: null,
+    3: null,
+    4: null
+  };
   Map<int, String?> get stepErrors => _stepErrors;
 
   // Getters
@@ -108,7 +114,8 @@ class PrecargaControllerSop extends ChangeNotifier {
   // Getters equipos
   List<dynamic> get equipos => _equipos;
   List<Map<String, dynamic>> get selectedEquipos => _selectedEquipos;
-  List<Map<String, dynamic>> get selectedTermohigrometros => _selectedTermohigrometros;
+  List<Map<String, dynamic>> get selectedTermohigrometros =>
+      _selectedTermohigrometros;
 
   // Fotos
   final Map<String, List<File>> _balanzaPhotos = {};
@@ -123,26 +130,89 @@ class PrecargaControllerSop extends ChangeNotifier {
   final List<String> unidadesPermitidas = ['mg', 'g', 'kg'];
 
   final List<String> marcasBalanzas = [
-    'ACCULAB', 'AIV ELECTRONIC TECH', 'AIV-ELECTRONIC TECH', 'AND', 'ASPIRE',
-    'AVERY', 'BALPER', 'CAMRY', 'CARDINAL', 'CAS', 'CAUDURO', 'CLEVER',
-    'DAYANG', 'DIGITAL SCALE', 'DOLPHIN', 'ELECTRONIC SCALE', 'FAIRBANKS',
-    'FAIRBANKS MORSE', 'AOSAI', 'FAMOCOL', 'FERTON', 'FILIZOLA', 'GRAM',
-    'GRAM PRECISION', 'GSC', 'GUOMING', 'HBM', 'HIWEIGH', 'HOWE', 'INESA',
-    'JADEVER', 'JM', 'KERN', 'KRETZ', 'LUTRANA', 'METTLER', 'METTLER TOLEDO',
-    'MY WEIGH', 'OHAUS', 'PRECISA', 'PRECISION HISPANA', 'PT Ltd',
-    'QUANTUM SCALES', 'RADWAG', 'RINSTRUM', 'SARTORIUS', 'SCIENTECH', 'SECA',
-    'SHANGAI', 'SHIMADZU', 'SIPEL', 'STAVOL', 'SYMMETRY', 'SYSTEL', 'TOLEDO',
-    'TOP BRAND', 'TOP INSTRUMENTS', 'TRANSCELL', 'TRINER', 'TRINNER SCALES',
-    'WATERPROOF', 'WHITE BIRD', 'CONSTANT', 'JEWELLRY SCALE', 'YAOHUA', 'PRIX'
+    'ACCULAB',
+    'AIV ELECTRONIC TECH',
+    'AIV-ELECTRONIC TECH',
+    'AND',
+    'ASPIRE',
+    'AVERY',
+    'BALPER',
+    'CAMRY',
+    'CARDINAL',
+    'CAS',
+    'CAUDURO',
+    'CLEVER',
+    'DAYANG',
+    'DIGITAL SCALE',
+    'DOLPHIN',
+    'ELECTRONIC SCALE',
+    'FAIRBANKS',
+    'FAIRBANKS MORSE',
+    'AOSAI',
+    'FAMOCOL',
+    'FERTON',
+    'FILIZOLA',
+    'GRAM',
+    'GRAM PRECISION',
+    'GSC',
+    'GUOMING',
+    'HBM',
+    'HIWEIGH',
+    'HOWE',
+    'INESA',
+    'JADEVER',
+    'JM',
+    'KERN',
+    'KRETZ',
+    'LUTRANA',
+    'METTLER',
+    'METTLER TOLEDO',
+    'MY WEIGH',
+    'OHAUS',
+    'PRECISA',
+    'PRECISION HISPANA',
+    'PT Ltd',
+    'QUANTUM SCALES',
+    'RADWAG',
+    'RINSTRUM',
+    'SARTORIUS',
+    'SCIENTECH',
+    'SECA',
+    'SHANGAI',
+    'SHIMADZU',
+    'SIPEL',
+    'STAVOL',
+    'SYMMETRY',
+    'SYSTEL',
+    'TOLEDO',
+    'TOP BRAND',
+    'TOP INSTRUMENTS',
+    'TRANSCELL',
+    'TRINER',
+    'TRINNER SCALES',
+    'WATERPROOF',
+    'WHITE BIRD',
+    'CONSTANT',
+    'JEWELLRY SCALE',
+    'YAOHUA',
+    'PRIX'
   ];
 
   final List<String> tiposEquipo = [
-    'BALANZA', 'BALANZA ANALIZADORA DE HUMEDAD', 'BALANZA ANALÍTICA',
-    'BALANZA MECÁNICA', 'BALANZA ELECTROMECÁNICA',
-    'BALANZA ELECTRÓNICA DE DOBLE RANGO', 'BALANZA ELECTRÓNICA DE TRIPLE RANGO',
-    'BALANZA ELECTRÓNICA DE DOBLE INTERVALO', 'BALANZA ELECTRÓNICA DE TRIPLE INTERVALO',
-    'BALANZA SEMIMICROANALÍTICA', 'BALANZA MICROANALÍTICA',
-    'BALANZA SEMIMICROANALÍTICA DE DOBLE RANGO', 'BALANZA SEMIMICROANALÍTICA DE TRIPLE RANGO', 'BALANZA ELECTRONICA',
+    'BALANZA',
+    'BALANZA ANALIZADORA DE HUMEDAD',
+    'BALANZA ANALÍTICA',
+    'BALANZA MECÁNICA',
+    'BALANZA ELECTROMECÁNICA',
+    'BALANZA ELECTRÓNICA DE DOBLE RANGO',
+    'BALANZA ELECTRÓNICA DE TRIPLE RANGO',
+    'BALANZA ELECTRÓNICA DE DOBLE INTERVALO',
+    'BALANZA ELECTRÓNICA DE TRIPLE INTERVALO',
+    'BALANZA SEMIMICROANALÍTICA',
+    'BALANZA MICROANALÍTICA',
+    'BALANZA SEMIMICROANALÍTICA DE DOBLE RANGO',
+    'BALANZA SEMIMICROANALÍTICA DE TRIPLE RANGO',
+    'BALANZA ELECTRONICA',
   ];
 
   // MÉTODOS DE VALIDACIÓN
@@ -207,7 +277,6 @@ class PrecargaControllerSop extends ChangeNotifier {
   }
 
   bool canProceedToStep(int targetStep) {
-
     final error = validateStep(targetStep);
     return error == null;
   }
@@ -230,9 +299,9 @@ class PrecargaControllerSop extends ChangeNotifier {
   }
 
   void goToStep(int step) {
-
     if (!canProceedToStep(step)) {
-      debugPrint('No se puede saltar al paso $step: pasos anteriores incompletos');
+      debugPrint(
+          'No se puede saltar al paso $step: pasos anteriores incompletos');
       return;
     }
 
@@ -343,7 +412,8 @@ class PrecargaControllerSop extends ChangeNotifier {
     _secaConfirmed = true;
 
     if (clienteName != null) _selectedClienteName = clienteName;
-    if (clienteRazonSocial != null) _selectedClienteRazonSocial = clienteRazonSocial;
+    if (clienteRazonSocial != null)
+      _selectedClienteRazonSocial = clienteRazonSocial;
     if (plantaDir != null) _selectedPlantaDir = plantaDir;
     if (plantaDep != null) _selectedPlantaDep = plantaDep;
     if (plantaNombre != null) _selectedPlantaNombre = plantaNombre;
@@ -383,7 +453,7 @@ class PrecargaControllerSop extends ChangeNotifier {
 
       await fetchPlantas(_selectedClienteId!);
 
-      final uniqueKey = '${plantaId}_${depId}';
+      final uniqueKey = '${plantaId}_$depId';
       selectPlanta(uniqueKey);
 
       notifyListeners();
@@ -397,7 +467,8 @@ class PrecargaControllerSop extends ChangeNotifier {
     try {
       String path = join(await getDatabasesPath(), 'precarga_database.db');
       final db = await openDatabase(path);
-      final List<Map<String, dynamic>> clientesList = await db.query('clientes');
+      final List<Map<String, dynamic>> clientesList =
+          await db.query('clientes');
 
       _clientes = clientesList;
       _filteredClientes = clientesList;
@@ -478,7 +549,7 @@ class PrecargaControllerSop extends ChangeNotifier {
 
   void selectPlanta(String uniqueKey) {
     final selectedPlanta = _plantas!.firstWhere(
-          (planta) => planta['unique_key'] == uniqueKey,
+      (planta) => planta['unique_key'] == uniqueKey,
       orElse: () => <String, dynamic>{},
     );
 
@@ -553,17 +624,18 @@ class PrecargaControllerSop extends ChangeNotifier {
 
   Future<void> confirmSeca(String userName, String fechaServicio) async {
     if (_generatedSeca == null) throw Exception('No hay OTST generado');
-    if (_tableName == null) throw Exception('No se ha seleccionado tipo de servicio');
+    if (_tableName == null)
+      throw Exception('No se ha seleccionado tipo de servicio');
 
     try {
-
       final dbHelper = _getDatabaseHelper();
 
       // Verificar si ya existe registro con este SECA
       final secaExiste = await dbHelper.metricaExists(_generatedSeca!);
 
       if (secaExiste) {
-        final ultimoRegistro = await dbHelper.getUltimoRegistroPorMetrica(_generatedSeca!);
+        final ultimoRegistro =
+            await dbHelper.getUltimoRegistroPorMetrica(_generatedSeca!);
         throw SecaExistsException(ultimoRegistro?['fecha_servicio'] ?? 'N/A');
       } else {
         await createNewSecaSession(userName, fechaServicio);
@@ -573,12 +645,12 @@ class PrecargaControllerSop extends ChangeNotifier {
     }
   }
 
-  Future<void> createNewSecaSession(String userName, String fechaServicio) async {
+  Future<void> createNewSecaSession(
+      String userName, String fechaServicio) async {
     try {
       if (_tableName == null) {
         throw Exception('No se ha seleccionado un tipo de servicio');
       }
-
 
       final dbHelper = _getDatabaseHelper();
 
@@ -601,7 +673,6 @@ class PrecargaControllerSop extends ChangeNotifier {
         'cod_metrica': '',
       };
 
-
       await dbHelper.upsertRegistro(registro);
 
       _secaConfirmed = true;
@@ -623,7 +694,6 @@ class PrecargaControllerSop extends ChangeNotifier {
         throw Exception('No se ha seleccionado un tipo de servicio');
       }
 
-
       final dbHelper = _getDatabaseHelper();
       return await dbHelper.generateSessionId(codMetrica);
     } catch (e) {
@@ -634,9 +704,9 @@ class PrecargaControllerSop extends ChangeNotifier {
   // MÉTODOS DE BALANZA
   Future<void> fetchBalanzas(String plantaCodigo) async {
     try {
-
       if (_tableName == null) {
-        debugPrint('⚠️ No se puede buscar balanzas sin tipo de servicio seleccionado');
+        debugPrint(
+            '⚠️ No se puede buscar balanzas sin tipo de servicio seleccionado');
         _balanzas = [];
         notifyListeners();
         return;
@@ -661,7 +731,6 @@ class PrecargaControllerSop extends ChangeNotifier {
           where: 'cod_metrica = ?',
           whereArgs: [codMetrica],
         );
-
 
         final estadoCalibacion = await _verificarEstadoCalibacion(codMetrica);
 
@@ -690,13 +759,12 @@ class PrecargaControllerSop extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> _verificarEstadoCalibacion(String codMetrica) async {
+  Future<Map<String, dynamic>> _verificarEstadoCalibacion(
+      String codMetrica) async {
     try {
-
       if (_tableName == null || _tableName!.isEmpty) {
         return {'estado': 'sin_tabla', 'tiene_registro': false};
       }
-
 
       final dbHelper = _getDatabaseHelper();
       final db = await dbHelper.database;
@@ -715,7 +783,8 @@ class PrecargaControllerSop extends ChangeNotifier {
       }
 
       // Verificar el estado del servicio
-      final estadoServicio = registros.first['estado_servicio_bal']?.toString() ?? '';
+      final estadoServicio =
+          registros.first['estado_servicio_bal']?.toString() ?? '';
 
       if (estadoServicio == 'Balanza Calibrada') {
         return {'estado': 'calibrada', 'tiene_registro': true};

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/repetibilidad_controller.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/repetibilidad_form.dart';
-import '../../../../database/app_database.dart';
 import '../../../../providers/calibration_provider.dart';
 
 class RepetibilidadScreen extends StatefulWidget {
@@ -54,7 +53,8 @@ class _RepetibilidadScreenState extends State<RepetibilidadScreen> {
         throw Exception('Los controladores no se inicializaron correctamente');
       }
 
-      debugPrint('✅ Controller inicializado: ${_controller.cargaControllers.length} cargas');
+      debugPrint(
+          '✅ Controller inicializado: ${_controller.cargaControllers.length} cargas');
 
       if (mounted) {
         setState(() {
@@ -66,7 +66,8 @@ class _RepetibilidadScreenState extends State<RepetibilidadScreen> {
       if (mounted) {
         setState(() {
           _errorMessage = e.toString();
-          _isInitialized = true; // Marcar como initialized para mostrar el error
+          _isInitialized =
+              true; // Marcar como initialized para mostrar el error
         });
       }
     }

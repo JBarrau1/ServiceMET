@@ -13,12 +13,12 @@ class PasoPruebasIniciales extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoPruebasIniciales({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.getD1FromDatabase,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -170,12 +170,12 @@ class PasoPruebasFinales extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoPruebasFinales({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.getD1FromDatabase,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

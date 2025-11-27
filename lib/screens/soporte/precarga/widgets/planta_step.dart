@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../precarga_controller.dart';
 
 class PlantaStep extends StatefulWidget {
-  const PlantaStep({Key? key}) : super(key: key);
+  const PlantaStep({super.key});
 
   @override
   State<PlantaStep> createState() => _PlantaStepState();
@@ -17,7 +17,6 @@ class _PlantaStepState extends State<PlantaStep> {
   final TextEditingController _plantaDepController = TextEditingController();
   final TextEditingController _codigoPlantaController = TextEditingController();
   final TextEditingController _nombrePlantaController = TextEditingController();
-
 
   @override
   void dispose() {
@@ -115,7 +114,8 @@ class _PlantaStepState extends State<PlantaStep> {
                 if (controller.isNewClient)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.orange[100],
                       borderRadius: BorderRadius.circular(10),
@@ -149,9 +149,7 @@ class _PlantaStepState extends State<PlantaStep> {
             color: Colors.green[700],
           ),
         ).animate(delay: 300.ms).fadeIn().slideX(begin: -0.3),
-
         const SizedBox(height: 20),
-
         TextField(
           controller: _nombrePlantaController,
           decoration: InputDecoration(
@@ -163,9 +161,7 @@ class _PlantaStepState extends State<PlantaStep> {
           ),
           onChanged: (value) => _updatePlantaData(controller),
         ).animate(delay: 350.ms).fadeIn().slideX(begin: -0.3),
-
         const SizedBox(height: 20),
-
         TextField(
           controller: _plantaDirController,
           decoration: InputDecoration(
@@ -177,9 +173,7 @@ class _PlantaStepState extends State<PlantaStep> {
           ),
           onChanged: (value) => _updatePlantaData(controller),
         ).animate(delay: 400.ms).fadeIn().slideX(begin: -0.3),
-
         const SizedBox(height: 16),
-
         TextField(
           controller: _plantaDepController,
           decoration: InputDecoration(
@@ -191,9 +185,7 @@ class _PlantaStepState extends State<PlantaStep> {
           ),
           onChanged: (value) => _updatePlantaData(controller),
         ).animate(delay: 500.ms).fadeIn().slideX(begin: 0.3),
-
         const SizedBox(height: 16),
-
         TextField(
           controller: _codigoPlantaController,
           decoration: InputDecoration(
@@ -206,9 +198,7 @@ class _PlantaStepState extends State<PlantaStep> {
           ),
           onChanged: (value) => _updatePlantaData(controller),
         ).animate(delay: 600.ms).fadeIn().slideX(begin: -0.3),
-
         const SizedBox(height: 16),
-
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -306,14 +296,13 @@ class _PlantaStepState extends State<PlantaStep> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3e7732),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
           ],
         ).animate(delay: 300.ms).fadeIn().slideX(begin: -0.3),
-
         const SizedBox(height: 20),
-
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey[300]!),
@@ -333,18 +322,17 @@ class _PlantaStepState extends State<PlantaStep> {
                   borderRadius: BorderRadius.circular(8),
                   border: isSelected
                       ? Border.all(
-                    color: Theme.of(context).primaryColor,
-                    width: 2,
-                  )
+                          color: Theme.of(context).primaryColor,
+                          width: 2,
+                        )
                       : null,
                 ),
                 child: ListTile(
                   title: Text(
                     planta['planta']?.toString() ?? 'Planta sin nombre',
                     style: GoogleFonts.poppins(
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   subtitle: Column(
@@ -373,9 +361,9 @@ class _PlantaStepState extends State<PlantaStep> {
                   ),
                   trailing: isSelected
                       ? Icon(
-                    Icons.check_circle,
-                    color: Theme.of(context).primaryColor,
-                  )
+                          Icons.check_circle,
+                          color: Theme.of(context).primaryColor,
+                        )
                       : const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () => controller.selectPlanta(uniqueKey),
                 ),
@@ -443,19 +431,15 @@ class _PlantaStepState extends State<PlantaStep> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           if (controller.selectedPlantaDir != null) ...[
             _buildInfoRow('Dirección', controller.selectedPlantaDir!),
             const SizedBox(height: 8),
           ],
-
           if (controller.selectedPlantaDep != null) ...[
             _buildInfoRow('Departamento', controller.selectedPlantaDep!),
             const SizedBox(height: 8),
           ],
-
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -517,10 +501,13 @@ class _PlantaStepState extends State<PlantaStep> {
     );
   }
 
-  void _showAddPlantaDialog(BuildContext context, PrecargaControllerSop controller) {
-    final TextEditingController nombrePlantaController = TextEditingController();
+  void _showAddPlantaDialog(
+      BuildContext context, PrecargaControllerSop controller) {
+    final TextEditingController nombrePlantaController =
+        TextEditingController();
     final TextEditingController direccionController = TextEditingController();
-    final TextEditingController departamentoController = TextEditingController();
+    final TextEditingController departamentoController =
+        TextEditingController();
     final TextEditingController codigoController = TextEditingController();
 
     showDialog(
@@ -529,7 +516,8 @@ class _PlantaStepState extends State<PlantaStep> {
         return AlertDialog(
           title: Text(
             'Agregar Nueva Planta',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+            style:
+                GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -539,7 +527,8 @@ class _PlantaStepState extends State<PlantaStep> {
                   controller: nombrePlantaController,
                   decoration: InputDecoration(
                     labelText: 'Nombre de la Planta *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.factory),
                   ),
                 ),
@@ -548,7 +537,8 @@ class _PlantaStepState extends State<PlantaStep> {
                   controller: direccionController,
                   decoration: InputDecoration(
                     labelText: 'Dirección *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.location_on),
                   ),
                 ),
@@ -557,7 +547,8 @@ class _PlantaStepState extends State<PlantaStep> {
                   controller: departamentoController,
                   decoration: InputDecoration(
                     labelText: 'Departamento *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.map),
                   ),
                 ),
@@ -566,7 +557,8 @@ class _PlantaStepState extends State<PlantaStep> {
                   controller: codigoController,
                   decoration: InputDecoration(
                     labelText: 'Código de Planta *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.code),
                     helperText: 'Ej: 1234, ABCD',
                   ),
@@ -586,7 +578,8 @@ class _PlantaStepState extends State<PlantaStep> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3e7732)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3e7732)),
               onPressed: () async {
                 if (nombrePlantaController.text.trim().isEmpty ||
                     direccionController.text.trim().isEmpty ||
@@ -620,7 +613,9 @@ class _PlantaStepState extends State<PlantaStep> {
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red),
                   );
                 }
               },

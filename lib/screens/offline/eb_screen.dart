@@ -180,7 +180,7 @@ class _EbScreenState extends State<EbScreen> {
         Expanded(
           flex: 5,
           child: DropdownButtonFormField<String>(
-            value: _fieldData[label]?['value'],
+            initialValue: _fieldData[label]?['value'],
             decoration: InputDecoration(
               labelText: label,
               border: const OutlineInputBorder(),
@@ -413,7 +413,7 @@ class _EbScreenState extends State<EbScreen> {
               ),
               const SizedBox(height: 16.0),
               DropdownButtonFormField<String>(
-                value: _tiempoMin,
+                initialValue: _tiempoMin,
                 decoration: InputDecoration(
                   labelText: 'Tiempo de estabilización de Pesas (en Minutos):',
                   border: OutlineInputBorder(
@@ -441,7 +441,7 @@ class _EbScreenState extends State<EbScreen> {
               ),
               const SizedBox(height: 20.0),
               DropdownButtonFormField<String>(
-                value: _tiempoBalanza,
+                initialValue: _tiempoBalanza,
                 decoration: InputDecoration(
                   labelText: 'Tiempo previo a operacion de Balanza:',
                   border: OutlineInputBorder(

@@ -22,22 +22,25 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
   final TextEditingController _pmax1Controller = TextEditingController();
   final TextEditingController _pmaxCalculoController = TextEditingController();
 
-  final TextEditingController repetibilidadController1 = TextEditingController();
-  final TextEditingController repetibilidadController2 = TextEditingController();
-  final TextEditingController repetibilidadController3 = TextEditingController();
+  final TextEditingController repetibilidadController1 =
+      TextEditingController();
+  final TextEditingController repetibilidadController2 =
+      TextEditingController();
+  final TextEditingController repetibilidadController3 =
+      TextEditingController();
 
   final List<TextEditingController> indicacionControllers1 =
-  List.generate(10, (index) => TextEditingController());
+      List.generate(10, (index) => TextEditingController());
   final List<TextEditingController> retornoControllers1 =
-  List.generate(10, (index) => TextEditingController(text: '0'));
+      List.generate(10, (index) => TextEditingController(text: '0'));
   final List<TextEditingController> indicacionControllers2 =
-  List.generate(10, (index) => TextEditingController());
+      List.generate(10, (index) => TextEditingController());
   final List<TextEditingController> retornoControllers2 =
-  List.generate(10, (index) => TextEditingController(text: '0'));
+      List.generate(10, (index) => TextEditingController(text: '0'));
   final List<TextEditingController> indicacionControllers3 =
-  List.generate(10, (index) => TextEditingController());
+      List.generate(10, (index) => TextEditingController());
   final List<TextEditingController> retornoControllers3 =
-  List.generate(10, (index) => TextEditingController(text: '0'));
+      List.generate(10, (index) => TextEditingController(text: '0'));
 
   int _selectedRepetibilityCount = 3;
   int _selectedRowCount = 3;
@@ -130,7 +133,8 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
     );
   }
 
-  InputDecoration _buildInputDecoration(String labelText, {Widget? suffixIcon, String? suffixText}) {
+  InputDecoration _buildInputDecoration(String labelText,
+      {Widget? suffixIcon, String? suffixText}) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -145,7 +149,7 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
 
     return SingleChildScrollView(
       padding: EdgeInsets.only(
-        top: kToolbarHeight + MediaQuery.of(context).padding.top -25,
+        top: kToolbarHeight + MediaQuery.of(context).padding.top - 25,
         left: 16.0,
         right: 16.0,
         bottom: 16.0,
@@ -160,7 +164,8 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
                 color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white : Colors.black,
+                    ? Colors.white
+                    : Colors.black,
               ),
               children: const <TextSpan>[
                 TextSpan(
@@ -172,31 +177,37 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
           ),
           const SizedBox(height: 20),
           DropdownButtonFormField<int>(
-            value: _selectedRepetibilityCount,
-            items: [1, 2, 3].map((int value) => DropdownMenuItem<int>(
-              value: value,
-              child: Text(value.toString()),
-            )).toList(),
+            initialValue: _selectedRepetibilityCount,
+            items: [1, 2, 3]
+                .map((int value) => DropdownMenuItem<int>(
+                      value: value,
+                      child: Text(value.toString()),
+                    ))
+                .toList(),
             onChanged: (value) {
               setState(() {
                 _selectedRepetibilityCount = value ?? 1;
               });
             },
-            decoration: _buildInputDecoration('Seleccione la cantidad de Cargas'),
+            decoration:
+                _buildInputDecoration('Seleccione la cantidad de Cargas'),
           ),
           const SizedBox(height: 20),
           DropdownButtonFormField<int>(
-            value: _selectedRowCount,
-            items: [3, 5, 10].map((int value) => DropdownMenuItem<int>(
-              value: value,
-              child: Text(value.toString()),
-            )).toList(),
+            initialValue: _selectedRowCount,
+            items: [3, 5, 10]
+                .map((int value) => DropdownMenuItem<int>(
+                      value: value,
+                      child: Text(value.toString()),
+                    ))
+                .toList(),
             onChanged: (value) {
               setState(() {
                 _selectedRowCount = value ?? 3;
               });
             },
-            decoration: _buildInputDecoration('Seleccione la cantidad de Pruebas'),
+            decoration:
+                _buildInputDecoration('Seleccione la cantidad de Pruebas'),
           ),
           const SizedBox(height: 20),
           Row(
@@ -228,8 +239,11 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
             ),
             const SizedBox(height: 20),
             TextFormField(
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+              ],
               controller: repetibilidadController1,
               decoration: _buildInputDecoration('CARGA 1'),
               onChanged: _updateIndicacionValues,
@@ -249,7 +263,10 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                             int getSignificantDecimals(double value) {
                               final text = value.toString();
                               if (text.contains('.')) {
-                                return text.split('.')[1].replaceAll(RegExp(r'0+$'), '').length;
+                                return text
+                                    .split('.')[1]
+                                    .replaceAll(RegExp(r'0+$'), '')
+                                    .length;
                               }
                               return 0;
                             }
@@ -257,23 +274,33 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                             final decimalPlaces = getSignificantDecimals(d1);
 
                             return TextFormField(
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d*\.?\d*'))
+                              ],
                               controller: indicacionControllers1[i],
                               decoration: _buildInputDecoration(
                                 'Indicación ${i + 1}',
                                 suffixIcon: PopupMenuButton<String>(
                                   icon: const Icon(Icons.arrow_drop_down),
                                   onSelected: (String newValue) {
-                                    setState(() => indicacionControllers1[i].text = newValue);
+                                    setState(() => indicacionControllers1[i]
+                                        .text = newValue);
                                   },
                                   itemBuilder: (BuildContext context) {
-                                    final baseValue = double.tryParse(indicacionControllers1[i].text) ?? 0.0;
+                                    final baseValue = double.tryParse(
+                                            indicacionControllers1[i].text) ??
+                                        0.0;
 
                                     return List.generate(11, (index) {
                                       final multiplier = index - 5;
-                                      final value = baseValue + (multiplier * d1);
-                                      final formattedValue = value.toStringAsFixed(decimalPlaces);
+                                      final value =
+                                          baseValue + (multiplier * d1);
+                                      final formattedValue =
+                                          value.toStringAsFixed(decimalPlaces);
 
                                       return PopupMenuItem<String>(
                                         value: formattedValue,
@@ -290,8 +317,12 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextFormField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'))
+                          ],
                           controller: retornoControllers1[i],
                           decoration: _buildInputDecoration('Retorno ${i + 1}'),
                         ),
@@ -310,8 +341,11 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
             ),
             const SizedBox(height: 20),
             TextFormField(
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+              ],
               controller: repetibilidadController2,
               decoration: _buildInputDecoration('CARGA 2'),
               onChanged: _updateIndicacionValues2,
@@ -331,7 +365,10 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                             int getSignificantDecimals(double value) {
                               final text = value.toString();
                               if (text.contains('.')) {
-                                return text.split('.')[1].replaceAll(RegExp(r'0+$'), '').length;
+                                return text
+                                    .split('.')[1]
+                                    .replaceAll(RegExp(r'0+$'), '')
+                                    .length;
                               }
                               return 0;
                             }
@@ -339,23 +376,33 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                             final decimalPlaces = getSignificantDecimals(d1);
 
                             return TextFormField(
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d*\.?\d*'))
+                              ],
                               controller: indicacionControllers2[i],
                               decoration: _buildInputDecoration(
                                 'Indicación ${i + 1}',
                                 suffixIcon: PopupMenuButton<String>(
                                   icon: const Icon(Icons.arrow_drop_down),
                                   onSelected: (String newValue) {
-                                    setState(() => indicacionControllers2[i].text = newValue);
+                                    setState(() => indicacionControllers2[i]
+                                        .text = newValue);
                                   },
                                   itemBuilder: (BuildContext context) {
-                                    final baseValue = double.tryParse(indicacionControllers2[i].text) ?? 0.0;
+                                    final baseValue = double.tryParse(
+                                            indicacionControllers2[i].text) ??
+                                        0.0;
 
                                     return List.generate(11, (index) {
                                       final multiplier = index - 5;
-                                      final value = baseValue + (multiplier * d1);
-                                      final formattedValue = value.toStringAsFixed(decimalPlaces);
+                                      final value =
+                                          baseValue + (multiplier * d1);
+                                      final formattedValue =
+                                          value.toStringAsFixed(decimalPlaces);
 
                                       return PopupMenuItem<String>(
                                         value: formattedValue,
@@ -372,8 +419,12 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextFormField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'))
+                          ],
                           controller: retornoControllers2[i],
                           decoration: _buildInputDecoration('Retorno ${i + 1}'),
                         ),
@@ -392,8 +443,11 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
             ),
             const SizedBox(height: 20),
             TextFormField(
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+              ],
               controller: repetibilidadController3,
               decoration: _buildInputDecoration('CARGA 3'),
               onChanged: _updateIndicacionValues3,
@@ -413,7 +467,10 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                             int getSignificantDecimals(double value) {
                               final text = value.toString();
                               if (text.contains('.')) {
-                                return text.split('.')[1].replaceAll(RegExp(r'0+$'), '').length;
+                                return text
+                                    .split('.')[1]
+                                    .replaceAll(RegExp(r'0+$'), '')
+                                    .length;
                               }
                               return 0;
                             }
@@ -421,23 +478,33 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                             final decimalPlaces = getSignificantDecimals(d1);
 
                             return TextFormField(
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d*\.?\d*'))
+                              ],
                               controller: indicacionControllers3[i],
                               decoration: _buildInputDecoration(
                                 'Indicación ${i + 1}',
                                 suffixIcon: PopupMenuButton<String>(
                                   icon: const Icon(Icons.arrow_drop_down),
                                   onSelected: (String newValue) {
-                                    setState(() => indicacionControllers3[i].text = newValue);
+                                    setState(() => indicacionControllers3[i]
+                                        .text = newValue);
                                   },
                                   itemBuilder: (BuildContext context) {
-                                    final baseValue = double.tryParse(indicacionControllers3[i].text) ?? 0.0;
+                                    final baseValue = double.tryParse(
+                                            indicacionControllers3[i].text) ??
+                                        0.0;
 
                                     return List.generate(11, (index) {
                                       final multiplier = index - 5;
-                                      final value = baseValue + (multiplier * d1);
-                                      final formattedValue = value.toStringAsFixed(decimalPlaces);
+                                      final value =
+                                          baseValue + (multiplier * d1);
+                                      final formattedValue =
+                                          value.toStringAsFixed(decimalPlaces);
 
                                       return PopupMenuItem<String>(
                                         value: formattedValue,
@@ -454,8 +521,12 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextFormField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'))
+                          ],
                           controller: retornoControllers3[i],
                           decoration: _buildInputDecoration('Retorno ${i + 1}'),
                         ),

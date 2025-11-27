@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:service_met/screens/calibracion/servicio_screen.dart';
+import 'package:service_met/screens/calibracion/inicio_servicio/inicio_servicio_screen.dart';
 import '../../../database/app_database.dart';
 import '../../../models/balanza_model.dart';
 import '../../../provider/balanza_provider.dart';
@@ -595,7 +595,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ServicioScreen(
+            builder: (context) => InicioServicioScreen(
               codMetrica: _balanzaControllers['cod_metrica']!.text,
               nReca: _nRecaController.text,
               secaValue: controller.generatedSeca!,

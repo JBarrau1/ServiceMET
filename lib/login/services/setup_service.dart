@@ -1,7 +1,6 @@
 // lib/login/services/setup_service.dart - VERSIÓN CORREGIDA
 
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:mssql_connection/mssql_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -302,7 +301,7 @@ class SetupService {
                 '✅ Tabla $tableName: $batchInserted insertados, $batchSkipped saltados');
           } catch (e) {
             print('❌ Error en batch commit para $tableName: $e');
-            throw e;
+            rethrow;
           }
         });
 
@@ -511,8 +510,8 @@ class UserValidationResult extends SetupResult {
   final UserModel? userData;
 
   UserValidationResult({
-    required bool success,
-    required String message,
+    required super.success,
+    required super.message,
     this.userData,
-  }) : super(success: success, message: message);
+  });
 }

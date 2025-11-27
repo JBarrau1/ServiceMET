@@ -1,11 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/screens/calibracion/precarga/precarga_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
-
 
 class ServiciosScreen extends StatelessWidget {
   final String userName;
@@ -49,7 +47,8 @@ class ServiciosScreen extends StatelessWidget {
               context,
               icon: FontAwesomeIcons.scaleBalanced,
               title: 'Calibración',
-              subtitle: 'Procesos de calibración de balanzas, tanques y pesas patrón',
+              subtitle:
+                  'Procesos de calibración de balanzas, tanques y pesas patrón',
               onTap: () {
                 Navigator.push(
                   context,
@@ -65,12 +64,18 @@ class ServiciosScreen extends StatelessWidget {
               context,
               icon: FontAwesomeIcons.screwdriverWrench,
               title: 'Soporte Técnico',
-              subtitle: 'Soporte y mantenimiento de balanzas y básculas de camiones',
+              subtitle:
+                  'Soporte y mantenimiento de balanzas y básculas de camiones',
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => PrecargaScreenSop(userName: userName, clienteId: '', plantaCodigo: '', tableName: '',)),
+                      builder: (context) => PrecargaScreenSop(
+                            userName: userName,
+                            clienteId: '',
+                            plantaCodigo: '',
+                            tableName: '',
+                          )),
                 );
               },
               color: const Color(0xFF89B2CC),
@@ -184,14 +189,14 @@ class ServiciosScreen extends StatelessWidget {
   }
 
   Widget _buildServiceCard(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required String subtitle,
-        required VoidCallback onTap,
-        required Color color,
-        required Duration delay,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required Color color,
+    required Duration delay,
+  }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -245,7 +250,9 @@ class ServiciosScreen extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF2C3E50),
                               ),
                             ),
                             const SizedBox(height: 4),

@@ -9,11 +9,11 @@ class PasoEntorno extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoEntorno({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,7 @@ class PasoEntorno extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
             );
-          }).toList(),
+          }),
         ],
       ),
     );

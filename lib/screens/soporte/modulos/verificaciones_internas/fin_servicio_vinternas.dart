@@ -2,17 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 
 import '../../../../database/soporte_tecnico/database_helper_verificaciones.dart';
-
 
 class FinServicioVinternasScreen extends StatefulWidget {
   final String sessionId;
@@ -49,7 +46,8 @@ class _FinServicioVinternasScreenState
   // ✅ NUEVOS CONTROLADORES PARA DATOS ADICIONALES
   String? _selectedEmp23001;
   final TextEditingController _indicarController = TextEditingController();
-  final TextEditingController _factorSeguridadController = TextEditingController();
+  final TextEditingController _factorSeguridadController =
+      TextEditingController();
   String? _selectedReglaAceptacion;
 
   @override
@@ -123,7 +121,7 @@ class _FinServicioVinternasScreenState
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
-              (route) => false,
+          (route) => false,
         );
       }
     } catch (e) {
@@ -137,7 +135,6 @@ class _FinServicioVinternasScreenState
     registros.removeWhere((registro) =>
         registro.values.every((value) => value == null || value == ''));
 
-
     final Map<String, Map<String, dynamic>> registrosUnicos = {};
 
     for (var registro in registros) {
@@ -146,7 +143,8 @@ class _FinServicioVinternasScreenState
 
       if (!registrosUnicos.containsKey(claveUnica) ||
           (registrosUnicos[claveUnica]?['hora_fin']?.toString() ?? '')
-              .compareTo(horaFinActual) < 0) {
+                  .compareTo(horaFinActual) <
+              0) {
         registrosUnicos[claveUnica] = registro;
       }
     }
@@ -174,7 +172,8 @@ class _FinServicioVinternasScreenState
       // 4. Guardar internamente
       final externalDir = await getExternalStorageDirectory();
       if (externalDir != null) {
-        final exportDir = Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
+        final exportDir =
+            Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
         if (!await exportDir.exists()) await exportDir.create(recursive: true);
 
         final internalFile = File('${exportDir.path}/$fileName');
@@ -189,7 +188,8 @@ class _FinServicioVinternasScreenState
       if (directoryPath != null) {
         final userFile = File('$directoryPath/$fileName');
         await userFile.writeAsBytes(csvBytes, mode: FileMode.write);
-        _showSnackBar(context, 'Archivo CSV exportado exitosamente a: ${userFile.path}');
+        _showSnackBar(
+            context, 'Archivo CSV exportado exitosamente a: ${userFile.path}');
       } else {
         _showSnackBar(context, 'Exportación cancelada.', isError: true);
       }
@@ -372,11 +372,11 @@ class _FinServicioVinternasScreenState
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(color: Colors.black.withOpacity(0.4)),
+                ),
+              )
             : null,
         iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
@@ -399,7 +399,7 @@ class _FinServicioVinternasScreenState
             _buildActionCard(
               'images/tarjetas/t4.png',
               'FINALIZAR SERVICIO\nY EXPORTAR DATOS',
-                  () => _confirmarYExportar(context),
+              () => _confirmarYExportar(context),
               textColor,
               cardOpacity,
             ),
@@ -413,7 +413,7 @@ class _FinServicioVinternasScreenState
             _buildActionCard(
               'images/tarjetas/t7.png',
               'SELECCIONAR OTRA BALANZA',
-                  () => _confirmarSeleccionOtraBalanza(context),
+              () => _confirmarSeleccionOtraBalanza(context),
               textColor,
               cardOpacity,
             ),
@@ -459,12 +459,12 @@ class _FinServicioVinternasScreenState
   }
 
   Widget _buildActionCard(
-      String imagePath,
-      String title,
-      VoidCallback onTap,
-      Color textColor,
-      double opacity,
-      ) {
+    String imagePath,
+    String title,
+    VoidCallback onTap,
+    Color textColor,
+    double opacity,
+  ) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       child: InkWell(
@@ -600,11 +600,11 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(color: Colors.black.withOpacity(0.4)),
+                ),
+              )
             : null,
         iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
@@ -617,8 +617,7 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
           }
 
           final resumen = snapshot.data!;
-          final balanzas =
-          resumen['balanzas'] as List<Map<String, dynamic>>;
+          final balanzas = resumen['balanzas'] as List<Map<String, dynamic>>;
           final totalBalanzas = resumen['totalBalanzas'] as int;
           final totalRegistros = resumen['totalRegistros'] as int;
 
@@ -736,48 +735,47 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
                     onPressed: _isExporting
                         ? null
                         : () async {
-                      setState(() => _isExporting = true);
+                            setState(() => _isExporting = true);
 
-                      try {
-                        await widget.onExport(widget.registros);
+                            try {
+                              await widget.onExport(widget.registros);
 
-                        if (mounted) {
-                          Navigator.pop(context, true);
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error al exportar: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState
-                            (() => _isExporting = false);
-                        }
-                      }
-                    },
+                              if (mounted) {
+                                Navigator.pop(context, true);
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error al exportar: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isExporting = false);
+                              }
+                            }
+                          },
                     child: _isExporting
                         ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
                         : const Text(
-                      'PROCEDER CON LA EXPORTACIÓN',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
+                            'PROCEDER CON LA EXPORTACIÓN',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 12),

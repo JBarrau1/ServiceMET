@@ -43,8 +43,11 @@ class AuthService {
     final dbUser = prefs.getString('dbuser');
     final dbPass = prefs.getString('dbpass');
 
-    if (ip == null || port == null || database == null ||
-        dbUser == null || dbPass == null) {
+    if (ip == null ||
+        port == null ||
+        database == null ||
+        dbUser == null ||
+        dbPass == null) {
       return null;
     }
 
@@ -65,16 +68,18 @@ class AuthService {
     try {
       _connection = MssqlConnection.getInstance();
 
-      final connected = await _connection!.connect(
-        ip: credentials['ip']!,
-        port: credentials['port']!,
-        databaseName: credentials['database']!,
-        username: credentials['username']!,
-        password: credentials['password']!,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => false,
-      );
+      final connected = await _connection!
+          .connect(
+            ip: credentials['ip']!,
+            port: credentials['port']!,
+            databaseName: credentials['database']!,
+            username: credentials['username']!,
+            password: credentials['password']!,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => false,
+          );
 
       return connected;
     } catch (e) {
@@ -85,9 +90,9 @@ class AuthService {
 
   // ✅ NUEVO: Validar usuario en SQL Server
   Future<UserValidationResult> _validateUserInServer(
-      String usuario,
-      String pass,
-      ) async {
+    String usuario,
+    String pass,
+  ) async {
     if (_connection == null) {
       return UserValidationResult(
         success: false,
@@ -103,8 +108,8 @@ class AuthService {
       ''';
 
       final resultJson = await _connection!.getData(query).timeout(
-        const Duration(seconds: 15),
-      );
+            const Duration(seconds: 15),
+          );
 
       if (resultJson.isEmpty || resultJson == '[]') {
         return UserValidationResult(
@@ -122,7 +127,8 @@ class AuthService {
         );
       }
 
-      final userData = UserModel.fromMap(Map<String, dynamic>.from(result.first));
+      final userData =
+          UserModel.fromMap(Map<String, dynamic>.from(result.first));
 
       if (!userData.isActive) {
         return UserValidationResult(
@@ -195,7 +201,8 @@ class AuthService {
       if (!dbExists) return [];
 
       final db = await openDatabase(path);
-      final results = await db.query('usuarios', orderBy: 'fecha_guardado DESC');
+      final results =
+          await db.query('usuarios', orderBy: 'fecha_guardado DESC');
       await db.close();
 
       return results.map((map) => UserModel.fromMap(map)).toList();
@@ -290,7 +297,6 @@ class AuthService {
       }
 
       return LoginResult(success: false, message: 'Credenciales incorrectas');
-
     } catch (e) {
       return LoginResult(success: false, message: 'Error: ${e.toString()}');
     }
@@ -342,7 +348,6 @@ class AuthService {
         success: true,
         message: 'Usuario agregado y autenticado exitosamente',
       );
-
     } catch (e) {
       await _connection?.disconnect();
       return LoginResult(
@@ -422,8 +427,8 @@ class UserValidationResult extends LoginResult {
   final UserModel? userData;
 
   UserValidationResult({
-    required bool success,
-    required String message,
+    required super.success,
+    required super.message,
     this.userData,
-  }) : super(success: success, message: message);
+  });
 }

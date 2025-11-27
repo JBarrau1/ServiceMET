@@ -1,11 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/screens/respaldo/respaldo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
+  const ConfiguracionScreen({super.key});
+
   @override
   _ConfiguracionScreenState createState() => _ConfiguracionScreenState();
 }
@@ -49,7 +50,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     // para que esto afecte a toda la aplicación
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,13 +68,13 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
         elevation: 0,
         flexibleSpace: Theme.of(context).brightness == Brightness.dark
             ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(
-              color: Colors.black.withOpacity(0.4),
-            ),
-          ),
-        )
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.4),
+                  ),
+                ),
+              )
             : null,
         iconTheme: IconThemeData(color: Theme.of(context).iconTheme.color),
         titleTextStyle: TextStyle(
@@ -98,7 +98,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                   child: SwitchListTile(
                     title: const Text('Modo Oscuro'),
                     subtitle: const Text('Activar tema oscuro'),
-                    value: isDarkMode, // Usamos el estado guardado, no el del contexto
+                    value:
+                        isDarkMode, // Usamos el estado guardado, no el del contexto
                     onChanged: _toggleTheme,
                     secondary: const Icon(Icons.dark_mode),
                   ),
@@ -116,7 +117,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => RespaldoScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => RespaldoScreen()),
                       );
                     },
                   ),

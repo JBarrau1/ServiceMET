@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/repetibilidad_controller.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/test_row.dart';
 
-
 class RepetibilidadForm extends StatefulWidget {
   final RepetibilidadController controller;
 
@@ -18,7 +17,8 @@ class _RepetibilidadFormState extends State<RepetibilidadForm> {
     final controller = widget.controller;
     return SingleChildScrollView(
       padding: EdgeInsets.only(
-        top: kToolbarHeight + 20, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
+        top: kToolbarHeight +
+            20, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
         left: 16.0, // Tu padding horizontal original
         right: 16.0, // Tu padding horizontal original
         bottom: 16.0, // Tu padding inferior original
@@ -33,7 +33,7 @@ class _RepetibilidadFormState extends State<RepetibilidadForm> {
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<int>(
-              value: controller.selectedRepetibilityCount,
+              initialValue: controller.selectedRepetibilityCount,
               decoration: buildInputDecoration('Cantidad de Cargas'),
               items: [1, 2, 3].map((int value) {
                 return DropdownMenuItem<int>(
@@ -49,7 +49,7 @@ class _RepetibilidadFormState extends State<RepetibilidadForm> {
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<int>(
-              value: controller.selectedRowCount,
+              initialValue: controller.selectedRowCount,
               decoration: buildInputDecoration('Pruebas por Carga'),
               items: [3, 5, 10].map((int value) {
                 return DropdownMenuItem<int>(
@@ -73,7 +73,8 @@ class _RepetibilidadFormState extends State<RepetibilidadForm> {
                       'Capacidad máxima',
                     ).copyWith(
                       labelStyle: const TextStyle(color: Color(0xFF4ECFBA)),
-                      floatingLabelStyle: const TextStyle(color: Color(0xFF4ECFBA)),
+                      floatingLabelStyle:
+                          const TextStyle(color: Color(0xFF4ECFBA)),
                     ),
                     style: const TextStyle(color: Color(0xFF4ECFBA)),
                     readOnly: true,
@@ -87,7 +88,8 @@ class _RepetibilidadFormState extends State<RepetibilidadForm> {
                       '50% Capacidad máxima',
                     ).copyWith(
                       labelStyle: const TextStyle(color: Color(0xFF92B6C9)),
-                      floatingLabelStyle: const TextStyle(color: Color(0xFF92B6C9)),
+                      floatingLabelStyle:
+                          const TextStyle(color: Color(0xFF92B6C9)),
                     ),
                     style: const TextStyle(color: Color(0xFF92B6C9)),
                     readOnly: true,
@@ -99,7 +101,7 @@ class _RepetibilidadFormState extends State<RepetibilidadForm> {
             const SizedBox(height: 20),
             ...List.generate(
               controller.selectedRepetibilityCount,
-                  (cargaIndex) => Column(
+              (cargaIndex) => Column(
                 children: [
                   Text(
                     'CARGA ${cargaIndex + 1}',
@@ -125,13 +127,12 @@ class _RepetibilidadFormState extends State<RepetibilidadForm> {
                   const SizedBox(height: 10),
                   ...List.generate(
                     controller.selectedRowCount,
-                        (testIndex) => TestRow(
+                    (testIndex) => TestRow(
                       controller: controller,
                       cargaIndex: cargaIndex,
                       testIndex: testIndex,
                     ),
                   ),
-
                 ],
               ),
             ),
@@ -174,10 +175,10 @@ class _RepetibilidadFormState extends State<RepetibilidadForm> {
   }
 
   InputDecoration buildInputDecoration(
-      String labelText, {
-        Widget? suffixIcon,
-        String? suffixText,
-      }) {
+    String labelText, {
+    Widget? suffixIcon,
+    String? suffixText,
+  }) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(

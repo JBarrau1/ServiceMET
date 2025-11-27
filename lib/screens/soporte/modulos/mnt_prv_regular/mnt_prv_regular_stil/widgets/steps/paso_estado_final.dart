@@ -7,10 +7,10 @@ class PasoEstadoFinal extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoEstadoFinal({
-    Key? key,
+    super.key,
     required this.model,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   // Función para calcular fecha futura
   String _calcularFechaFutura(int meses) {
@@ -57,8 +57,8 @@ class PasoEstadoFinal extends StatelessWidget {
                     color: meses == 3
                         ? Colors.green
                         : meses == 6
-                        ? Colors.orange
-                        : Colors.blue,
+                            ? Colors.orange
+                            : Colors.blue,
                   ),
                   title: Text(
                     label,
@@ -135,7 +135,8 @@ class PasoEstadoFinal extends StatelessWidget {
 
           // Recomendación
           DropdownButtonFormField<String>(
-            value: model.recomendacion.isEmpty ? null : model.recomendacion,
+            initialValue:
+                model.recomendacion.isEmpty ? null : model.recomendacion,
             decoration: InputDecoration(
               labelText: 'Recomendación *',
               border: OutlineInputBorder(
@@ -176,11 +177,13 @@ class PasoEstadoFinal extends StatelessWidget {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  prefixIcon: const Icon(Icons.event_repeat, color: Colors.blue),
+                  prefixIcon:
+                      const Icon(Icons.event_repeat, color: Colors.blue),
                   suffixIcon: const Icon(Icons.arrow_drop_down),
                   helperText: 'Seleccione 3, 6 o 12 meses',
                 ),
-                controller: TextEditingController(text: model.fechaProxServicio),
+                controller:
+                    TextEditingController(text: model.fechaProxServicio),
               ),
             ),
           ),
@@ -260,7 +263,7 @@ class PasoEstadoFinal extends StatelessWidget {
           const SizedBox(height: 12),
           _buildInfoBox(
             'Para registrar la hora final, presione el botón del reloj. '
-                'Una vez registrada, no se podrá modificar.',
+            'Una vez registrada, no se podrá modificar.',
             Colors.blue,
           ),
           const SizedBox(height: 24),
@@ -351,7 +354,7 @@ class PasoEstadoFinal extends StatelessWidget {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value.isEmpty ? null : value,
+      initialValue: value.isEmpty ? null : value,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(
@@ -359,8 +362,7 @@ class PasoEstadoFinal extends StatelessWidget {
         ),
         prefixIcon: Icon(icon, color: color),
       ),
-      items: ['Bueno', 'Aceptable', 'Malo', 'No aplica']
-          .map((String estado) {
+      items: ['Bueno', 'Aceptable', 'Malo', 'No aplica'].map((String estado) {
         final estadoColor = _getColorForEstado(estado);
         return DropdownMenuItem<String>(
           value: estado,

@@ -2,11 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
@@ -47,7 +45,8 @@ class _FinServicioMntPrvStilScreenState
   // ✅ NUEVOS CONTROLADORES PARA DATOS ADICIONALES
   String? _selectedEmp23001;
   final TextEditingController _indicarController = TextEditingController();
-  final TextEditingController _factorSeguridadController = TextEditingController();
+  final TextEditingController _factorSeguridadController =
+      TextEditingController();
   String? _selectedReglaAceptacion;
 
   @override
@@ -121,7 +120,7 @@ class _FinServicioMntPrvStilScreenState
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
-              (route) => false,
+          (route) => false,
         );
       }
     } catch (e) {
@@ -135,7 +134,6 @@ class _FinServicioMntPrvStilScreenState
     registros.removeWhere((registro) =>
         registro.values.every((value) => value == null || value == ''));
 
-
     final Map<String, Map<String, dynamic>> registrosUnicos = {};
 
     for (var registro in registros) {
@@ -144,7 +142,8 @@ class _FinServicioMntPrvStilScreenState
 
       if (!registrosUnicos.containsKey(claveUnica) ||
           (registrosUnicos[claveUnica]?['hora_fin']?.toString() ?? '')
-              .compareTo(horaFinActual) < 0) {
+                  .compareTo(horaFinActual) <
+              0) {
         registrosUnicos[claveUnica] = registro;
       }
     }
@@ -172,7 +171,8 @@ class _FinServicioMntPrvStilScreenState
       // 4. Guardar internamente
       final externalDir = await getExternalStorageDirectory();
       if (externalDir != null) {
-        final exportDir = Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
+        final exportDir =
+            Directory('${externalDir.path}/RespaldoSM/CSV_Automaticos');
         if (!await exportDir.exists()) await exportDir.create(recursive: true);
 
         final internalFile = File('${exportDir.path}/$fileName');
@@ -187,7 +187,8 @@ class _FinServicioMntPrvStilScreenState
       if (directoryPath != null) {
         final userFile = File('$directoryPath/$fileName');
         await userFile.writeAsBytes(csvBytes, mode: FileMode.write);
-        _showSnackBar(context, 'Archivo CSV exportado exitosamente a: ${userFile.path}');
+        _showSnackBar(
+            context, 'Archivo CSV exportado exitosamente a: ${userFile.path}');
       } else {
         _showSnackBar(context, 'Exportación cancelada.', isError: true);
       }
@@ -370,11 +371,11 @@ class _FinServicioMntPrvStilScreenState
         elevation: 0,
         flexibleSpace: isDarkMode
             ? ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(color: Colors.black.withOpacity(0.4)),
-          ),
-        )
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(color: Colors.black.withOpacity(0.4)),
+                ),
+              )
             : null,
         iconTheme: IconThemeData(color: textColor),
         centerTitle: true,
@@ -397,7 +398,7 @@ class _FinServicioMntPrvStilScreenState
             _buildActionCard(
               'images/tarjetas/t4.png',
               'FINALIZAR SERVICIO\nY EXPORTAR DATOS',
-                  () => _confirmarYExportar(context),
+              () => _confirmarYExportar(context),
               textColor,
               cardOpacity,
             ),
@@ -411,7 +412,7 @@ class _FinServicioMntPrvStilScreenState
             _buildActionCard(
               'images/tarjetas/t7.png',
               'SELECCIONAR OTRA BALANZA',
-                  () => _confirmarSeleccionOtraBalanza(context),
+              () => _confirmarSeleccionOtraBalanza(context),
               textColor,
               cardOpacity,
             ),
@@ -457,12 +458,12 @@ class _FinServicioMntPrvStilScreenState
   }
 
   Widget _buildActionCard(
-      String imagePath,
-      String title,
-      VoidCallback onTap,
-      Color textColor,
-      double opacity,
-      ) {
+    String imagePath,
+    String title,
+    VoidCallback onTap,
+    Color textColor,
+    double opacity,
+  ) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       child: InkWell(
@@ -584,156 +585,155 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
     final textColor = isDarkMode ? Colors.white : Colors.black;
 
     return Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 70,
-          title: Text(
-            'RESUMEN DE EXPORTACIÓN',
-            style: TextStyle(
-              color: textColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
+      appBar: AppBar(
+        toolbarHeight: 70,
+        title: Text(
+          'RESUMEN DE EXPORTACIÓN',
+          style: TextStyle(
+            color: textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
           ),
-          backgroundColor: isDarkMode ? Colors.transparent : Colors.white,
-          elevation: 0,
-          flexibleSpace: isDarkMode
-              ? ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-              child: Container(color: Colors.black.withOpacity(0.4)),
-            ),
-          )
-              : null,
-          iconTheme: IconThemeData(color: textColor),
-          centerTitle: true,
         ),
-        body: FutureBuilder<Map<String, dynamic>>(
-            future: _resumenFuture,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
+        backgroundColor: isDarkMode ? Colors.transparent : Colors.white,
+        elevation: 0,
+        flexibleSpace: isDarkMode
+            ? ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(color: Colors.black.withOpacity(0.4)),
+                ),
+              )
+            : null,
+        iconTheme: IconThemeData(color: textColor),
+        centerTitle: true,
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _resumenFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-              final resumen = snapshot.data!;
-              final balanzas =
-              resumen['balanzas'] as List<Map<String, dynamic>>;
-              final totalBalanzas = resumen['totalBalanzas'] as int;
-              final totalRegistros = resumen['totalRegistros'] as int;
+          final resumen = snapshot.data!;
+          final balanzas = resumen['balanzas'] as List<Map<String, dynamic>>;
+          final totalBalanzas = resumen['totalBalanzas'] as int;
+          final totalRegistros = resumen['totalRegistros'] as int;
 
-              return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                    Card(
-                    elevation: 4,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF46824B),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'RESUMEN GENERAL',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildResumenItem(
-                            'OTST:',
-                            resumen['otst'],
-                            Colors.white,
-                          ),
-                          _buildResumenItem(
-                            'Fecha/Hora:',
-                            resumen['fecha'],
-                            Colors.white,
-                          ),
-                          _buildResumenItem(
-                            'Balanzas realizadas:',
-                            totalBalanzas.toString(),
-                            Colors.white,
-                          ),
-                          _buildResumenItem(
-                            'Total de registros:',
-                            totalRegistros.toString(),
-                            Colors.white,
-                          ),
-                        ],
-                      ),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Card(
+                  elevation: 4,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF46824B),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'DETALLE DE BALANZAS',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: balanzas.length,
-                    itemBuilder: (context, index) {
-                      final balanza = balanzas[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Balanza ${index + 1}',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _buildDetailItem(
-                                'Código métrica:',
-                                balanza['cod_metrica'],
-                              ),
-                              _buildDetailItem(
-                                'Marca:',
-                                balanza['marca'],
-                              ),
-                              _buildDetailItem(
-                                'Modelo:',
-                                balanza['modelo'],
-                              ),
-                              _buildDetailItem(
-                                'Registros:',
-                                balanza['cantidad'].toString(),
-                                highlight: true,
-                              ),
-                            ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'RESUMEN GENERAL',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
                           ),
                         ),
-                      );
-                    },
+                        const SizedBox(height: 16),
+                        _buildResumenItem(
+                          'OTST:',
+                          resumen['otst'],
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Fecha/Hora:',
+                          resumen['fecha'],
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Balanzas realizadas:',
+                          totalBalanzas.toString(),
+                          Colors.white,
+                        ),
+                        _buildResumenItem(
+                          'Total de registros:',
+                          totalRegistros.toString(),
+                          Colors.white,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF46824B),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          onPressed: _isExporting
-                              ? null
-                              : () async {
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'DETALLE DE BALANZAS',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: balanzas.length,
+                  itemBuilder: (context, index) {
+                    final balanza = balanzas[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Balanza ${index + 1}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildDetailItem(
+                              'Código métrica:',
+                              balanza['cod_metrica'],
+                            ),
+                            _buildDetailItem(
+                              'Marca:',
+                              balanza['marca'],
+                            ),
+                            _buildDetailItem(
+                              'Modelo:',
+                              balanza['modelo'],
+                            ),
+                            _buildDetailItem(
+                              'Registros:',
+                              balanza['cantidad'].toString(),
+                              highlight: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF46824B),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: _isExporting
+                        ? null
+                        : () async {
                             setState(() => _isExporting = true);
 
                             try {
@@ -753,50 +753,49 @@ class _ResumenExportacionScreenState extends State<_ResumenExportacionScreen> {
                               }
                             } finally {
                               if (mounted) {
-                                setState
-                                  (() => _isExporting = false);
+                                setState(() => _isExporting = false);
                               }
                             }
                           },
-                        child: _isExporting
-                            ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                            : const Text(
-                          'PROCEDER CON LA EXPORTACIÓN',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                  ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text(
-                            'CANCELAR',
+                    child: _isExporting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'PROCEDER CON LA EXPORTACIÓN',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
+                              color: Colors.white,
                             ),
                           ),
-                        ),
-                      ),
-                    ],
                   ),
-              );
-            },
-        ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text(
+                      'CANCELAR',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

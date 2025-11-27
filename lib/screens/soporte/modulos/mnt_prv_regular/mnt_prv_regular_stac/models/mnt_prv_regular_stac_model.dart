@@ -1,8 +1,6 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 
 class MntPrvRegularStacModel {
-
   final String codMetrica;
   final String sessionId;
   final String secaValue;
@@ -25,7 +23,6 @@ class MntPrvRegularStacModel {
   String fechaProxServicio;
 
   MntPrvRegularStacModel({
-
     required this.codMetrica,
     required this.sessionId,
     required this.secaValue,
@@ -212,8 +209,9 @@ class Repetibilidad {
       : activo = other.activo,
         cantidadCargas = other.cantidadCargas,
         cantidadPruebas = other.cantidadPruebas,
-        cargas =
-        other.cargas.map((carga) => CargaRepetibilidad.fromOther(carga)).toList();
+        cargas = other.cargas
+            .map((carga) => CargaRepetibilidad.fromOther(carga))
+            .toList();
 }
 
 class CargaRepetibilidad {
@@ -269,8 +267,9 @@ class Linealidad {
         ultimaCargaLt = other.ultimaCargaLt,
         carga = other.carga,
         incremento = other.incremento,
-        puntos =
-        other.puntos.map((punto) => PuntoLinealidad.fromOther(punto)).toList();
+        puntos = other.puntos
+            .map((punto) => PuntoLinealidad.fromOther(punto))
+            .toList();
 }
 
 class PuntoLinealidad {

@@ -4,11 +4,9 @@ import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:intl/intl.dart';
-import 'package:sqflite/sqflite.dart';
 import '../../bdb/calibracion_bd.dart';
 import '../../database/app_database.dart';
 import '../../provider/balanza_provider.dart';
@@ -34,7 +32,6 @@ class RcaFinalScreen extends StatefulWidget {
 }
 
 class _RcaFinalScreenState extends State<RcaFinalScreen> {
-
   double? _hriInicial;
   double? _tiInicial;
   double? _patmiInicial;
@@ -73,7 +70,8 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
   Future<void> _loadInitialValues() async {
     try {
       final dbHelper = AppDatabase();
-      final registro = await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
+      final registro =
+          await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
 
       if (registro != null) {
         setState(() {
@@ -124,17 +122,18 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
   Future<void> _saveDataToDatabase(BuildContext context) async {
     // Validaciones existentes...
     if (_horaController.text.isEmpty ||
-        _hrifinController.text.isEmpty ||
-        _tifinController.text.isEmpty ||
-        _patmifinController.text.isEmpty ||
-        _mantenimientoController.text.isEmpty ||
-        _ventaPesasController.text.isEmpty ||
-        _reemplazoController.text.isEmpty ||
-        _obscomController.text.isEmpty
+            _hrifinController.text.isEmpty ||
+            _tifinController.text.isEmpty ||
+            _patmifinController.text.isEmpty ||
+            _mantenimientoController.text.isEmpty ||
+            _ventaPesasController.text.isEmpty ||
+            _reemplazoController.text.isEmpty ||
+            _obscomController.text.isEmpty
 
-    // ... resto de validaciones
-    ) {
-      _showSnackBar(context, 'Error, termine de llenar todos los campos', isError: true);
+        // ... resto de validaciones
+        ) {
+      _showSnackBar(context, 'Error, termine de llenar todos los campos',
+          isError: true);
       return;
     }
 
@@ -145,7 +144,8 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
 
     try {
       final dbHelper = AppDatabase();
-      final existingRecord = await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
+      final existingRecord =
+          await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
 
       // Crear registro con TODOS los datos
       final Map<String, dynamic> registro = {
@@ -551,29 +551,37 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                             if (_finalPhotos['final'] != null)
                               ..._finalPhotos['final']!.map((photo) {
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
                                   child: GestureDetector(
-                                    onTap: () => _showFullScreenPhoto(context, photo),
+                                    onTap: () =>
+                                        _showFullScreenPhoto(context, photo),
                                     child: Stack(
                                       children: [
                                         Container(
                                           width: 80,
                                           height: 80,
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: Colors.grey),
-                                            borderRadius: BorderRadius.circular(8),
+                                            border:
+                                                Border.all(color: Colors.grey),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
-                                          child: Image.file(photo, fit: BoxFit.cover),
+                                          child: Image.file(photo,
+                                              fit: BoxFit.cover),
                                         ),
                                         Positioned(
                                           top: 0,
                                           right: 0,
                                           child: IconButton(
-                                            icon: const Icon(Icons.close, size: 16),
+                                            icon: const Icon(Icons.close,
+                                                size: 16),
                                             onPressed: () {
                                               setState(() {
-                                                _finalPhotos['final']!.remove(photo);
-                                                if (_finalPhotos['final']!.isEmpty) {
+                                                _finalPhotos['final']!
+                                                    .remove(photo);
+                                                if (_finalPhotos['final']!
+                                                    .isEmpty) {
                                                   _fotosTomadas = false;
                                                 }
                                               });
@@ -656,11 +664,14 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: _hrifinController,
                     builder: (context, value, child) {
-                      final borderColor = _getValidationColor(_hriInicial, value.text);
+                      final borderColor =
+                          _getValidationColor(_hriInicial, value.text);
                       return TextFormField(
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d*')),
                         ],
                         controller: _hrifinController,
                         decoration: buildInputDecoration(
@@ -669,16 +680,20 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                         ).copyWith(
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            borderSide: BorderSide(color: borderColor, width: 2.0),
+                            borderSide:
+                                BorderSide(color: borderColor, width: 2.0),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            borderSide: BorderSide(color: borderColor, width: 2.5),
+                            borderSide:
+                                BorderSide(color: borderColor, width: 2.5),
                           ),
                           prefixIcon: Icon(
                             borderColor == Colors.green
                                 ? Icons.check_circle
-                                : (borderColor == Colors.red ? Icons.warning : Icons.info),
+                                : (borderColor == Colors.red
+                                    ? Icons.warning
+                                    : Icons.info),
                             color: borderColor,
                           ),
                         ),
@@ -698,11 +713,14 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: _tifinController,
                     builder: (context, value, child) {
-                      final borderColor = _getValidationColor(_tiInicial, value.text);
+                      final borderColor =
+                          _getValidationColor(_tiInicial, value.text);
                       return TextFormField(
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d*')),
                         ],
                         controller: _tifinController,
                         decoration: buildInputDecoration(
@@ -711,16 +729,20 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                         ).copyWith(
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            borderSide: BorderSide(color: borderColor, width: 2.0),
+                            borderSide:
+                                BorderSide(color: borderColor, width: 2.0),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            borderSide: BorderSide(color: borderColor, width: 2.5),
+                            borderSide:
+                                BorderSide(color: borderColor, width: 2.5),
                           ),
                           prefixIcon: Icon(
                             borderColor == Colors.green
                                 ? Icons.check_circle
-                                : (borderColor == Colors.red ? Icons.warning : Icons.info),
+                                : (borderColor == Colors.red
+                                    ? Icons.warning
+                                    : Icons.info),
                             color: borderColor,
                           ),
                         ),
@@ -740,11 +762,14 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: _patmifinController,
                     builder: (context, value, child) {
-                      final borderColor = _getValidationColor(_patmiInicial, value.text);
+                      final borderColor =
+                          _getValidationColor(_patmiInicial, value.text);
                       return TextFormField(
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d*')),
                         ],
                         controller: _patmifinController,
                         decoration: buildInputDecoration(
@@ -753,16 +778,20 @@ class _RcaFinalScreenState extends State<RcaFinalScreen> {
                         ).copyWith(
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            borderSide: BorderSide(color: borderColor, width: 2.0),
+                            borderSide:
+                                BorderSide(color: borderColor, width: 2.0),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20.0),
-                            borderSide: BorderSide(color: borderColor, width: 2.5),
+                            borderSide:
+                                BorderSide(color: borderColor, width: 2.5),
                           ),
                           prefixIcon: Icon(
                             borderColor == Colors.green
                                 ? Icons.check_circle
-                                : (borderColor == Colors.red ? Icons.warning : Icons.info),
+                                : (borderColor == Colors.red
+                                    ? Icons.warning
+                                    : Icons.info),
                             color: borderColor,
                           ),
                         ),

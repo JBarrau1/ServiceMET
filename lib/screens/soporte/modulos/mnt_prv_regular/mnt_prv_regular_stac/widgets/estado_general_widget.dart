@@ -10,11 +10,11 @@ class EstadoGeneralWidget extends StatefulWidget {
   final Function onFieldChanged;
 
   const EstadoGeneralWidget({
-    Key? key,
+    super.key,
     required this.campos,
     required this.controller,
     required this.onFieldChanged,
-  }) : super(key: key);
+  });
 
   @override
   _EstadoGeneralWidgetState createState() => _EstadoGeneralWidgetState();
@@ -23,7 +23,8 @@ class EstadoGeneralWidget extends StatefulWidget {
 class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
   final ImagePicker _imagePicker = ImagePicker();
 
-  InputDecoration _buildInputDecoration(String labelText, {Widget? suffixIcon}) {
+  InputDecoration _buildInputDecoration(String labelText,
+      {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -48,16 +49,25 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
   }
 
   Widget _buildDropdownFieldWithComment(
-      String label,
-      CampoEstado campo,
-      ) {
-    final List<String> initialOptions = ['1 Bueno', '2 Aceptable', '3 Malo', '4 No aplica'];
-    final List<String> solutionOptions = ['Sí', 'Se intentó', 'No', 'No aplica'];
+    String label,
+    CampoEstado campo,
+  ) {
+    final List<String> initialOptions = [
+      '1 Bueno',
+      '2 Aceptable',
+      '3 Malo',
+      '4 No aplica'
+    ];
+    final List<String> solutionOptions = [
+      'Sí',
+      'Se intentó',
+      'No',
+      'No aplica'
+    ];
 
     return Column(
       children: [
         Container(
-
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -83,7 +93,7 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
             Expanded(
               flex: 2,
               child: DropdownButtonFormField<String>(
-                value: campo.initialValue,
+                initialValue: campo.initialValue,
                 decoration: _buildInputDecoration('Estado $label'),
                 items: initialOptions.map((String value) {
                   Color textColor;
@@ -91,7 +101,8 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
                   switch (value) {
                     case '1 Bueno':
                       textColor = Colors.green;
-                      icon = const Icon(Icons.check_circle, color: Colors.green);
+                      icon =
+                          const Icon(Icons.check_circle, color: Colors.green);
                       break;
                     case '2 Aceptable':
                       textColor = Colors.orange;
@@ -137,7 +148,7 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
             Expanded(
               flex: 2,
               child: DropdownButtonFormField<String>(
-                value: campo.solutionValue,
+                initialValue: campo.solutionValue,
                 decoration: _buildInputDecoration('Solución'),
                 items: solutionOptions.map((String value) {
                   Color textColor;
@@ -145,19 +156,23 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
                   switch (value) {
                     case 'Sí':
                       textColor = Colors.green;
-                      icon = const Icon(Icons.check_circle_outline, color: Colors.green);
+                      icon = const Icon(Icons.check_circle_outline,
+                          color: Colors.green);
                       break;
                     case 'Se intentó':
                       textColor = Colors.orange;
-                      icon = const Icon(Icons.build_circle_outlined, color: Colors.orange);
+                      icon = const Icon(Icons.build_circle_outlined,
+                          color: Colors.orange);
                       break;
                     case 'No':
                       textColor = Colors.red;
-                      icon = const Icon(Icons.cancel_rounded, color: Colors.red);
+                      icon =
+                          const Icon(Icons.cancel_rounded, color: Colors.red);
                       break;
                     case 'No aplica':
                       textColor = Colors.grey;
-                      icon = const Icon(Icons.block_outlined, color: Colors.grey);
+                      icon =
+                          const Icon(Icons.block_outlined, color: Colors.grey);
                       break;
                     default:
                       textColor = Colors.black;
@@ -215,7 +230,9 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
                 children: [
                   Icon(
                     Icons.camera_alt_rounded,
-                    color: campo.fotos.isNotEmpty ? Colors.green : const Color(0xFFE3D60E),
+                    color: campo.fotos.isNotEmpty
+                        ? Colors.green
+                        : const Color(0xFFE3D60E),
                   ),
                   if (campo.fotos.isNotEmpty)
                     Positioned(
@@ -255,7 +272,8 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
     );
   }
 
-  Future<void> _showCommentDialog(BuildContext context, String label, CampoEstado campo) async {
+  Future<void> _showCommentDialog(
+      BuildContext context, String label, CampoEstado campo) async {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -264,7 +282,8 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
             return AlertDialog(
               title: Text(
                 'AGREGAR FOTOGRAFÍA PARA: $label',
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -275,7 +294,8 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
                             source: ImageSource.camera);
                         if (photo != null) {
                           setState(() {
-                            widget.controller.agregarFoto(label, File(photo.path));
+                            widget.controller
+                                .agregarFoto(label, File(photo.path));
                           });
                         }
                       },
@@ -288,7 +308,9 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
                         children: [
                           const Icon(Icons.camera_alt),
                           const SizedBox(width: 8),
-                          Text(campo.fotos.isEmpty ? 'TOMAR FOTO' : 'TOMAR OTRA FOTO'),
+                          Text(campo.fotos.isEmpty
+                              ? 'TOMAR FOTO'
+                              : 'TOMAR OTRA FOTO'),
                         ],
                       ),
                     ),
@@ -313,10 +335,12 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
                               top: 0,
                               right: 0,
                               child: IconButton(
-                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                icon: const Icon(Icons.delete_outline_rounded,
+                                    color: Colors.red),
                                 onPressed: () {
                                   setState(() {
-                                    widget.controller.eliminarFoto(label, index);
+                                    widget.controller
+                                        .eliminarFoto(label, index);
                                   });
                                 },
                               ),
@@ -336,7 +360,8 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
                   child: const Text('Guardar'),
                 ),
               ],
@@ -370,24 +395,46 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
   List<Widget> _buildSeccionesEstadoGeneral() {
     final secciones = [
       _buildSeccion('ENTORNO DE INSTALACIÓN:', [
-        'Vibración', 'Polvo', 'Temperatura', 'Humedad',
-        'Mesada', 'Iluminación', 'Limpieza de Fosa', 'Estado de Drenaje'
+        'Vibración',
+        'Polvo',
+        'Temperatura',
+        'Humedad',
+        'Mesada',
+        'Iluminación',
+        'Limpieza de Fosa',
+        'Estado de Drenaje'
       ]),
       _buildSeccion('TERMINAL DE PESAJE:', [
-        'Carcasa', 'Teclado Fisico', 'Display Fisico', 'Fuente de poder',
-        'Bateria operacional', 'Bracket', 'Teclado Operativo', 'Display Operativo',
-        'Contector de celda', 'Bateria de memoria'
+        'Carcasa',
+        'Teclado Fisico',
+        'Display Fisico',
+        'Fuente de poder',
+        'Bateria operacional',
+        'Bracket',
+        'Teclado Operativo',
+        'Display Operativo',
+        'Contector de celda',
+        'Bateria de memoria'
       ]),
       _buildSeccion('ESTADO GENERAL DE LA BALANZA:', [
-        'Limpieza general', 'Golpes al terminal', 'Nivelacion', 'Limpieza receptor',
-        'Golpes al receptor de carga', 'Encendido'
+        'Limpieza general',
+        'Golpes al terminal',
+        'Nivelacion',
+        'Limpieza receptor',
+        'Golpes al receptor de carga',
+        'Encendido'
       ]),
       _buildSeccion('BALANZA | PLATAFORMA:', [
-        'Limitador de movimiento', 'Suspensión', 'Limitador de carga', 'Celda de carga'
+        'Limitador de movimiento',
+        'Suspensión',
+        'Limitador de carga',
+        'Celda de carga'
       ]),
       _buildSeccion('CAJA SUMADORA:', [
-        'Tapa de caja sumadora', 'Humedad Interna',
-        'Estado de prensacables', 'Estado de borneas'
+        'Tapa de caja sumadora',
+        'Humedad Interna',
+        'Estado de prensacables',
+        'Estado de borneas'
       ]),
     ];
 
@@ -411,7 +458,7 @@ class _EstadoGeneralWidgetState extends State<EstadoGeneralWidget> {
         const SizedBox(height: 20.0),
         ...campos.map((campo) {
           return _buildDropdownFieldWithComment(campo, widget.campos[campo]!);
-        }).toList(),
+        }),
       ],
     );
   }

@@ -301,8 +301,9 @@ class PrecargaController extends ChangeNotifier {
     _secaConfirmed = true;
 
     if (clienteName != null) _selectedClienteName = clienteName;
-    if (clienteRazonSocial != null)
+    if (clienteRazonSocial != null) {
       _selectedClienteRazonSocial = clienteRazonSocial;
+    }
     if (plantaDir != null) _selectedPlantaDir = plantaDir;
     if (plantaDep != null) _selectedPlantaDep = plantaDep;
     if (plantaNombre != null) _selectedPlantaNombre = plantaNombre; // NUEVO
@@ -347,7 +348,7 @@ class PrecargaController extends ChangeNotifier {
       await fetchPlantas(_selectedClienteId!);
 
       // Seleccionar la planta recién creada
-      final uniqueKey = '${plantaId}_${depId}';
+      final uniqueKey = '${plantaId}_$depId';
       selectPlanta(uniqueKey);
 
       notifyListeners();

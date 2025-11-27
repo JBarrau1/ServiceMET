@@ -10,10 +10,10 @@ class SecaStep extends StatefulWidget {
   final String fechaServicio;
 
   const SecaStep({
-    Key? key,
+    super.key,
     required this.userName,
     required this.fechaServicio,
-  }) : super(key: key);
+  });
 
   @override
   State<SecaStep> createState() => _SecaStepState();
@@ -38,12 +38,14 @@ class _SecaStepState extends State<SecaStep> {
   }
 
   void _initializeCotizacion() {
-    final controller = Provider.of<PrecargaControllerSop>(context, listen: false);
+    final controller =
+        Provider.of<PrecargaControllerSop>(context, listen: false);
     _cotizacionController.text = _getCotizacionPart(controller);
   }
 
   String _getFixedOtstPart(PrecargaControllerSop controller) {
-    final otst = controller.generatedSeca ?? ''; // Internamente sigue siendo _generatedSeca
+    final otst = controller.generatedSeca ??
+        ''; // Internamente sigue siendo _generatedSeca
     final parts = otst.split('-');
     if (parts.length >= 3) {
       return '${parts[0]}-${parts[1]}-${parts[2]}-';
@@ -128,11 +130,13 @@ class _SecaStepState extends State<SecaStep> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildSummaryRow('Tipo de Servicio', controller.selectedTipoServicioLabel ?? 'N/A'),
+          _buildSummaryRow('Tipo de Servicio',
+              controller.selectedTipoServicioLabel ?? 'N/A'),
           const SizedBox(height: 8),
           _buildSummaryRow('Cliente', controller.selectedClienteName ?? 'N/A'),
           const SizedBox(height: 8),
-          _buildSummaryRow('Código Planta', controller.selectedPlantaCodigo ?? 'N/A'),
+          _buildSummaryRow(
+              'Código Planta', controller.selectedPlantaCodigo ?? 'N/A'),
           const SizedBox(height: 8),
           _buildSummaryRow('Técnico', widget.userName),
           const SizedBox(height: 8),
@@ -169,7 +173,8 @@ class _SecaStepState extends State<SecaStep> {
     );
   }
 
-  Widget _buildOtstCard(PrecargaControllerSop controller, BuildContext context) {
+  Widget _buildOtstCard(
+      PrecargaControllerSop controller, BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -182,9 +187,8 @@ class _SecaStepState extends State<SecaStep> {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: controller.secaConfirmed
-              ? Colors.green[300]!
-              : Colors.blue[300]!,
+          color:
+              controller.secaConfirmed ? Colors.green[300]! : Colors.blue[300]!,
           width: 2,
         ),
         boxShadow: [
@@ -240,7 +244,7 @@ class _SecaStepState extends State<SecaStep> {
               ),
             ).animate(delay: 300.ms).fadeIn()
           else
-          // Código OTST - No confirmado (editable)
+            // Código OTST - No confirmado (editable)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -292,8 +296,7 @@ class _SecaStepState extends State<SecaStep> {
                             width: 2,
                           ),
                         ),
-                        contentPadding:
-                        const EdgeInsets.symmetric(vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         hintText: 'S01',
                         hintStyle: GoogleFonts.robotoMono(
                           fontSize: 20,
@@ -304,29 +307,34 @@ class _SecaStepState extends State<SecaStep> {
                       textAlign: TextAlign.center,
                       maxLength: 3,
                       buildCounter: (context,
-                          {required currentLength,
-                            required isFocused,
-                            maxLength}) =>
-                      null,
+                              {required currentLength,
+                              required isFocused,
+                              maxLength}) =>
+                          null,
                       onChanged: (value) {
                         if (value.isEmpty) return;
 
                         // Forzar que empiece con 'S'
                         if (!value.startsWith('S')) {
                           _cotizacionController.text = 'S';
-                          _cotizacionController.selection = TextSelection.fromPosition(
+                          _cotizacionController.selection =
+                              TextSelection.fromPosition(
                             TextPosition(offset: 1),
                           );
                           return;
                         }
 
                         // Solo permitir S seguido de dígitos
-                        if (value.length > 1 && !RegExp(r'^S\d{0,2}$').hasMatch(value)) {
+                        if (value.length > 1 &&
+                            !RegExp(r'^S\d{0,2}$').hasMatch(value)) {
                           final previousText = _cotizacionController.text;
                           if (previousText.isNotEmpty) {
-                            _cotizacionController.text = previousText.substring(0, previousText.length - 1);
-                            _cotizacionController.selection = TextSelection.fromPosition(
-                              TextPosition(offset: _cotizacionController.text.length),
+                            _cotizacionController.text = previousText.substring(
+                                0, previousText.length - 1);
+                            _cotizacionController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(
+                                  offset: _cotizacionController.text.length),
                             );
                           }
                           return;
@@ -339,7 +347,8 @@ class _SecaStepState extends State<SecaStep> {
                           if (numero == null || numero < 1 || numero > 99) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('El número debe estar entre 01 y 99'),
+                                content:
+                                    Text('El número debe estar entre 01 y 99'),
                                 backgroundColor: Colors.orange,
                                 duration: Duration(seconds: 2),
                               ),
@@ -356,7 +365,8 @@ class _SecaStepState extends State<SecaStep> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('OTST actualizado: ${ctrl.generatedSeca}'),
+                                content: Text(
+                                    'OTST actualizado: ${ctrl.generatedSeca}'),
                                 backgroundColor: Colors.green,
                                 duration: Duration(seconds: 2),
                               ),
@@ -408,8 +418,8 @@ class _SecaStepState extends State<SecaStep> {
                 ],
               ),
             ).animate(delay: 400.ms).fadeIn().scale(
-              begin: const Offset(0.8, 0.8),
-            ),
+                  begin: const Offset(0.8, 0.8),
+                ),
 
           // ID Sesión
           if (controller.secaConfirmed &&
@@ -485,9 +495,9 @@ class _SecaStepState extends State<SecaStep> {
                     const SizedBox(height: 4),
                     Text(
                       'El código se genera automáticamente usando:\n'
-                          '• Código de planta seleccionado\n'
-                          '• Numeración correlativa (S01, S02...)\n'
-                          '• Año actual (${DateTime.now().year.toString().substring(2)})',
+                      '• Código de planta seleccionado\n'
+                      '• Numeración correlativa (S01, S02...)\n'
+                      '• Año actual (${DateTime.now().year.toString().substring(2)})',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: Colors.orange[700],
@@ -589,8 +599,8 @@ class _SecaStepState extends State<SecaStep> {
             ],
           ),
         ).animate(delay: 700.ms).fadeIn().scale(
-          begin: const Offset(0.9, 0.9),
-        ),
+              begin: const Offset(0.9, 0.9),
+            ),
       ],
     );
   }

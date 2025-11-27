@@ -11,19 +11,21 @@ class PruebasMetrologicasWidget extends StatefulWidget {
   final Future<double> Function() getD1FromDatabase;
 
   const PruebasMetrologicasWidget({
-    Key? key,
+    super.key,
     required this.pruebas,
     required this.isInicial,
     required this.onChanged,
     required this.getD1FromDatabase,
-  }) : super(key: key);
+  });
 
   @override
-  _PruebasMetrologicasWidgetState createState() => _PruebasMetrologicasWidgetState();
+  _PruebasMetrologicasWidgetState createState() =>
+      _PruebasMetrologicasWidgetState();
 }
 
 class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
-  InputDecoration _buildInputDecoration(String labelText, {Widget? suffixIcon}) {
+  InputDecoration _buildInputDecoration(String labelText,
+      {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -48,7 +50,8 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
 
         // Excentricidad
         SwitchListTile(
-          title: Text('PRUEBAS DE EXCENTRICIDAD ${widget.isInicial ? 'INICIAL' : 'FINAL'}',
+          title: Text(
+              'PRUEBAS DE EXCENTRICIDAD ${widget.isInicial ? 'INICIAL' : 'FINAL'}',
               style: const TextStyle(fontWeight: FontWeight.bold)),
           value: widget.pruebas.excentricidad?.activo ?? false,
           onChanged: (bool value) {
@@ -73,7 +76,8 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
 
         // Repetibilidad
         SwitchListTile(
-          title: Text('PRUEBAS DE REPETIBILIDAD ${widget.isInicial ? 'INICIAL' : 'FINAL'}',
+          title: Text(
+              'PRUEBAS DE REPETIBILIDAD ${widget.isInicial ? 'INICIAL' : 'FINAL'}',
               style: const TextStyle(fontWeight: FontWeight.bold)),
           value: widget.pruebas.repetibilidad?.activo ?? false,
           onChanged: (bool value) {
@@ -98,7 +102,8 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
 
         // Linealidad
         SwitchListTile(
-          title: Text('PRUEBAS DE LINEALIDAD ${widget.isInicial ? 'INICIAL' : 'FINAL'}',
+          title: Text(
+              'PRUEBAS DE LINEALIDAD ${widget.isInicial ? 'INICIAL' : 'FINAL'}',
               style: const TextStyle(fontWeight: FontWeight.bold)),
           value: widget.pruebas.linealidad?.activo ?? false,
           onChanged: (bool value) {

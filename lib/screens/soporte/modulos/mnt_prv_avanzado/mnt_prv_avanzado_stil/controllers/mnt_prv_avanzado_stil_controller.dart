@@ -1,12 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
 import '../models/mnt_prv_avanzado_stil_model.dart';
-
 
 class MntPrvAvanzadoStilController {
   final MntPrvAvanzadoStilModel model;
@@ -51,7 +49,8 @@ class MntPrvAvanzadoStilController {
   }
 
   // ✅ NUEVO: Método para guardar solo en BD (sin fotos)
-  Future<void> saveDataToDatabase(BuildContext context, {bool showMessage = true}) async {
+  Future<void> saveDataToDatabase(BuildContext context,
+      {bool showMessage = true}) async {
     try {
       final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
       final Map<String, dynamic> mntPrvData = _prepareDataForSave();
@@ -91,7 +90,6 @@ class MntPrvAvanzadoStilController {
 
       // Luego guardar datos en la base de datos
       await saveDataToDatabase(context, showMessage: true);
-
     } catch (e) {
       if (context.mounted) {
         _showSnackBar(
@@ -120,7 +118,8 @@ class MntPrvAvanzadoStilController {
 
           // ⚠️ Advertir si el archivo es muy grande (> 5MB)
           if (fileSize > 5 * 1024 * 1024) {
-            debugPrint('⚠️ Foto grande detectada: ${label}_${i + 1} - ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
+            debugPrint(
+                '⚠️ Foto grande detectada: ${label}_${i + 1} - ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
           }
 
           final fileName = '${_sanitizeFileName(label)}_${i + 1}.jpg';
@@ -132,12 +131,13 @@ class MntPrvAvanzadoStilController {
         }
       });
 
-      debugPrint('📦 Tamaño total de fotos: ${(totalSize / 1024 / 1024).toStringAsFixed(2)} MB');
+      debugPrint(
+          '📦 Tamaño total de fotos: ${(totalSize / 1024 / 1024).toStringAsFixed(2)} MB');
 
       final zipEncoder = ZipEncoder();
       final zipData = zipEncoder.encode(archive);
 
-      final uint8ListData = Uint8List.fromList(zipData!);
+      final uint8ListData = Uint8List.fromList(zipData);
       final zipFileName =
           '${model.secaValue}_${model.codMetrica}_fotos_${DateTime.now().millisecondsSinceEpoch}.zip';
 
@@ -265,12 +265,13 @@ class MntPrvAvanzadoStilController {
 
   // ✅ MEJORADO: Agregar pruebas metrológicas con null-safety
   void _addPruebasMetrologicasData(Map<String, dynamic> data) {
-
     // Excentricidad inicial
-    _addExcentricidadData(data, model.pruebasIniciales.excentricidad, 'inicial');
+    _addExcentricidadData(
+        data, model.pruebasIniciales.excentricidad, 'inicial');
 
     // Repetibilidad inicial
-    _addRepetibilidadData(data, model.pruebasIniciales.repetibilidad, 'inicial');
+    _addRepetibilidadData(
+        data, model.pruebasIniciales.repetibilidad, 'inicial');
 
     // Linealidad inicial
     _addLinealidadData(data, model.pruebasIniciales.linealidad, 'inicial');
@@ -285,7 +286,8 @@ class MntPrvAvanzadoStilController {
     _addLinealidadData(data, model.pruebasFinales.linealidad, 'final');
   }
 
-  void _addExcentricidadData(Map<String, dynamic> data, Excentricidad? exc, String tipo) {
+  void _addExcentricidadData(
+      Map<String, dynamic> data, Excentricidad? exc, String tipo) {
     if (exc?.activo ?? false) {
       data['tipo_plataforma_$tipo'] = exc!.tipoPlataforma ?? '';
       data['puntos_ind_$tipo'] = exc.puntosIndicador ?? '';
@@ -301,7 +303,8 @@ class MntPrvAvanzadoStilController {
     }
   }
 
-  void _addRepetibilidadData(Map<String, dynamic> data, Repetibilidad? rep, String tipo) {
+  void _addRepetibilidadData(
+      Map<String, dynamic> data, Repetibilidad? rep, String tipo) {
     if (rep?.activo ?? false) {
       for (int i = 0; i < rep!.cargas.length; i++) {
         final carga = rep.cargas[i];
@@ -318,7 +321,8 @@ class MntPrvAvanzadoStilController {
     }
   }
 
-  void _addLinealidadData(Map<String, dynamic> data, Linealidad? lin, String tipo) {
+  void _addLinealidadData(
+      Map<String, dynamic> data, Linealidad? lin, String tipo) {
     if (lin?.activo ?? false) {
       for (int i = 0; i < lin!.puntos.length; i++) {
         final punto = lin.puntos[i];
@@ -364,7 +368,8 @@ class MntPrvAvanzadoStilController {
   }
 
   void eliminarFoto(String campo, int index) {
-    if (_fieldPhotos.containsKey(campo) && index < _fieldPhotos[campo]!.length) {
+    if (_fieldPhotos.containsKey(campo) &&
+        index < _fieldPhotos[campo]!.length) {
       _fieldPhotos[campo]!.removeAt(index);
       model.camposEstado[campo]?.eliminarFoto(index);
     }

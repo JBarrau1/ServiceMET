@@ -11,12 +11,12 @@ class CampoInspeccionWidget extends StatefulWidget {
   final VoidCallback onChanged;
 
   const CampoInspeccionWidget({
-    Key? key,
+    super.key,
     required this.label,
     required this.campo,
     required this.controller,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<CampoInspeccionWidget> createState() => _CampoInspeccionWidgetState();
@@ -70,7 +70,8 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Row(
                 children: [
@@ -88,7 +89,8 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
                   // Indicador de fotos
                   if (widget.campo.fotos.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.blue,
                         borderRadius: BorderRadius.circular(12),
@@ -96,7 +98,8 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                          const Icon(Icons.camera_alt,
+                              color: Colors.white, size: 16),
                           const SizedBox(width: 4),
                           Text(
                             '${widget.campo.fotos.length}',
@@ -150,10 +153,11 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
                       widget.campo.comentario = value;
                       widget.onChanged();
                     },
-                    controller: TextEditingController(text: widget.campo.comentario)
-                      ..selection = TextSelection.collapsed(
-                        offset: widget.campo.comentario.length,
-                      ),
+                    controller:
+                        TextEditingController(text: widget.campo.comentario)
+                          ..selection = TextSelection.collapsed(
+                            offset: widget.campo.comentario.length,
+                          ),
                   ),
                   const SizedBox(height: 16),
 
@@ -172,7 +176,9 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
     final opciones = ['1 Bueno', '2 Aceptable', '3 Malo', '4 No aplica'];
 
     return DropdownButtonFormField<String>(
-      value: widget.campo.initialValue.isEmpty ? '4 No aplica' : widget.campo.initialValue,
+      initialValue: widget.campo.initialValue.isEmpty
+          ? '4 No aplica'
+          : widget.campo.initialValue,
       decoration: InputDecoration(
         labelText: 'Estado',
         border: OutlineInputBorder(
@@ -228,7 +234,9 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
     };
 
     return DropdownButtonFormField<String>(
-      value: widget.campo.solutionValue.isEmpty ? 'No aplica' : widget.campo.solutionValue,
+      initialValue: widget.campo.solutionValue.isEmpty
+          ? 'No aplica'
+          : widget.campo.solutionValue,
       decoration: InputDecoration(
         labelText: 'Solución',
         border: OutlineInputBorder(
@@ -283,21 +291,20 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
               ),
             ),
             ElevatedButton.icon(
-              onPressed: widget.campo.fotos.length < 5
-                  ? () => _tomarFoto()
-                  : null,
+              onPressed:
+                  widget.campo.fotos.length < 5 ? () => _tomarFoto() : null,
               icon: const Icon(Icons.camera_alt, size: 18),
               label: const Text('AGREGAR'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 textStyle: const TextStyle(fontSize: 12),
               ),
             ),
           ],
         ),
-
         if (widget.campo.fotos.isNotEmpty) ...[
           const SizedBox(height: 12),
           SizedBox(

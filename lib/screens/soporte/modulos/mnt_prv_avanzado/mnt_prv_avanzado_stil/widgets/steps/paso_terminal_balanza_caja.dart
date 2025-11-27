@@ -11,11 +11,11 @@ class PasoTerminal extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoTerminal({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,14 +37,14 @@ class PasoTerminal extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context,
+          _buildHeader(
+            context,
             title: 'TERMINAL DE PESAJE',
             subtitle: 'Inspeccione el estado físico y operacional del terminal',
             icon: Icons.computer_outlined,
             color: Colors.purple,
           ),
           const SizedBox(height: 24),
-
           ...campos.map((campo) {
             return CampoInspeccionWidget(
               label: campo,
@@ -52,13 +52,14 @@ class PasoTerminal extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
             );
-          }).toList(),
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, {
+  Widget _buildHeader(
+    BuildContext context, {
     required String title,
     required String subtitle,
     required IconData icon,
@@ -69,9 +70,7 @@ class PasoTerminal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? color.withOpacity(0.1)
-            : color.withOpacity(0.05),
+        color: isDarkMode ? color.withOpacity(0.1) : color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: color.withOpacity(0.3),
@@ -110,7 +109,6 @@ class PasoTerminal extends StatelessWidget {
   }
 }
 
-
 // PASO 3: ESTADO DE BALANZA
 
 class PasoBalanza extends StatelessWidget {
@@ -119,11 +117,11 @@ class PasoBalanza extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoBalanza({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -141,14 +139,14 @@ class PasoBalanza extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context,
+          _buildHeader(
+            context,
             title: 'ESTADO GENERAL DE LA BALANZA',
             subtitle: 'Inspeccione el estado general del instrumento',
             icon: Icons.balance_outlined,
             color: Colors.teal,
           ),
           const SizedBox(height: 24),
-
           ...campos.map((campo) {
             return CampoInspeccionWidget(
               label: campo,
@@ -156,13 +154,14 @@ class PasoBalanza extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
             );
-          }).toList(),
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, {
+  Widget _buildHeader(
+    BuildContext context, {
     required String title,
     required String subtitle,
     required IconData icon,
@@ -173,9 +172,7 @@ class PasoBalanza extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? color.withOpacity(0.1)
-            : color.withOpacity(0.05),
+        color: isDarkMode ? color.withOpacity(0.1) : color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: color.withOpacity(0.3),
@@ -222,11 +219,11 @@ class PasoCajaSumadora extends StatelessWidget {
   final VoidCallback onChanged;
 
   const PasoCajaSumadora({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -251,14 +248,14 @@ class PasoCajaSumadora extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context,
+          _buildHeader(
+            context,
             title: 'BALANZA | PLATAFORMA',
             subtitle: 'Inspeccione los componentes de la plataforma',
             icon: Icons.square_outlined,
             color: Colors.orange,
           ),
           const SizedBox(height: 16),
-
           ...camposPlataforma.map((campo) {
             return CampoInspeccionWidget(
               label: campo,
@@ -266,18 +263,16 @@ class PasoCajaSumadora extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
             );
-          }).toList(),
-
+          }),
           const SizedBox(height: 32),
-
-          _buildHeader(context,
+          _buildHeader(
+            context,
             title: 'CAJA SUMADORA',
             subtitle: 'Inspeccione el estado de la caja sumadora',
             icon: Icons.electrical_services_outlined,
             color: Colors.amber[700]!,
           ),
           const SizedBox(height: 16),
-
           ...camposCajaSumadora.map((campo) {
             return CampoInspeccionWidget(
               label: campo,
@@ -285,13 +280,14 @@ class PasoCajaSumadora extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
             );
-          }).toList(),
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, {
+  Widget _buildHeader(
+    BuildContext context, {
     required String title,
     required String subtitle,
     required IconData icon,
@@ -302,9 +298,7 @@ class PasoCajaSumadora extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? color.withOpacity(0.1)
-            : color.withOpacity(0.05),
+        color: isDarkMode ? color.withOpacity(0.1) : color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: color.withOpacity(0.3),

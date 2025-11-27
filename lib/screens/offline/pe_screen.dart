@@ -376,7 +376,7 @@ class _PeScreenState extends State<PeScreen> {
                             _selectedImagePath = null; // Reset the image path
                           });
                         },
-                        value: _selectedPlatform,
+                        initialValue: _selectedPlatform,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Por favor seleccione una opción';
@@ -407,7 +407,7 @@ class _PeScreenState extends State<PeScreen> {
                                 _updatePositions(); // Actualizar las posiciones
                               });
                             },
-                            value: _selectedOption,
+                            initialValue: _selectedOption,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Por favor seleccione una opción';

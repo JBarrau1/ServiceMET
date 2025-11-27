@@ -1,4 +1,3 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:flutter/material.dart';
 import '../../../database/app_database.dart';
 
@@ -12,7 +11,8 @@ class CalibrationService {
       final db = await _dbHelper.database;
 
       // Verificar si la tabla existe primero
-      final tableExists = await _dbHelper.doesTableExist('registros_calibracion');
+      final tableExists =
+          await _dbHelper.doesTableExist('registros_calibracion');
       if (!tableExists) return 0.1;
 
       // Si no pasas un ID, tomamos el último registro insertado

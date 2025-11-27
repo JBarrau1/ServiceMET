@@ -38,14 +38,22 @@ class StacInstalacionScreen extends StatefulWidget {
 }
 
 class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
-  final TextEditingController _entornoComentarioController = TextEditingController();
-  final TextEditingController _nivelacionComentarioController = TextEditingController();
-  final TextEditingController _movilizacionComentarioController = TextEditingController();
-  final TextEditingController _flujoPesadasComentarioController = TextEditingController();
-  final TextEditingController _celulasComentarioController = TextEditingController();
-  final TextEditingController _cablesComentarioController = TextEditingController();
-  final TextEditingController _cubiertaSiliconaComentarioController = TextEditingController();
-  final TextEditingController _flujoPesasComentarioController = TextEditingController();
+  final TextEditingController _entornoComentarioController =
+      TextEditingController();
+  final TextEditingController _nivelacionComentarioController =
+      TextEditingController();
+  final TextEditingController _movilizacionComentarioController =
+      TextEditingController();
+  final TextEditingController _flujoPesadasComentarioController =
+      TextEditingController();
+  final TextEditingController _celulasComentarioController =
+      TextEditingController();
+  final TextEditingController _cablesComentarioController =
+      TextEditingController();
+  final TextEditingController _cubiertaSiliconaComentarioController =
+      TextEditingController();
+  final TextEditingController _flujoPesasComentarioController =
+      TextEditingController();
   final TextEditingController _horaController = TextEditingController();
   final TextEditingController _horaFinController = TextEditingController();
   final List<TextEditingController> _comentariosControllers = [];
@@ -241,9 +249,9 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
       final Map<String, dynamic> comentariosData = {};
       for (int i = 0; i < _comentariosControllers.length; i++) {
         comentariosData['comentario_${i + 1}'] =
-        _comentariosControllers[i].text.isNotEmpty
-            ? _comentariosControllers[i].text
-            : null;
+            _comentariosControllers[i].text.isNotEmpty
+                ? _comentariosControllers[i].text
+                : null;
       }
 
       // ✅ Convertir todos los datos a un mapa para la base de datos
@@ -266,9 +274,12 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
         ...comentariosData,
 
         // Retorno a Cero (si existe)
-        'retorno_cero_inicial_valoracion': _fieldData['Retorno a cero']?['initial_value'] ?? '',
-        'retorno_cero_inicial_carga': _fieldData['Retorno a cero']?['initial_load'] ?? '',
-        'retorno_cero_inicial_unidad': _fieldData['Retorno a cero']?['initial_unit'] ?? '',
+        'retorno_cero_inicial_valoracion':
+            _fieldData['Retorno a cero']?['initial_value'] ?? '',
+        'retorno_cero_inicial_carga':
+            _fieldData['Retorno a cero']?['initial_load'] ?? '',
+        'retorno_cero_inicial_unidad':
+            _fieldData['Retorno a cero']?['initial_unit'] ?? '',
 
         // Condiciones del entorno
         'entorno_valor': _fieldData['Entorno']?['value'] ?? '',
@@ -283,7 +294,8 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
 
       // ✅ Agregar fotos de campos si existen
       _fieldData.forEach((label, fieldData) {
-        final fotos = _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
+        final fotos =
+            _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
         if (fotos.isNotEmpty) {
           final key = _getFieldKey(label);
           dbData['${key}_foto'] = fotos;
@@ -839,28 +851,29 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
                     builder: (context, isSaved, child) {
                       return Expanded(
                         child: ElevatedButton(
-                          onPressed: isSaved ? ()
-                          {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FinServicioInstalacionScreen(
-                                  nReca: widget.nReca,
-                                  secaValue: widget.secaValue,
-                                  sessionId: widget.sessionId,
-                                  codMetrica: widget.codMetrica,
-                                  userName: widget.userName,
-                                  clienteId: widget.clienteId,
-                                  plantaCodigo: widget.plantaCodigo,
-                                  tableName: 'instalacion',
-                                ),
-                              ),
-                            );
-                          }
-                          : null,
+                          onPressed: isSaved
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          FinServicioInstalacionScreen(
+                                        nReca: widget.nReca,
+                                        secaValue: widget.secaValue,
+                                        sessionId: widget.sessionId,
+                                        codMetrica: widget.codMetrica,
+                                        userName: widget.userName,
+                                        clienteId: widget.clienteId,
+                                        plantaCodigo: widget.plantaCodigo,
+                                        tableName: 'instalacion',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                            isSaved ? const Color(0xFF167D1D) : Colors.grey,
+                                isSaved ? const Color(0xFF167D1D) : Colors.grey,
                           ),
                           child: const Text('SIGUIENTE'),
                         ),
@@ -923,7 +936,7 @@ class _StacInstalacionScreenState extends State<StacInstalacionScreen> {
             Expanded(
               flex: 5,
               child: DropdownButtonFormField<String>(
-                value: currentValue, // Usar el valor validado
+                initialValue: currentValue, // Usar el valor validado
                 decoration: _buildInputDecoration(label),
                 items: options.map((String value) {
                   // Solo mostrar texto simple si son opciones personalizadas

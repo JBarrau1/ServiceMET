@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/providers/calibration_provider.dart';
 import '../../../../database/app_database.dart';
-import '../../../../provider/balanza_provider.dart';
 import 'linealidad_controller.dart';
 import 'linealidad_form.dart';
 
@@ -36,7 +35,8 @@ class _LinealidadScreenState extends State<LinealidadScreen> {
   }
 
   Future<void> _initializeController() async {
-    final calibrationProvider = Provider.of<CalibrationProvider>(context, listen: false);
+    final calibrationProvider =
+        Provider.of<CalibrationProvider>(context, listen: false);
 
     _controller = LinealidadController(
       context: context,
@@ -49,33 +49,36 @@ class _LinealidadScreenState extends State<LinealidadScreen> {
 
     // Consultar si hay datos previos
     final dbHelper = AppDatabase();
-    final existingRecord = await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
+    final existingRecord =
+        await dbHelper.getRegistroBySeca(widget.secaValue, widget.sessionId);
 
     bool useExisting = false;
     if (existingRecord != null && _hasLinealidadData(existingRecord)) {
       useExisting = await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text(
-            'DATOS PREVIOS ENCONTRADOS',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text(
+                'DATOS PREVIOS ENCONTRADOS',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              content: const Text(
+                  "Se encontraron datos registrados anteriormente. ¿Desea continuar con ellos o empezar un nuevo registro?\n SI CAMBIO DE BALANZA, INGRESE NUEVOS, DE LO CONTRARIO VISULIZARA LOS DATOS DE LA ANTERIOR BALANZA"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Ingresar nuevos'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Usar últimos'),
+                ),
+              ],
             ),
-          ),
-          content: const Text("Se encontraron datos registrados anteriormente. ¿Desea continuar con ellos o empezar un nuevo registro?\n SI CAMBIO DE BALANZA, INGRESE NUEVOS, DE LO CONTRARIO VISULIZARA LOS DATOS DE LA ANTERIOR BALANZA"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Ingresar nuevos'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Usar últimos'),
-            ),
-          ],
-        ),
-      ) ?? false;
+          ) ??
+          false;
     }
 
     if (useExisting) {

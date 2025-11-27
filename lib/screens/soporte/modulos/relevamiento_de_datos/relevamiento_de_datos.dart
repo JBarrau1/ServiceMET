@@ -42,7 +42,7 @@ class RelevamientoDeDatosScreen extends StatefulWidget {
 
 class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
   Timer? _debounceTimer;
-  bool _isAutoSaving = false;
+  final bool _isAutoSaving = false;
 
   final TextEditingController _comentarioGeneralController =
       TextEditingController();
@@ -69,16 +69,22 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
   final Map<String, List<String>> _sectorFields = {
     'TERMINAL': [
-      'Carcasa', 'Conector y Cables', 'Alimentación',
-      'Pantalla', 'Teclado', 'Bracket y columna'
+      'Carcasa',
+      'Conector y Cables',
+      'Alimentación',
+      'Pantalla',
+      'Teclado',
+      'Bracket y columna'
     ],
     'PLATAFORMA': [
-      'Plato de Carga', 'Estructura', 'Topes de Carga',
-      'Patas', 'Limpieza', 'Bordes y puntas'
+      'Plato de Carga',
+      'Estructura',
+      'Topes de Carga',
+      'Patas',
+      'Limpieza',
+      'Bordes y puntas'
     ],
-    'CELDAS DE CARGA': [
-      'Célula(s)', 'Cable(s)', 'Cubierta de Silicona'
-    ],
+    'CELDAS DE CARGA': ['Célula(s)', 'Cable(s)', 'Cubierta de Silicona'],
   };
 
   // Configuración de campos de inspección
@@ -224,7 +230,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
           }
         }
       }
-
     });
   }
 
@@ -469,10 +474,10 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
   }
 
   Widget _buildDropdownFieldWithComment(
-      BuildContext context,
-      String label, {
-        List<String>? customOptions,
-      }) {
+    BuildContext context,
+    String label, {
+    List<String>? customOptions,
+  }) {
     final List<String> options =
         customOptions ?? ['1 Bueno', '2 Aceptable', '3 Malo', '4 No aplica'];
 
@@ -492,11 +497,15 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
             Expanded(
               flex: 5,
               child: DropdownButtonFormField<String>(
-                value: currentValue,
+                initialValue: currentValue,
                 decoration: _buildInputDecoration(label).copyWith(
-                  hintText: isSectorInGoodState ? 'Valor sugerido: Buen Estado' : null,
+                  hintText: isSectorInGoodState
+                      ? 'Valor sugerido: Buen Estado'
+                      : null,
                   filled: isSectorInGoodState,
-                  fillColor: isSectorInGoodState ? Colors.green.withOpacity(0.1) : null,
+                  fillColor: isSectorInGoodState
+                      ? Colors.green.withOpacity(0.1)
+                      : null,
                 ),
                 items: options.map((String value) {
                   if (customOptions != null) {
@@ -573,16 +582,18 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
               child: TextFormField(
                 controller: _commentControllers[label],
                 decoration: _buildInputDecoration('Comentario $label').copyWith(
-                  hintText: isSectorInGoodState ? 'Comentario editable...' : null,
+                  hintText:
+                      isSectorInGoodState ? 'Comentario editable...' : null,
                   filled: isSectorInGoodState,
-                  fillColor: isSectorInGoodState ? Colors.green.withOpacity(0.1) : null,
+                  fillColor: isSectorInGoodState
+                      ? Colors.green.withOpacity(0.1)
+                      : null,
                 ),
                 onTap: () {
-                  if (_commentControllers[label]?.text == 'Sin Comentario'){
+                  if (_commentControllers[label]?.text == 'Sin Comentario') {
                     _commentControllers[label]?.clear();
                   }
                 },
-
               ),
             ),
             const SizedBox(width: 10),
@@ -918,7 +929,8 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
     }
   }
 
-  void _showConfirmationDialog(BuildContext context, String sector, bool newValue) {
+  void _showConfirmationDialog(
+      BuildContext context, String sector, bool newValue) {
     final action = newValue ? 'activar' : 'desactivar';
     final message = newValue
         ? '¿Está seguro que desea sugerir "Buen Estado" para el sector $sector?\n\nSe sugerirá "1 Bueno" en todos los campos, pero podrá modificarlos individualmente después.'
@@ -949,7 +961,8 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: newValue ? Colors.green : Colors.orange,
               ),
-              child: Text(newValue ? 'Aplicar Sugerencia' : 'Desactivar Sugerencia'),
+              child: Text(
+                  newValue ? 'Aplicar Sugerencia' : 'Desactivar Sugerencia'),
             ),
           ],
         );
@@ -1017,9 +1030,8 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
       // Modificar el campo para considerar el estado del switch
       widgets.add(_buildDropdownFieldWithComment(
-          context,
-          field['label']  // ✅ Solo pasa los parámetros requeridos
-      ));
+          context, field['label'] // ✅ Solo pasa los parámetros requeridos
+          ));
       widgets.add(const SizedBox(height: 20.0));
     }
 
@@ -1039,18 +1051,16 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 20.0),
-        ..._environmentFields
-            .map((field) => Column(
-                  children: [
-                    _buildDropdownFieldWithComment(
-                      context,
-                      field['label'],
-                      customOptions: field['options'],
-                    ),
-                    const SizedBox(height: 20.0),
-                  ],
-                ))
-            .toList(),
+        ..._environmentFields.map((field) => Column(
+              children: [
+                _buildDropdownFieldWithComment(
+                  context,
+                  field['label'],
+                  customOptions: field['options'],
+                ),
+                const SizedBox(height: 20.0),
+              ],
+            )),
       ],
     );
   }
@@ -1172,7 +1182,6 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
                 const SizedBox(height: 20.0),
 
-
                 // Pruebas metrológicas
                 MetrologicalTestsContainer(
                   testType: 'INICIAL',
@@ -1209,7 +1218,7 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
                 // Recomendaciones
                 DropdownButtonFormField<String>(
-                  value: _selectedRecommendation,
+                  initialValue: _selectedRecommendation,
                   decoration: _buildInputDecoration('Recomendación'),
                   items: [
                     'Calibración',
@@ -1359,24 +1368,25 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                       builder: (context, isSaved, child) {
                         return Expanded(
                           child: ElevatedButton(
-                            onPressed: isSaved ? () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FinServicioScreen(
-                                    userName: widget.userName,
-                                    clienteId: widget.clienteId,
-                                    plantaCodigo: widget.plantaCodigo,
-                                    sessionId: widget.sessionId,
-                                    secaValue: widget.secaValue,
-                                    codMetrica: widget.codMetrica,
-                                    nReca: widget.nReca,
-                                    tableName: 'relevamiento_de_datos',
-                                  ),
-                                ),
-                              );
-                            }
-                            : null,
+                            onPressed: isSaved
+                                ? () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FinServicioScreen(
+                                          userName: widget.userName,
+                                          clienteId: widget.clienteId,
+                                          plantaCodigo: widget.plantaCodigo,
+                                          sessionId: widget.sessionId,
+                                          secaValue: widget.secaValue,
+                                          codMetrica: widget.codMetrica,
+                                          nReca: widget.nReca,
+                                          tableName: 'relevamiento_de_datos',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isSaved
                                   ? const Color(0xFF167D1D)
@@ -1429,20 +1439,25 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                         ),
                         const SizedBox(height: 10),
                         if (balanza != null) ...[
-                          _buildDetailContainer('Código Métrica', balanza.cod_metrica),
-                          _buildDetailContainer('Unidades', balanza.unidad.toString()),
+                          _buildDetailContainer(
+                              'Código Métrica', balanza.cod_metrica),
+                          _buildDetailContainer(
+                              'Unidades', balanza.unidad.toString()),
                           _buildDetailContainer('pmax1', balanza.cap_max1),
                           _buildDetailContainer('d1', balanza.d1.toString()),
                           _buildDetailContainer('e1', balanza.e1.toString()),
-                          _buildDetailContainer('dec1', balanza.dec1.toString()),
+                          _buildDetailContainer(
+                              'dec1', balanza.dec1.toString()),
                           _buildDetailContainer('pmax2', balanza.cap_max2),
                           _buildDetailContainer('d2', balanza.d2.toString()),
                           _buildDetailContainer('e2', balanza.e2.toString()),
-                          _buildDetailContainer('dec2', balanza.dec2.toString()),
+                          _buildDetailContainer(
+                              'dec2', balanza.dec2.toString()),
                           _buildDetailContainer('pmax3', balanza.cap_max3),
                           _buildDetailContainer('d3', balanza.d3.toString()),
                           _buildDetailContainer('e3', balanza.e3.toString()),
-                          _buildDetailContainer('dec3', balanza.dec3.toString()),
+                          _buildDetailContainer(
+                              'dec3', balanza.dec3.toString()),
                         ],
                       ],
                     ),
@@ -1526,7 +1541,8 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
   }
 
   Widget _buildSectorStatusIndicator() {
-    final activeSectors = _sectorGoodState.values.where((state) => state).length;
+    final activeSectors =
+        _sectorGoodState.values.where((state) => state).length;
     if (activeSectors == 0) return const SizedBox.shrink();
 
     return Container(
@@ -1554,9 +1570,9 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
     _horaController.dispose();
     _horaFinController.dispose();
 
-    _commentControllers.values.forEach((controller) {
+    for (var controller in _commentControllers.values) {
       controller.dispose();
-    });
+    }
 
     _isSaveButtonPressed.dispose();
     _isDataSaved.dispose();

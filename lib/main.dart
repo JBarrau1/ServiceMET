@@ -97,7 +97,6 @@ class MyApp extends StatelessWidget {
       canvasColor: scaffoldBackgroundColor,
       cardColor: scaffoldBackgroundColor,
       disabledColor: Colors.grey[400],
-
       colorScheme: baseTheme.colorScheme.copyWith(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -105,7 +104,6 @@ class MyApp extends StatelessWidget {
         onSurface: textColor,
         brightness: Brightness.light,
       ),
-
       textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).copyWith(
         displayLarge: const TextStyle(color: textColor),
         displayMedium: const TextStyle(color: textColor),
@@ -121,7 +119,6 @@ class MyApp extends StatelessWidget {
         labelLarge: const TextStyle(color: Colors.white),
         labelSmall: TextStyle(color: Colors.grey[800]),
       ),
-
       appBarTheme: const AppBarTheme(
         backgroundColor: primaryColor,
         titleTextStyle: TextStyle(
@@ -132,7 +129,6 @@ class MyApp extends StatelessWidget {
         iconTheme: IconThemeData(color: Colors.black),
         elevation: 1,
       ),
-
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.grey[100],
@@ -146,7 +142,6 @@ class MyApp extends StatelessWidget {
         prefixIconColor: Colors.grey[800],
         suffixIconColor: Colors.grey[800],
       ),
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
@@ -160,25 +155,21 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
         ),
       ),
-
       iconTheme: const IconThemeData(color: textColor),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           foregroundColor: primaryColor,
         ),
       ),
-
       dividerTheme: const DividerThemeData(
         thickness: 1,
         space: 1,
       ).copyWith(color: Colors.grey[300]),
-
       snackBarTheme: SnackBarThemeData(
         backgroundColor: Colors.grey[800],
         contentTextStyle: const TextStyle(color: Colors.white),
@@ -193,19 +184,18 @@ class MyApp extends StatelessWidget {
         secondaryLabelStyle: const TextStyle(color: Colors.white),
       ),
       dialogTheme: DialogThemeData(backgroundColor: scaffoldBackgroundColor),
-
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color?>(
-              (states) {
-            if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith<Color?>(
+          (states) {
+            if (states.contains(WidgetState.selected)) {
               return Colors.white;
             }
             return Colors.grey;
           },
         ),
-        trackColor: MaterialStateProperty.resolveWith<Color?>(
-              (states) {
-            if (states.contains(MaterialState.selected)) {
+        trackColor: WidgetStateProperty.resolveWith<Color?>(
+          (states) {
+            if (states.contains(WidgetState.selected)) {
               return const Color(0xFF457D41);
             }
             return Colors.black12;
@@ -229,7 +219,6 @@ class MyApp extends StatelessWidget {
       canvasColor: const Color(0xFF1E1E1E),
       cardColor: const Color(0xFF1E1E1E),
       disabledColor: Colors.grey[600],
-
       colorScheme: baseTheme.colorScheme.copyWith(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -237,7 +226,6 @@ class MyApp extends StatelessWidget {
         onSurface: textColor,
         brightness: Brightness.dark,
       ),
-
       textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).copyWith(
         displayLarge: const TextStyle(color: textColor),
         displayMedium: const TextStyle(color: textColor),
@@ -253,7 +241,6 @@ class MyApp extends StatelessWidget {
         labelLarge: const TextStyle(color: Colors.black),
         labelSmall: const TextStyle(color: Colors.white70),
       ),
-
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF1E1E1E),
         titleTextStyle: TextStyle(
@@ -264,7 +251,6 @@ class MyApp extends StatelessWidget {
         iconTheme: IconThemeData(color: textColor),
         elevation: 1,
       ),
-
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.grey[800],
@@ -278,7 +264,6 @@ class MyApp extends StatelessWidget {
         prefixIconColor: Colors.white70,
         suffixIconColor: Colors.white70,
       ),
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
@@ -292,25 +277,21 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
         ),
       ),
-
       iconTheme: const IconThemeData(color: textColor),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           foregroundColor: primaryColor,
         ),
       ),
-
       dividerTheme: const DividerThemeData(
         thickness: 1,
         space: 1,
       ).copyWith(color: Colors.grey[700]),
-
       snackBarTheme: const SnackBarThemeData(
         contentTextStyle: TextStyle(color: textColor),
       ).copyWith(backgroundColor: const Color(0xFF1E1E1E)),
@@ -325,19 +306,18 @@ class MyApp extends StatelessWidget {
         secondaryLabelStyle: TextStyle(color: Colors.black),
       ).copyWith(backgroundColor: Colors.grey[700]!),
       dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E1E1E)),
-
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color?>(
-              (states) {
-            if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith<Color?>(
+          (states) {
+            if (states.contains(WidgetState.selected)) {
               return Colors.white;
             }
             return Colors.grey;
           },
         ),
-        trackColor: MaterialStateProperty.resolveWith<Color?>(
-              (states) {
-            if (states.contains(MaterialState.selected)) {
+        trackColor: WidgetStateProperty.resolveWith<Color?>(
+          (states) {
+            if (states.contains(WidgetState.selected)) {
               return const Color(0xFF457D41);
             }
             return Colors.black12;

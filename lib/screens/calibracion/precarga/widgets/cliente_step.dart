@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../precarga_controller.dart';
 
 class ClienteStep extends StatefulWidget {
-  const ClienteStep({Key? key}) : super(key: key);
+  const ClienteStep({super.key});
 
   @override
   State<ClienteStep> createState() => _ClienteStepState();
@@ -14,7 +14,8 @@ class ClienteStep extends StatefulWidget {
 
 class _ClienteStepState extends State<ClienteStep> {
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _nombreComercialController = TextEditingController();
+  final TextEditingController _nombreComercialController =
+      TextEditingController();
   final TextEditingController _razonSocialController = TextEditingController();
 
   @override
@@ -63,7 +64,8 @@ class _ClienteStepState extends State<ClienteStep> {
               _buildSelectedClientInfo(controller),
 
             // Botón de selección de termohigrómetros (FUERA del info card)
-            if (controller.selectedClienteName != null && controller.equipos.isNotEmpty) ...[
+            if (controller.selectedClienteName != null &&
+                controller.equipos.isNotEmpty) ...[
               const SizedBox(height: 20),
               _buildTermohigrometroSelection(controller),
             ],
@@ -139,12 +141,12 @@ class _ClienteStepState extends State<ClienteStep> {
             prefixIcon: const Icon(Icons.search),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                controller.filterClientes('');
-              },
-            )
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      controller.filterClientes('');
+                    },
+                  )
                 : null,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -165,59 +167,59 @@ class _ClienteStepState extends State<ClienteStep> {
             ),
             child: controller.filteredClientes!.isEmpty
                 ? const Center(
-              child: Text(
-                'No se encontraron clientes',
-                style: TextStyle(color: Colors.grey),
-              ),
-            )
+                    child: Text(
+                      'No se encontraron clientes',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
                 : ListView.builder(
-              itemCount: controller.filteredClientes!.length,
-              itemBuilder: (context, index) {
-                final cliente = controller.filteredClientes![index];
-                final isSelected = controller.selectedClienteId ==
-                    cliente['cliente_id']?.toString();
+                    itemCount: controller.filteredClientes!.length,
+                    itemBuilder: (context, index) {
+                      final cliente = controller.filteredClientes![index];
+                      final isSelected = controller.selectedClienteId ==
+                          cliente['cliente_id']?.toString();
 
-                return Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                      return Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Theme.of(context).primaryColor.withOpacity(0.1)
+                              : null,
+                          borderRadius: BorderRadius.circular(8),
+                          border: isSelected
+                              ? Border.all(
+                                  color: Theme.of(context).primaryColor,
+                                  width: 2,
+                                )
+                              : null,
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            cliente['cliente'] ?? 'Cliente desconocido',
+                            style: GoogleFonts.inter(
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                          subtitle: Text(
+                            cliente['razonsocial'] ?? '',
+                            style: GoogleFonts.inter(fontSize: 12),
+                          ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: Theme.of(context).primaryColor,
+                                )
+                              : const Icon(Icons.arrow_forward_ios, size: 16),
+                          onTap: () => controller.selectClientFromList(cliente),
+                        ),
+                      );
+                    },
                   ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Theme.of(context).primaryColor.withOpacity(0.1)
-                        : null,
-                    borderRadius: BorderRadius.circular(8),
-                    border: isSelected
-                        ? Border.all(
-                      color: Theme.of(context).primaryColor,
-                      width: 2,
-                    )
-                        : null,
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      cliente['cliente'] ?? 'Cliente desconocido',
-                      style: GoogleFonts.inter(
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                    subtitle: Text(
-                      cliente['razonsocial'] ?? '',
-                      style: GoogleFonts.inter(fontSize: 12),
-                    ),
-                    trailing: isSelected
-                        ? Icon(
-                      Icons.check_circle,
-                      color: Theme.of(context).primaryColor,
-                    )
-                        : const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => controller.selectClientFromList(cliente),
-                  ),
-                );
-              },
-            ),
           ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.3),
       ],
     );
@@ -239,9 +241,7 @@ class _ClienteStepState extends State<ClienteStep> {
             controller.selectNewClient(value, _razonSocialController.text);
           },
         ).animate(delay: 300.ms).fadeIn().slideX(begin: -0.3),
-
         const SizedBox(height: 16),
-
         TextField(
           controller: _razonSocialController,
           decoration: InputDecoration(
@@ -255,9 +255,7 @@ class _ClienteStepState extends State<ClienteStep> {
             controller.selectNewClient(_nombreComercialController.text, value);
           },
         ).animate(delay: 400.ms).fadeIn().slideX(begin: 0.3),
-
         const SizedBox(height: 16),
-
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -384,7 +382,8 @@ class _ClienteStepState extends State<ClienteStep> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+                      Icon(Icons.check_circle,
+                          color: Colors.green[600], size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -404,7 +403,8 @@ class _ClienteStepState extends State<ClienteStep> {
                   ),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                      Icon(Icons.calendar_today,
+                          size: 14, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Text(
                         'Certificado: ${termo['cert_fecha']}',
@@ -413,8 +413,8 @@ class _ClienteStepState extends State<ClienteStep> {
                           color: difference > 365
                               ? Colors.red
                               : difference > 300
-                              ? Colors.orange
-                              : Colors.green,
+                                  ? Colors.orange
+                                  : Colors.green,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -447,7 +447,7 @@ class _ClienteStepState extends State<ClienteStep> {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     ).animate(delay: 900.ms).fadeIn().slideY(begin: 0.3);
@@ -467,7 +467,8 @@ class _ClienteStepState extends State<ClienteStep> {
       final certFecha = DateTime.parse(termo['cert_fecha']);
 
       if (!uniqueTermos.containsKey(codInstrumento) ||
-          certFecha.isAfter(DateTime.parse(uniqueTermos[codInstrumento]!['cert_fecha']))) {
+          certFecha.isAfter(
+              DateTime.parse(uniqueTermos[codInstrumento]!['cert_fecha']))) {
         uniqueTermos[codInstrumento] = termo;
       }
     }
@@ -489,7 +490,8 @@ class _ClienteStepState extends State<ClienteStep> {
               builder: (context, setState) {
                 return Container(
                   decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(20)),
                   ),
                   child: Column(
                     children: [
@@ -525,25 +527,30 @@ class _ClienteStepState extends State<ClienteStep> {
                           ],
                         ),
                       ),
-
                       Expanded(
                         child: ListView.builder(
                           controller: scrollController,
                           itemCount: termosUnicos.length,
                           itemBuilder: (context, index) {
                             final termo = termosUnicos[index];
-                            final isSelected = controller.selectedTermohigrometros.any((e) =>
-                            e['cod_instrumento'] == termo['cod_instrumento']);
+                            final isSelected =
+                                controller.selectedTermohigrometros.any((e) =>
+                                    e['cod_instrumento'] ==
+                                    termo['cod_instrumento']);
 
-                            final certFecha = DateTime.parse(termo['cert_fecha']);
-                            final difference = DateTime.now().difference(certFecha).inDays;
+                            final certFecha =
+                                DateTime.parse(termo['cert_fecha']);
+                            final difference =
+                                DateTime.now().difference(certFecha).inDays;
 
                             return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
                               child: CheckboxListTile(
                                 title: Text(
                                   '${termo['cod_instrumento']}',
-                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                  style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w600),
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,8 +563,8 @@ class _ClienteStepState extends State<ClienteStep> {
                                         color: difference > 365
                                             ? Colors.red
                                             : difference > 300
-                                            ? Colors.orange
-                                            : Colors.green,
+                                                ? Colors.orange
+                                                : Colors.green,
                                       ),
                                     ),
                                     Text(
@@ -570,15 +577,23 @@ class _ClienteStepState extends State<ClienteStep> {
                                 onChanged: (bool? value) {
                                   setState(() {
                                     if (value == true) {
-                                      if (controller.selectedTermohigrometros.length < 2) {
-                                        controller.addEquipo(termo, 'termohigrometro', '1');
+                                      if (controller
+                                              .selectedTermohigrometros.length <
+                                          2) {
+                                        controller.addEquipo(
+                                            termo, 'termohigrometro', '1');
                                       } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Máximo 2 termohigrómetros permitidos')),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                              content: Text(
+                                                  'Máximo 2 termohigrómetros permitidos')),
                                         );
                                       }
                                     } else {
-                                      controller.removeEquipo(termo['cod_instrumento'], 'termohigrometro');
+                                      controller.removeEquipo(
+                                          termo['cod_instrumento'],
+                                          'termohigrometro');
                                     }
                                   });
                                   this.setState(() {});
@@ -588,7 +603,6 @@ class _ClienteStepState extends State<ClienteStep> {
                           },
                         ),
                       ),
-
                       Container(
                         padding: const EdgeInsets.all(20),
                         child: SizedBox(
@@ -670,7 +684,6 @@ class _ClienteStepState extends State<ClienteStep> {
               ),
             ],
           ),
-
           if (controller.selectedClienteRazonSocial != null &&
               controller.selectedClienteRazonSocial!.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -701,7 +714,6 @@ class _ClienteStepState extends State<ClienteStep> {
               ),
             ),
           ],
-
           if (controller.isNewClient) ...[
             const SizedBox(height: 12),
             Container(

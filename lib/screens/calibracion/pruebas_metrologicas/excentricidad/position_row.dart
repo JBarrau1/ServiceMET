@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:service_met/provider/balanza_provider.dart';
-import '../../../../models/balanza_model.dart';
 import 'excentricidad_controller.dart';
 
 class PositionRow extends StatefulWidget {
@@ -30,8 +27,9 @@ class _PositionRowState extends State<PositionRow> {
 
   Future<void> _loadDValue() async {
     final carga = double.tryParse(
-      widget.controller.cargaController.text.replaceAll(',', '.'),
-    ) ?? 0.0;
+          widget.controller.cargaController.text.replaceAll(',', '.'),
+        ) ??
+        0.0;
 
     try {
       final dValue = await widget.controller.getDForCarga(carga);
@@ -94,7 +92,8 @@ class _PositionRowState extends State<PositionRow> {
                 decoration: _buildInputDecoration('Retorno'),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Campo obligatorio';
+                  if (value == null || value.isEmpty)
+                    return 'Campo obligatorio';
                   return null;
                 },
               ),
@@ -128,30 +127,30 @@ class _IndicationField extends StatelessWidget {
         suffixIcon: (dValue <= 0)
             ? null
             : PopupMenuButton<String>(
-          icon: const Icon(Icons.arrow_drop_down),
-          onSelected: (value) {
-            controller.indicationControllers[index].text = value;
-          },
-          itemBuilder: (context) {
-            final currentText =
-            controller.indicationControllers[index].text.trim();
-            // Si está vacío, usa la carga como base
-            final baseValue = double.tryParse(
-              (currentText.isEmpty
-                  ? controller.cargaController.text
-                  : currentText)
-                  .replaceAll(',', '.'),
-            ) ??
-                0.0;
+                icon: const Icon(Icons.arrow_drop_down),
+                onSelected: (value) {
+                  controller.indicationControllers[index].text = value;
+                },
+                itemBuilder: (context) {
+                  final currentText =
+                      controller.indicationControllers[index].text.trim();
+                  // Si está vacío, usa la carga como base
+                  final baseValue = double.tryParse(
+                        (currentText.isEmpty
+                                ? controller.cargaController.text
+                                : currentText)
+                            .replaceAll(',', '.'),
+                      ) ??
+                      0.0;
 
-            // 11 sugerencias (5 abajo, actual, 5 arriba)
-            return List.generate(11, (i) {
-              final value = baseValue + ((i - 5) * dValue);
-              final txt = value.toStringAsFixed(decimalPlaces);
-              return PopupMenuItem<String>(value: txt, child: Text(txt));
-            });
-          },
-        ),
+                  // 11 sugerencias (5 abajo, actual, 5 arriba)
+                  return List.generate(11, (i) {
+                    final value = baseValue + ((i - 5) * dValue);
+                    final txt = value.toStringAsFixed(decimalPlaces);
+                    return PopupMenuItem<String>(value: txt, child: Text(txt));
+                  });
+                },
+              ),
       ),
       keyboardType: TextInputType.number,
       validator: (value) {
@@ -174,10 +173,10 @@ class _IndicationField extends StatelessWidget {
 
 // Utilidad local para mantener tu estilo
 InputDecoration _buildInputDecoration(
-    String labelText, {
-      Widget? suffixIcon,
-      String? suffixText,
-    }) {
+  String labelText, {
+  Widget? suffixIcon,
+  String? suffixText,
+}) {
   return InputDecoration(
     labelText: labelText,
     border: OutlineInputBorder(

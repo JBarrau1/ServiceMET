@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -52,8 +51,8 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
         .replaceAll('_', ' ')
         .split(' ')
         .map((palabra) => palabra.isEmpty
-        ? ''
-        : palabra[0].toUpperCase() + palabra.substring(1).toLowerCase())
+            ? ''
+            : palabra[0].toUpperCase() + palabra.substring(1).toLowerCase())
         .join(' ');
   }
 
@@ -83,7 +82,8 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
         throw Exception('No se pudo acceder al directorio de descargas');
       }
 
-      final fileName = 'SECA_${widget.servicioSeca.seca}_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final fileName =
+          'SECA_${widget.servicioSeca.seca}_${DateTime.now().millisecondsSinceEpoch}.csv';
       final filePath = '$path/$fileName';
       final File file = File(filePath);
       await file.writeAsString(csv);
@@ -95,14 +95,16 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(FontAwesomeIcons.circleCheck, color: Colors.white, size: 20),
+                const Icon(FontAwesomeIcons.circleCheck,
+                    color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Archivo exportado: $fileName')),
               ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -112,21 +114,24 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(FontAwesomeIcons.circleXmark, color: Colors.white, size: 20),
+                const Icon(FontAwesomeIcons.circleXmark,
+                    color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Error al exportar: $e')),
               ],
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
     }
   }
 
-  Widget _buildBalanzaCard(BuildContext context, int index, Map<String, dynamic> balanza) {
+  Widget _buildBalanzaCard(
+      BuildContext context, int index, Map<String, dynamic> balanza) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final camposConDatos = _obtenerCamposConDatos(balanza);
     final isExpanded = balanzaExpandida == index;
@@ -193,7 +198,9 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : const Color(0xFF2C3E50),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF2C3E50),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -256,7 +263,7 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
                           entry.value.toString(),
                           isDark,
                         );
-                      }).toList(),
+                      }),
 
                       const SizedBox(height: 16),
 
@@ -264,8 +271,10 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () => _mostrarDialogoEdicion(context, index, balanza),
-                          icon: const Icon(FontAwesomeIcons.penToSquare, size: 16),
+                          onPressed: () =>
+                              _mostrarDialogoEdicion(context, index, balanza),
+                          icon: const Icon(FontAwesomeIcons.penToSquare,
+                              size: 16),
                           label: const Text('Editar datos'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF667EEA),
@@ -290,19 +299,20 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
           ),
         ),
       ),
-    ).animate(delay: Duration(milliseconds: index * 100))
+    )
+        .animate(delay: Duration(milliseconds: index * 100))
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.2, end: 0);
   }
 
-  Widget _buildDataField(BuildContext context, String label, String value, bool isDark) {
+  Widget _buildDataField(
+      BuildContext context, String label, String value, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.05)
-            : const Color(0xFFF5F7FA),
+        color:
+            isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark
@@ -413,38 +423,40 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
       body: SafeArea(
         child: balanzasEditadas.isEmpty
             ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                FontAwesomeIcons.boxOpen,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No hay balanzas registradas',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[600],
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      FontAwesomeIcons.boxOpen,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No hay balanzas registradas',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        )
+              )
             : ListView.builder(
-          padding: const EdgeInsets.all(20),
-          itemCount: balanzasEditadas.length,
-          itemBuilder: (context, index) {
-            return _buildBalanzaCard(context, index, balanzasEditadas[index]);
-          },
-        ),
+                padding: const EdgeInsets.all(20),
+                itemCount: balanzasEditadas.length,
+                itemBuilder: (context, index) {
+                  return _buildBalanzaCard(
+                      context, index, balanzasEditadas[index]);
+                },
+              ),
       ),
     );
   }
 
-  void _mostrarDialogoEdicion(BuildContext context, int index, Map<String, dynamic> balanza) {
+  void _mostrarDialogoEdicion(
+      BuildContext context, int index, Map<String, dynamic> balanza) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final camposConDatos = _obtenerCamposConDatos(balanza);
     final Map<String, TextEditingController> controllers = {};
@@ -559,14 +571,16 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
                 SnackBar(
                   content: Row(
                     children: [
-                      const Icon(FontAwesomeIcons.circleCheck, color: Colors.white, size: 20),
+                      const Icon(FontAwesomeIcons.circleCheck,
+                          color: Colors.white, size: 20),
                       const SizedBox(width: 12),
                       const Text('Cambios guardados correctamente'),
                     ],
                   ),
                   backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
               );
             },

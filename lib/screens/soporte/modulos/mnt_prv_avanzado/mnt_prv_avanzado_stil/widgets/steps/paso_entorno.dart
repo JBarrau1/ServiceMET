@@ -3,18 +3,17 @@ import '../../../mnt_prv_avanzado_stil/widgets/campo_inspeccion_widget.dart';
 import '../../controllers/mnt_prv_avanzado_stil_controller.dart';
 import '../../models/mnt_prv_avanzado_stil_model.dart';
 
-
 class PasoEntorno extends StatelessWidget {
   final MntPrvAvanzadoStilModel model;
   final MntPrvAvanzadoStilController controller;
   final VoidCallback onChanged;
 
   const PasoEntorno({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +44,7 @@ class PasoEntorno extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
             );
-          }).toList(),
+          }),
         ],
       ),
     );

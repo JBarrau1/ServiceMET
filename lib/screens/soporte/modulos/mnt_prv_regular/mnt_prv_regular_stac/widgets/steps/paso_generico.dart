@@ -14,7 +14,7 @@ class PasoGenerico extends StatelessWidget {
   final Color color;
 
   const PasoGenerico({
-    Key? key,
+    super.key,
     required this.model,
     required this.controller,
     required this.onChanged,
@@ -23,7 +23,7 @@ class PasoGenerico extends StatelessWidget {
     required this.subtitulo,
     required this.icono,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +43,7 @@ class PasoGenerico extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -55,9 +55,7 @@ class PasoGenerico extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? color.withOpacity(0.1)
-            : color.withOpacity(0.05),
+        color: isDarkMode ? color.withOpacity(0.1) : color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: color.withOpacity(0.3),

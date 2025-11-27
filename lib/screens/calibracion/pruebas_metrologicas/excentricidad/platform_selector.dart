@@ -22,15 +22,17 @@ class PlatformSelector extends StatelessWidget {
         ),
         const SizedBox(height: 20.0),
         DropdownButtonFormField<String>(
-          value: controller.selectedPlatform != null &&
-              controller.platformOptions.containsKey(controller.selectedPlatform)
+          initialValue: controller.selectedPlatform != null &&
+                  controller.platformOptions
+                      .containsKey(controller.selectedPlatform)
               ? controller.selectedPlatform
               : null,
           decoration: buildInputDecoration(
             'Selecciona el tipo de plataforma',
           ),
           items: controller.platformOptions.keys
-              .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+              .map(
+                  (value) => DropdownMenuItem(value: value, child: Text(value)))
               .toList(),
           onChanged: (value) {
             controller.selectedPlatform = value!;
@@ -41,18 +43,20 @@ class PlatformSelector extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         if (controller.selectedPlatform != null &&
-            controller.platformOptions[controller.selectedPlatform] != null) ...[
+            controller.platformOptions[controller.selectedPlatform] !=
+                null) ...[
           DropdownButtonFormField<String>(
-            value: controller.selectedOption != null &&
-                controller.platformOptions[controller.selectedPlatform]!
-                    .contains(controller.selectedOption)
+            initialValue: controller.selectedOption != null &&
+                    controller.platformOptions[controller.selectedPlatform]!
+                        .contains(controller.selectedOption)
                 ? controller.selectedOption
                 : null,
             decoration: buildInputDecoration(
               'Puntos e Indicador',
             ),
             items: controller.platformOptions[controller.selectedPlatform]!
-                .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                .map((value) =>
+                    DropdownMenuItem(value: value, child: Text(value)))
                 .toList(),
             onChanged: (value) {
               controller.selectedOption = value!;
@@ -70,7 +74,8 @@ class PlatformSelector extends StatelessWidget {
                   child: Image.asset(
                     controller.optionImages[controller.selectedOption]!,
                     height: 130, // Tamaño más pequeño
-                    fit: BoxFit.cover, // Para que llene el espacio manteniendo proporciones
+                    fit: BoxFit
+                        .cover, // Para que llene el espacio manteniendo proporciones
                   ),
                 ),
               ),
@@ -81,10 +86,10 @@ class PlatformSelector extends StatelessWidget {
   }
 
   InputDecoration buildInputDecoration(
-      String labelText, {
-        Widget? suffixIcon,
-        String? suffixText,
-      }) {
+    String labelText, {
+    Widget? suffixIcon,
+    String? suffixText,
+  }) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(

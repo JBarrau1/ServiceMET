@@ -20,12 +20,16 @@ class RepetibilidadController {
   final TextEditingController notaController = TextEditingController();
   final TextEditingController comentarioController = TextEditingController();
   final TextEditingController pmax1Controller = TextEditingController();
-  final TextEditingController fiftyPercentPmax1Controller = TextEditingController();
+  final TextEditingController fiftyPercentPmax1Controller =
+      TextEditingController();
   final bool loadExisting;
   final List<ValueNotifier<String>> cargaNotifiers = [];
 
   bool _dataLoadedFromPrecarga = false;
   bool _dataLoadedFromAppDatabase = false;
+  bool _isLoadingData = false;
+
+  final VoidCallback? onUpdate;
 
   RepetibilidadController({
     required this.provider,
@@ -34,6 +38,7 @@ class RepetibilidadController {
     required this.sessionId,
     required this.context,
     this.loadExisting = true,
+    this.onUpdate,
   });
 
   // Método para obtener el valor D correcto según la carga desde la BD
@@ -54,9 +59,12 @@ class RepetibilidadController {
         final d3 = double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1;
 
         // Obtener capacidades máximas
-        final capMax1 = double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0;
-        final capMax2 = double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0;
-        final capMax3 = double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0;
+        final capMax1 =
+            double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0;
+        final capMax2 =
+            double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0;
+        final capMax3 =
+            double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0;
 
         // Lógica de selección según la carga
         if (carga <= capMax1 && capMax1 > 0) return d1;
@@ -64,10 +72,10 @@ class RepetibilidadController {
         if (carga <= capMax3 && capMax3 > 0) return d3;
         return d1; // fallback al primer rango
       } else {
-        debugPrint('No se encontraron datos de balanza, usando valor por defecto d=0.1');
+        debugPrint(
+            'No se encontraron datos de balanza, usando valor por defecto d=0.1');
         return 0.1;
       }
-
     } catch (e) {
       debugPrint('Error al obtener D desde la base de datos: $e');
       return 0.1; // Valor por defecto en caso de error
@@ -90,18 +98,35 @@ class RepetibilidadController {
           'd1': double.tryParse(balanzaData['d1']?.toString() ?? '') ?? 0.1,
           'd2': double.tryParse(balanzaData['d2']?.toString() ?? '') ?? 0.1,
           'd3': double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1,
-          'pmax1': double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0,
-          'pmax2': double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0,
-          'pmax3': double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0,
+          'pmax1':
+              double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0,
+          'pmax2':
+              double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0,
+          'pmax3':
+              double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0,
         };
       } else {
-        debugPrint('No se encontraron datos de balanza, usando valores por defecto');
-        return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1, 'pmax1': 0.0, 'pmax2': 0.0, 'pmax3': 0.0};
+        debugPrint(
+            'No se encontraron datos de balanza, usando valores por defecto');
+        return {
+          'd1': 0.1,
+          'd2': 0.1,
+          'd3': 0.1,
+          'pmax1': 0.0,
+          'pmax2': 0.0,
+          'pmax3': 0.0
+        };
       }
-
     } catch (e) {
       debugPrint('Error al obtener valores D desde la BD: $e');
-      return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1, 'pmax1': 0.0, 'pmax2': 0.0, 'pmax3': 0.0};
+      return {
+        'd1': 0.1,
+        'd2': 0.1,
+        'd3': 0.1,
+        'pmax1': 0.0,
+        'pmax2': 0.0,
+        'pmax3': 0.0
+      };
     }
   }
 
@@ -117,7 +142,8 @@ class RepetibilidadController {
   }
 
   // Método para obtener sugerencias (ahora async)
-  Future<List<String>> getIndicationSuggestions(int cargaIndex, String currentValue) async {
+  Future<List<String>> getIndicationSuggestions(
+      int cargaIndex, String currentValue) async {
     final dValue = await getDValueForCargaController(cargaIndex);
 
     // Si está vacío, usa la carga como base
@@ -155,12 +181,15 @@ class RepetibilidadController {
       // PASO 1: Buscar en AppDatabase (datos históricos) - PRIMERO AHORA
       final appDatabaseData = await _loadFromAppDatabase();
 
-      if (appDatabaseData.isNotEmpty && _hasRepetibilidadData(appDatabaseData)) {
+      if (appDatabaseData.isNotEmpty &&
+          _hasRepetibilidadData(appDatabaseData)) {
         // Si encuentra datos en AppDatabase, los usa
         _createRowsFromAppDatabaseData(appDatabaseData);
         _dataLoadedFromAppDatabase = true;
-        _showDataLoadedMessage('Datos de repetibilidad cargados desde registro existente');
-        debugPrint('Datos de repetibilidad cargados desde AppDatabase (históricos)');
+        _showDataLoadedMessage(
+            'Datos de repetibilidad cargados desde registro existente');
+        debugPrint(
+            'Datos de repetibilidad cargados desde AppDatabase (históricos)');
         return;
       }
 
@@ -171,15 +200,16 @@ class RepetibilidadController {
         // Si encuentra datos en precarga, los usa
         _createRowsFromPrecargaData(precargaData);
         _dataLoadedFromPrecarga = true;
-        _showDataLoadedMessage('Datos de repetibilidad cargados desde servicio anterior');
-        debugPrint('Datos de repetibilidad cargados desde precarga_database.db');
+        _showDataLoadedMessage(
+            'Datos de repetibilidad cargados desde servicio anterior');
+        debugPrint(
+            'Datos de repetibilidad cargados desde precarga_database.db');
         return;
       }
 
       // PASO 3: Si no hay datos en ninguna base de datos
       _showNoDataMessage();
       _createDefaultEmptyRows();
-
     } catch (e) {
       debugPrint('Error en búsqueda cascada de repetibilidad: $e');
       _handleLoadError(e);
@@ -199,7 +229,8 @@ class RepetibilidadController {
     for (int i = 1; i <= 3; i++) {
       for (int j = 1; j <= 10; j++) {
         final indicacionKey = 'indicacion${i}_$j';
-        if (data[indicacionKey] != null && data[indicacionKey].toString().isNotEmpty) {
+        if (data[indicacionKey] != null &&
+            data[indicacionKey].toString().isNotEmpty) {
           return true;
         }
       }
@@ -226,7 +257,6 @@ class RepetibilidadController {
       await db.close();
 
       return result.isNotEmpty ? result.first : {};
-
     } catch (e) {
       debugPrint('Error al cargar repetibilidad desde precarga: $e');
       return {};
@@ -238,7 +268,8 @@ class RepetibilidadController {
       final dbHelper = AppDatabase();
 
       // Primero buscar por sessionId y seca (datos más específicos)
-      final sessionData = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+      final sessionData =
+          await dbHelper.getRegistroBySeca(secaValue, sessionId);
       if (sessionData != null && _hasRepetibilidadData(sessionData)) {
         return sessionData;
       }
@@ -250,7 +281,6 @@ class RepetibilidadController {
       }
 
       return {};
-
     } catch (e) {
       debugPrint('Error al cargar repetibilidad desde AppDatabase: $e');
       return {};
@@ -258,67 +288,87 @@ class RepetibilidadController {
   }
 
   void _createRowsFromPrecargaData(Map<String, dynamic> data) {
-    _initializeControllers(false);
+    _isLoadingData = true;
+    try {
+      _initializeControllers(false);
 
-    // Cargar datos de repetibilidad desde precarga (rep1, rep2, rep3)
-    for (int i = 1; i <= 3; i++) {
-      final cargaValue = data['rep$i']?.toString();
-      if (cargaValue != null && cargaValue.isNotEmpty && cargaControllers.length >= i) {
-        cargaControllers[i - 1].text = cargaValue;
+      // Cargar datos de repetibilidad desde precarga (rep1, rep2, rep3)
+      for (int i = 1; i <= 3; i++) {
+        final cargaValue = data['rep$i']?.toString();
+        if (cargaValue != null &&
+            cargaValue.isNotEmpty &&
+            cargaControllers.length >= i) {
+          cargaControllers[i - 1].text = cargaValue;
 
-        // ✅ MEJORADO: Replicar en TODAS las indicaciones y retornos
-        for (int j = 0; j < selectedRowCount; j++) {
-          if (indicacionControllers[i - 1].length > j) {
-            indicacionControllers[i - 1][j].text = cargaValue; // Auto-completar con el valor de carga
-          }
-          if (retornoControllers[i - 1].length > j) {
-            retornoControllers[i - 1][j].text = '0'; // Valor por defecto para retorno
+          // ✅ MEJORADO: Replicar en TODAS las indicaciones y retornos
+          for (int j = 0; j < selectedRowCount; j++) {
+            if (indicacionControllers[i - 1].length > j) {
+              indicacionControllers[i - 1][j].text =
+                  cargaValue; // Auto-completar con el valor de carga
+            }
+            if (retornoControllers[i - 1].length > j) {
+              retornoControllers[i - 1][j].text =
+                  '0'; // Valor por defecto para retorno
+            }
           }
         }
       }
-    }
 
-    // Cargar comentario si existe
-    notaController.text = data['repetibilidad_comentario']?.toString() ?? '';
+      // Cargar comentario si existe
+      notaController.text = data['repetibilidad_comentario']?.toString() ?? '';
+    } finally {
+      _isLoadingData = false;
+      onUpdate?.call();
+    }
   }
 
   void _createRowsFromAppDatabaseData(Map<String, dynamic> data) {
-    _initializeControllers(false);
+    _isLoadingData = true;
+    try {
+      _initializeControllers(false);
 
-    // Cargar datos de AppDatabase (repetibilidad1, repetibilidad2, repetibilidad3)
-    for (int i = 1; i <= 3; i++) {
-      final cargaValue = data['repetibilidad$i']?.toString();
-      if (cargaValue != null && cargaValue.isNotEmpty && cargaControllers.length >= i) {
-        cargaControllers[i - 1].text = cargaValue;
+      // Cargar datos de AppDatabase (repetibilidad1, repetibilidad2, repetibilidad3)
+      for (int i = 1; i <= 3; i++) {
+        final cargaValue = data['repetibilidad$i']?.toString();
+        if (cargaValue != null &&
+            cargaValue.isNotEmpty &&
+            cargaControllers.length >= i) {
+          cargaControllers[i - 1].text = cargaValue;
 
-        // ✅ MEJORADO: Cargar indicaciones y retornos desde AppDatabase
-        // Si no hay datos en AppDatabase, replicar el valor de carga
-        for (int j = 1; j <= 10; j++) {
-          final indicacionValue = data['indicacion${i}_$j']?.toString();
-          final retornoValue = data['retorno${i}_$j']?.toString();
+          // ✅ MEJORADO: Cargar indicaciones y retornos desde AppDatabase
+          // Si no hay datos en AppDatabase, replicar el valor de carga
+          for (int j = 1; j <= 10; j++) {
+            final indicacionValue = data['indicacion${i}_$j']?.toString();
+            final retornoValue = data['retorno${i}_$j']?.toString();
 
-          if (j <= selectedRowCount && indicacionControllers[i - 1].length >= j) {
-            // Si hay dato en BD, usarlo; si no, replicar carga
-            indicacionControllers[i - 1][j - 1].text =
-                indicacionValue ?? cargaValue;
-          }
+            if (j <= selectedRowCount &&
+                indicacionControllers[i - 1].length >= j) {
+              // Si hay dato en BD, usarlo; si no, replicar carga
+              indicacionControllers[i - 1][j - 1].text =
+                  indicacionValue ?? cargaValue;
+            }
 
-          if (j <= selectedRowCount && retornoControllers[i - 1].length >= j) {
-            retornoControllers[i - 1][j - 1].text = retornoValue ?? '0';
+            if (j <= selectedRowCount &&
+                retornoControllers[i - 1].length >= j) {
+              retornoControllers[i - 1][j - 1].text = retornoValue ?? '0';
+            }
           }
         }
       }
-    }
 
-    // Cargar comentario si existe
-    notaController.text = data['repetibilidad_comentario']?.toString() ?? '';
+      // Cargar comentario si existe
+      notaController.text = data['repetibilidad_comentario']?.toString() ?? '';
 
-    // Cargar pmax1 si existe
-    if (data['cap_max1'] != null) {
-      double pmax1 = double.tryParse(data['cap_max1'].toString()) ?? 0.0;
-      double fiftyPercentPmax1 = pmax1 * 0.5;
-      pmax1Controller.text = pmax1.toStringAsFixed(2);
-      fiftyPercentPmax1Controller.text = fiftyPercentPmax1.toStringAsFixed(2);
+      // Cargar pmax1 si existe
+      if (data['cap_max1'] != null) {
+        double pmax1 = double.tryParse(data['cap_max1'].toString()) ?? 0.0;
+        double fiftyPercentPmax1 = pmax1 * 0.5;
+        pmax1Controller.text = pmax1.toStringAsFixed(2);
+        fiftyPercentPmax1Controller.text = fiftyPercentPmax1.toStringAsFixed(2);
+      }
+    } finally {
+      _isLoadingData = false;
+      onUpdate?.call();
     }
   }
 
@@ -396,17 +446,21 @@ class RepetibilidadController {
 
       // ✅ CRÍTICO: Primero inicializar los controladores con valores por defecto
       _initializeControllers(false);
-      debugPrint('✅ Controladores inicializados: ${cargaControllers.length} cargas');
+      debugPrint(
+          '✅ Controladores inicializados: ${cargaControllers.length} cargas');
 
       // Luego intentar cargar datos existentes de esta sesión
       final dbHelper = AppDatabase();
-      final existingSessionData = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+      final existingSessionData =
+          await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
-      if (existingSessionData != null && _hasRepetibilidadData(existingSessionData)) {
+      if (existingSessionData != null &&
+          _hasRepetibilidadData(existingSessionData)) {
         // Cargar datos de esta sesión específica
         debugPrint('📥 Cargando datos de sesión actual');
         loadFromDatabase(existingSessionData);
-        _showDataLoadedMessage('Datos de repetibilidad cargados desde sesión actual');
+        _showDataLoadedMessage(
+            'Datos de repetibilidad cargados desde sesión actual');
       } else {
         // Si no hay datos de esta sesión, buscar en cascada
         debugPrint('🔍 Buscando datos en cascada');
@@ -417,7 +471,6 @@ class RepetibilidadController {
       await _loadPmax1FromDatabase();
 
       debugPrint('✅ initialize() completado exitosamente');
-
     } catch (e) {
       debugPrint('❌ Error en initialize() de repetibilidad: $e');
       // Asegurar que al menos los controladores estén inicializados
@@ -432,10 +485,12 @@ class RepetibilidadController {
   Future<void> _loadPmax1FromDatabase() async {
     try {
       final dbHelper = AppDatabase();
-      final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+      final existingRecord =
+          await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
       if (existingRecord != null && existingRecord['cap_max1'] != null) {
-        double pmax1 = double.tryParse(existingRecord['cap_max1'].toString()) ?? 0.0;
+        double pmax1 =
+            double.tryParse(existingRecord['cap_max1'].toString()) ?? 0.0;
         double fiftyPercentPmax1 = pmax1 * 0.5;
         pmax1Controller.text = pmax1.toStringAsFixed(2);
         fiftyPercentPmax1Controller.text = fiftyPercentPmax1.toStringAsFixed(2);
@@ -446,24 +501,31 @@ class RepetibilidadController {
   }
 
   void loadFromDatabase(Map<String, dynamic> data) {
-    for (int i = 1; i <= selectedRepetibilityCount; i++) {
-      if (data['repetibilidad$i'] != null && cargaControllers.length >= i) {
-        final cargaValue = data['repetibilidad$i'].toString();
-        cargaControllers[i - 1].text = cargaValue;
+    _isLoadingData = true;
+    try {
+      for (int i = 1; i <= selectedRepetibilityCount; i++) {
+        if (data['repetibilidad$i'] != null && cargaControllers.length >= i) {
+          final cargaValue = data['repetibilidad$i'].toString();
+          cargaControllers[i - 1].text = cargaValue;
 
-        for (int j = 1; j <= selectedRowCount; j++) {
-          if (indicacionControllers[i - 1].length >= j) {
-            // ✅ MEJORADO: Si no hay indicación en BD, usar valor de carga
-            final indicacionValue = data['indicacion${i}_$j']?.toString();
-            indicacionControllers[i - 1][j - 1].text = indicacionValue ?? cargaValue;
+          for (int j = 1; j <= selectedRowCount; j++) {
+            if (indicacionControllers[i - 1].length >= j) {
+              // ✅ MEJORADO: Si no hay indicación en BD, usar valor de carga
+              final indicacionValue = data['indicacion${i}_$j']?.toString();
+              indicacionControllers[i - 1][j - 1].text =
+                  indicacionValue ?? cargaValue;
 
-            final retornoValue = data['retorno${i}_$j']?.toString();
-            retornoControllers[i - 1][j - 1].text = retornoValue ?? '0';
+              final retornoValue = data['retorno${i}_$j']?.toString();
+              retornoControllers[i - 1][j - 1].text = retornoValue ?? '0';
+            }
           }
         }
       }
+      notaController.text = data['repetibilidad_comentario'] ?? '';
+    } finally {
+      _isLoadingData = false;
+      onUpdate?.call();
     }
-    notaController.text = data['repetibilidad_comentario'] ?? '';
   }
 
   void _initializeControllers(bool loadExisting, [VoidCallback? onUpdated]) {
@@ -497,26 +559,32 @@ class RepetibilidadController {
     if (onUpdated != null) {
       onUpdated();
     }
+    onUpdate?.call();
   }
 
   // NUEVO MÉTODO: Manejar cambios en el valor de carga
   void _onCargaValueChanged(int cargaIndex) {
+    if (_isLoadingData) return;
+
     final value = cargaControllers[cargaIndex].text;
     debugPrint('Carga $cargaIndex cambiada a: "$value"');
     _replicateCargaToIndicaciones(cargaIndex, value);
+    onUpdate?.call();
   }
 
   // NUEVO MÉTODO: Replicar valor a todas las indicaciones
   // VERSIÓN SIMPLIFICADA Y MÁS EFECTIVA
   void _replicateCargaToIndicaciones(int cargaIndex, String value) {
-    debugPrint('Replicando carga $cargaIndex: "$value" a todas las indicaciones');
+    debugPrint(
+        'Replicando carga $cargaIndex: "$value" a todas las indicaciones');
 
     for (int j = 0; j < indicacionControllers[cargaIndex].length; j++) {
       // SIEMPRE actualizar con el nuevo valor, sin excepciones
       indicacionControllers[cargaIndex][j].text = value;
     }
 
-    debugPrint('Actualizadas ${indicacionControllers[cargaIndex].length} indicaciones para carga $cargaIndex');
+    debugPrint(
+        'Actualizadas ${indicacionControllers[cargaIndex].length} indicaciones para carga $cargaIndex');
   }
 
   void updateRepetibilityCount(int? value, VoidCallback onUpdateUI) {
@@ -563,7 +631,8 @@ class RepetibilidadController {
     for (int i = 0; i < indicacionControllers.length && i < 3; i++) {
       for (int j = 0; j < indicacionControllers[i].length && j < 10; j++) {
         if (indicacionControllers[i][j].text.isNotEmpty) {
-          data['indicacion${i + 1}_${j + 1}'] = indicacionControllers[i][j].text;
+          data['indicacion${i + 1}_${j + 1}'] =
+              indicacionControllers[i][j].text;
         }
         if (retornoControllers[i][j].text.isNotEmpty) {
           data['retorno${i + 1}_${j + 1}'] = retornoControllers[i][j].text;
@@ -593,7 +662,9 @@ class RepetibilidadController {
     if (data.isEmpty) return;
 
     // Primero restaurar datos de carga
-    for (int i = 0; i < selectedRepetibilityCount && i < cargaControllers.length; i++) {
+    for (int i = 0;
+        i < selectedRepetibilityCount && i < cargaControllers.length;
+        i++) {
       final cargaKey = 'repetibilidad${i + 1}';
       if (data[cargaKey] != null) {
         cargaControllers[i].text = data[cargaKey].toString();
@@ -601,8 +672,12 @@ class RepetibilidadController {
     }
 
     // Luego restaurar datos de indicaciones y retornos
-    for (int i = 0; i < selectedRepetibilityCount && i < indicacionControllers.length; i++) {
-      for (int j = 0; j < selectedRowCount && j < indicacionControllers[i].length; j++) {
+    for (int i = 0;
+        i < selectedRepetibilityCount && i < indicacionControllers.length;
+        i++) {
+      for (int j = 0;
+          j < selectedRowCount && j < indicacionControllers[i].length;
+          j++) {
         final indicacionKey = 'indicacion${i + 1}_${j + 1}';
         final retornoKey = 'retorno${i + 1}_${j + 1}';
 
@@ -640,7 +715,8 @@ class RepetibilidadController {
     for (int i = 0; i < selectedRepetibilityCount; i++) {
       registro['repetibilidad${i + 1}'] = cargaControllers[i].text;
       for (int j = 0; j < selectedRowCount; j++) {
-        registro['indicacion${i + 1}_${j + 1}'] = indicacionControllers[i][j].text;
+        registro['indicacion${i + 1}_${j + 1}'] =
+            indicacionControllers[i][j].text;
         registro['retorno${i + 1}_${j + 1}'] = retornoControllers[i][j].text;
       }
     }
@@ -649,7 +725,8 @@ class RepetibilidadController {
     registro['session_id'] = sessionId;
 
     final dbHelper = AppDatabase();
-    final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+    final existingRecord =
+        await dbHelper.getRegistroBySeca(secaValue, sessionId);
     if (existingRecord != null) {
       await dbHelper.upsertRegistroCalibracion(registro);
     } else {
@@ -685,12 +762,18 @@ class RepetibilidadController {
   }
 
   void clearAllFields() {
-    for (var c in cargaControllers) c.clear();
+    for (var c in cargaControllers) {
+      c.clear();
+    }
     for (var list in indicacionControllers) {
-      for (var c in list) c.clear();
+      for (var c in list) {
+        c.clear();
+      }
     }
     for (var list in retornoControllers) {
-      for (var c in list) c.clear();
+      for (var c in list) {
+        c.clear();
+      }
     }
     notaController.clear();
     comentarioController.clear();

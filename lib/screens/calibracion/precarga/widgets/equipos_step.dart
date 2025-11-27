@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../precarga_controller.dart';
 
 class EquiposStep extends StatefulWidget {
-  const EquiposStep({Key? key}) : super(key: key);
+  const EquiposStep({super.key});
 
   @override
   State<EquiposStep> createState() => _EquiposStepState();
@@ -79,11 +79,9 @@ class _EquiposStepState extends State<EquiposStep> {
               backgroundColor: const Color(0xFF773243),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-
             ),
           ),
         ).animate(delay: 200.ms).fadeIn().slideX(begin: -0.3),
-
       ],
     );
   }
@@ -115,26 +113,26 @@ class _EquiposStepState extends State<EquiposStep> {
               color: Colors.blue[700],
             ),
           ),
-
           const SizedBox(height: 20),
-
           ...allEquipos.asMap().entries.map((entry) {
             final index = entry.key;
             final equipo = entry.value;
 
             // Asegurar que hay suficientes controladores
             while (_cantidadControllers.length <= index) {
-              _cantidadControllers.add(TextEditingController(text: equipo['cantidad'] ?? '1'));
+              _cantidadControllers
+                  .add(TextEditingController(text: equipo['cantidad'] ?? '1'));
             }
 
             return _buildEquipoCard(equipo, index, controller);
-          }).toList(),
+          }),
         ],
       ),
     ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.3);
   }
 
-  Widget _buildEquipoCard(Map<String, dynamic> equipo, int index, PrecargaController controller) {
+  Widget _buildEquipoCard(
+      Map<String, dynamic> equipo, int index, PrecargaController controller) {
     final certFecha = DateTime.parse(equipo['cert_fecha']);
     final currentDate = DateTime.now();
     final difference = currentDate.difference(certFecha).inDays;
@@ -150,14 +148,10 @@ class _EquiposStepState extends State<EquiposStep> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: tipo == 'pesa'
-            ? Colors.blue[50]
-            : Colors.green[50],
+        color: tipo == 'pesa' ? Colors.blue[50] : Colors.green[50],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: tipo == 'pesa'
-              ? Colors.blue[200]!
-              : Colors.green[200]!,
+          color: tipo == 'pesa' ? Colors.blue[200]! : Colors.green[200]!,
         ),
       ),
       child: Column(
@@ -169,16 +163,12 @@ class _EquiposStepState extends State<EquiposStep> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: tipo == 'pesa'
-                      ? Colors.blue[100]
-                      : Colors.green[100],
+                  color: tipo == 'pesa' ? Colors.blue[100] : Colors.green[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   tipo == 'pesa' ? Icons.scale : Icons.device_thermostat,
-                  color: tipo == 'pesa'
-                      ? Colors.blue[700]
-                      : Colors.green[700],
+                  color: tipo == 'pesa' ? Colors.blue[700] : Colors.green[700],
                   size: 20,
                 ),
               ),
@@ -198,7 +188,8 @@ class _EquiposStepState extends State<EquiposStep> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: tipo == 'pesa'
                             ? Colors.blue[200]
@@ -332,7 +323,8 @@ class _EquiposStepState extends State<EquiposStep> {
             children: [
               Icon(
                 totalEquipos > 0 ? Icons.check_circle : Icons.warning,
-                color: totalEquipos > 0 ? Colors.green[600] : Colors.orange[600],
+                color:
+                    totalEquipos > 0 ? Colors.green[600] : Colors.orange[600],
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -343,21 +335,25 @@ class _EquiposStepState extends State<EquiposStep> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: totalEquipos > 0 ? Colors.green[800] : Colors.orange[800],
+                    color: totalEquipos > 0
+                        ? Colors.green[800]
+                        : Colors.orange[800],
                   ),
                 ),
               ),
             ],
           ),
-
           if (totalEquipos > 0) ...[
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildResumenItem('Pesas Patrón', pesas.toString(), Icons.scale),
-                _buildResumenItem('Termohigrómetros', termohigrometros.toString(), Icons.device_thermostat),
-                _buildResumenItem('Total', totalEquipos.toString(), Icons.construction),
+                _buildResumenItem(
+                    'Pesas Patrón', pesas.toString(), Icons.scale),
+                _buildResumenItem('Termohigrómetros',
+                    termohigrometros.toString(), Icons.device_thermostat),
+                _buildResumenItem(
+                    'Total', totalEquipos.toString(), Icons.construction),
               ],
             ),
           ],
@@ -416,7 +412,8 @@ class _EquiposStepState extends State<EquiposStep> {
       final certFecha = DateTime.parse(pesa['cert_fecha']);
 
       if (!uniquePesas.containsKey(codInstrumento) ||
-          certFecha.isAfter(DateTime.parse(uniquePesas[codInstrumento]!['cert_fecha']))) {
+          certFecha.isAfter(
+              DateTime.parse(uniquePesas[codInstrumento]!['cert_fecha']))) {
         uniquePesas[codInstrumento] = pesa;
       }
     }
@@ -438,7 +435,8 @@ class _EquiposStepState extends State<EquiposStep> {
               builder: (context, setState) {
                 return Container(
                   decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(20)),
                   ),
                   child: Column(
                     children: [
@@ -474,25 +472,30 @@ class _EquiposStepState extends State<EquiposStep> {
                           ],
                         ),
                       ),
-
                       Expanded(
                         child: ListView.builder(
                           controller: scrollController,
                           itemCount: pesasUnicas.length,
                           itemBuilder: (context, index) {
                             final pesa = pesasUnicas[index];
-                            final isSelected = controller.selectedEquipos.any((e) =>
-                            e['cod_instrumento'] == pesa['cod_instrumento']);
+                            final isSelected = controller.selectedEquipos.any(
+                                (e) =>
+                                    e['cod_instrumento'] ==
+                                    pesa['cod_instrumento']);
 
-                            final certFecha = DateTime.parse(pesa['cert_fecha']);
-                            final difference = DateTime.now().difference(certFecha).inDays;
+                            final certFecha =
+                                DateTime.parse(pesa['cert_fecha']);
+                            final difference =
+                                DateTime.now().difference(certFecha).inDays;
 
                             return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
                               child: CheckboxListTile(
                                 title: Text(
                                   '${pesa['cod_instrumento']}',
-                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                  style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w600),
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,8 +508,8 @@ class _EquiposStepState extends State<EquiposStep> {
                                         color: difference > 365
                                             ? Colors.red
                                             : difference > 300
-                                            ? Colors.orange
-                                            : Colors.green,
+                                                ? Colors.orange
+                                                : Colors.green,
                                       ),
                                     ),
                                     Text(
@@ -519,16 +522,27 @@ class _EquiposStepState extends State<EquiposStep> {
                                 onChanged: (bool? value) {
                                   setState(() {
                                     if (value == true) {
-                                      if (controller.selectedEquipos.length < 5) {
-                                        final cantidad = !pesa['cod_instrumento'].toString().startsWith('M') ? '1' : '';
-                                        controller.addEquipo(pesa, 'pesa', cantidad);
+                                      if (controller.selectedEquipos.length <
+                                          5) {
+                                        final cantidad =
+                                            !pesa['cod_instrumento']
+                                                    .toString()
+                                                    .startsWith('M')
+                                                ? '1'
+                                                : '';
+                                        controller.addEquipo(
+                                            pesa, 'pesa', cantidad);
                                       } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Máximo 5 pesas patrón permitidas')),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                              content: Text(
+                                                  'Máximo 5 pesas patrón permitidas')),
                                         );
                                       }
                                     } else {
-                                      controller.removeEquipo(pesa['cod_instrumento'], 'pesa');
+                                      controller.removeEquipo(
+                                          pesa['cod_instrumento'], 'pesa');
                                     }
                                   });
                                   this.setState(() {});
@@ -538,7 +552,6 @@ class _EquiposStepState extends State<EquiposStep> {
                           },
                         ),
                       ),
-
                       Container(
                         padding: const EdgeInsets.all(20),
                         child: SizedBox(

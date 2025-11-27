@@ -37,10 +37,10 @@ class MethodSelector extends StatelessWidget {
     );
   }
 
-  Widget _buildMethodDropdown(LinealidadController controller,
-      ThemeData theme) {
+  Widget _buildMethodDropdown(
+      LinealidadController controller, ThemeData theme) {
     return DropdownButtonFormField<String>(
-      value: controller.metodoOptions.contains(controller.selectedMetodo)
+      initialValue: controller.metodoOptions.contains(controller.selectedMetodo)
           ? controller.selectedMetodo
           : null,
       decoration: buildInputDecoration(
@@ -65,11 +65,13 @@ class MethodSelector extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadMethodDropdown(LinealidadController controller, ThemeData theme) {
+  Widget _buildLoadMethodDropdown(
+      LinealidadController controller, ThemeData theme) {
     return DropdownButtonFormField<String>(
-      value: controller.metodocargaOptions.contains(controller.selectedMetodoCarga)
-          ? controller.selectedMetodoCarga
-          : 'Sin método de carga', // Valor por defecto
+      initialValue:
+          controller.metodocargaOptions.contains(controller.selectedMetodoCarga)
+              ? controller.selectedMetodoCarga
+              : 'Sin método de carga', // Valor por defecto
       decoration: buildInputDecoration('Método de Carga'),
       items: controller.metodocargaOptions.map((String metodo) {
         return DropdownMenuItem<String>(
@@ -102,7 +104,7 @@ class MethodSelector extends StatelessWidget {
         Flexible(
           child: Text(
             'Seleccione "Sin método de carga" para ingresar directamente las cargas. '
-                'Método 1 o 2 para cálculos automáticos con cargas sustitutivas.',
+            'Método 1 o 2 para cálculos automáticos con cargas sustitutivas.',
             style: TextStyle(
               fontSize: 12,
               color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade800,
@@ -113,7 +115,8 @@ class MethodSelector extends StatelessWidget {
     );
   }
 
-  InputDecoration buildInputDecoration(String labelText, {
+  InputDecoration buildInputDecoration(
+    String labelText, {
     Widget? suffixIcon,
     String? suffixText,
   }) {

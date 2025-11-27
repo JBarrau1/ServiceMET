@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../models/mnt_prv_avanzado_stac_model.dart';
 
-
 class LinealidadWidget extends StatefulWidget {
   final Linealidad linealidad;
   final Function onChanged;
 
   const LinealidadWidget({
-    Key? key,
+    super.key,
     required this.linealidad,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   _LinealidadWidgetState createState() => _LinealidadWidgetState();
@@ -120,7 +119,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
       _agregarFila();
       final lastIndex = widget.linealidad.puntos.length - 1;
       widget.linealidad.puntos[lastIndex].lt = _incrementoController.text;
-      widget.linealidad.puntos[lastIndex].indicacion = _incrementoController.text;
+      widget.linealidad.puntos[lastIndex].indicacion =
+          _incrementoController.text;
       _ltControllers[lastIndex].text = _incrementoController.text;
       _indicacionControllers[lastIndex].text = _incrementoController.text;
       _actualizarUltimaCarga();
@@ -136,7 +136,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     widget.onChanged();
   }
 
-  InputDecoration _buildInputDecoration(String labelText, {Widget? suffixIcon}) {
+  InputDecoration _buildInputDecoration(String labelText,
+      {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -153,7 +154,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
             child: TextFormField(
               controller: _ltControllers[index],
               decoration: _buildInputDecoration('LT ${index + 1}'),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               onChanged: (value) {
                 widget.linealidad.puntos[index].lt = value;
                 widget.linealidad.puntos[index].indicacion = value;
@@ -168,7 +170,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
             child: TextFormField(
               controller: _indicacionControllers[index],
               decoration: _buildInputDecoration('Indicación ${index + 1}'),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               onChanged: (value) {
                 widget.linealidad.puntos[index].indicacion = value;
                 widget.onChanged();
@@ -198,7 +201,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
             Expanded(
               child: TextFormField(
                 readOnly: true,
-                controller: TextEditingController(text: widget.linealidad.ultimaCargaLt),
+                controller: TextEditingController(
+                    text: widget.linealidad.ultimaCargaLt),
                 decoration: _buildInputDecoration('Última Carga de LT'),
               ),
             ),
@@ -207,7 +211,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
               child: TextFormField(
                 controller: _cargaController,
                 decoration: _buildInputDecoration('Carga'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (value) {
                   widget.linealidad.carga = value;
                   _calcularSumatoria();
@@ -261,7 +266,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
             ),
             ElevatedButton.icon(
-              onPressed: () => _removerFila(widget.linealidad.puntos.length - 1),
+              onPressed: () =>
+                  _removerFila(widget.linealidad.puntos.length - 1),
               icon: const Icon(Icons.remove, color: Colors.white),
               label: const Text('Eliminar Fila'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

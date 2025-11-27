@@ -144,7 +144,7 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<int>(
-          value: _selectedRepetibilityCount,
+          initialValue: _selectedRepetibilityCount,
           items: [1, 2, 3]
               .map((int value) => DropdownMenuItem<int>(
                     value: value,
@@ -162,7 +162,7 @@ class _RepeatabilityTestState extends State<RepeatabilityTest> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<int>(
-          value: _selectedRowCount,
+          initialValue: _selectedRowCount,
           items: [3, 5, 10]
               .map((int value) => DropdownMenuItem<int>(
                     value: value,

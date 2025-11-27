@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../precarga_controller.dart';
 
 class PlantaStep extends StatefulWidget {
-  const PlantaStep({Key? key}) : super(key: key);
+  const PlantaStep({super.key});
 
   @override
   State<PlantaStep> createState() => _PlantaStepState();
@@ -32,7 +32,8 @@ class _PlantaStepState extends State<PlantaStep> {
     super.didChangeDependencies();
 
     if (!_isInitialized) {
-      final controller = Provider.of<PrecargaController>(context, listen: false);
+      final controller =
+          Provider.of<PrecargaController>(context, listen: false);
       _initializeControllers(controller);
       _isInitialized = true;
     }
@@ -66,7 +67,8 @@ class _PlantaStepState extends State<PlantaStep> {
     return Consumer<PrecargaController>(
       builder: (context, controller, child) {
         // Resetear controllers cuando se cambia de cliente nuevo a existente
-        if (!controller.isNewClient && _nombrePlantaController.text.isNotEmpty) {
+        if (!controller.isNewClient &&
+            _nombrePlantaController.text.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
@@ -161,7 +163,8 @@ class _PlantaStepState extends State<PlantaStep> {
                 if (controller.isNewClient)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.orange[100],
                       borderRadius: BorderRadius.circular(10),
@@ -308,7 +311,8 @@ class _PlantaStepState extends State<PlantaStep> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3e7732),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
           ],
@@ -354,7 +358,7 @@ class _PlantaStepState extends State<PlantaStep> {
             ),
           ).animate(delay: 400.ms).fadeIn().scale(begin: const Offset(0.9, 0.9))
         else
-        // Lista de plantas
+          // Lista de plantas
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey[300]!),
@@ -374,18 +378,17 @@ class _PlantaStepState extends State<PlantaStep> {
                     borderRadius: BorderRadius.circular(8),
                     border: isSelected
                         ? Border.all(
-                      color: Theme.of(context).primaryColor,
-                      width: 2,
-                    )
+                            color: Theme.of(context).primaryColor,
+                            width: 2,
+                          )
                         : null,
                   ),
                   child: ListTile(
                     title: Text(
                       planta['planta']?.toString() ?? 'Planta sin nombre',
                       style: GoogleFonts.poppins(
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     subtitle: Column(
@@ -416,9 +419,9 @@ class _PlantaStepState extends State<PlantaStep> {
                     ),
                     trailing: isSelected
                         ? Icon(
-                      Icons.check_circle,
-                      color: Theme.of(context).primaryColor,
-                    )
+                            Icons.check_circle,
+                            color: Theme.of(context).primaryColor,
+                          )
                         : const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () => controller.selectPlanta(uniqueKey),
                   ),
@@ -486,19 +489,15 @@ class _PlantaStepState extends State<PlantaStep> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           if (controller.selectedPlantaDir != null) ...[
             _buildInfoRow('Dirección', controller.selectedPlantaDir!),
             const SizedBox(height: 8),
           ],
-
           if (controller.selectedPlantaDep != null) ...[
             _buildInfoRow('Departamento', controller.selectedPlantaDep!),
             const SizedBox(height: 8),
           ],
-
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -560,10 +559,13 @@ class _PlantaStepState extends State<PlantaStep> {
     );
   }
 
-  void _showAddPlantaDialog(BuildContext context, PrecargaController controller) {
-    final TextEditingController nombrePlantaController = TextEditingController();
+  void _showAddPlantaDialog(
+      BuildContext context, PrecargaController controller) {
+    final TextEditingController nombrePlantaController =
+        TextEditingController();
     final TextEditingController direccionController = TextEditingController();
-    final TextEditingController departamentoController = TextEditingController();
+    final TextEditingController departamentoController =
+        TextEditingController();
 
     showDialog(
       context: context,
@@ -572,7 +574,8 @@ class _PlantaStepState extends State<PlantaStep> {
         return AlertDialog(
           title: Text(
             'Agregar Nueva Planta',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+            style:
+                GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -582,7 +585,8 @@ class _PlantaStepState extends State<PlantaStep> {
                   controller: nombrePlantaController,
                   decoration: InputDecoration(
                     labelText: 'Nombre de la Planta *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.factory),
                   ),
                 ),
@@ -591,7 +595,8 @@ class _PlantaStepState extends State<PlantaStep> {
                   controller: direccionController,
                   decoration: InputDecoration(
                     labelText: 'Dirección *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.location_on),
                   ),
                 ),
@@ -600,7 +605,8 @@ class _PlantaStepState extends State<PlantaStep> {
                   controller: departamentoController,
                   decoration: InputDecoration(
                     labelText: 'Departamento *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     prefixIcon: const Icon(Icons.map),
                   ),
                 ),

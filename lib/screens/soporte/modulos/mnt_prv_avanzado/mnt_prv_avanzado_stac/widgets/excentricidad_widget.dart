@@ -8,11 +8,11 @@ class ExcentricidadWidget extends StatefulWidget {
   final Function onChanged;
 
   const ExcentricidadWidget({
-    Key? key,
+    super.key,
     required this.excentricidad,
     required this.getD1FromDatabase,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   _ExcentricidadWidgetState createState() => _ExcentricidadWidgetState();
@@ -36,7 +36,8 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
 
     for (var posicion in widget.excentricidad.posiciones) {
       _positionControllers.add(TextEditingController(text: posicion.posicion));
-      _indicationControllers.add(TextEditingController(text: posicion.indicacion));
+      _indicationControllers
+          .add(TextEditingController(text: posicion.indicacion));
       _returnControllers.add(TextEditingController(text: posicion.retorno));
     }
   }
@@ -44,7 +45,8 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
   void _updatePositions() {
     if (widget.excentricidad.puntosIndicador == null) return;
 
-    int numberOfPositions = _getNumberOfPositions(widget.excentricidad.puntosIndicador!);
+    int numberOfPositions =
+        _getNumberOfPositions(widget.excentricidad.puntosIndicador!);
 
     widget.excentricidad.posiciones.clear();
     _initializeControllers();
@@ -57,7 +59,8 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
       ));
 
       _positionControllers.add(TextEditingController(text: (i + 1).toString()));
-      _indicationControllers.add(TextEditingController(text: widget.excentricidad.carga));
+      _indicationControllers
+          .add(TextEditingController(text: widget.excentricidad.carga));
       _returnControllers.add(TextEditingController(text: '0'));
     }
 
@@ -75,7 +78,8 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
     return 0;
   }
 
-  InputDecoration _buildInputDecoration(String labelText, {Widget? suffixIcon}) {
+  InputDecoration _buildInputDecoration(String labelText,
+      {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -95,9 +99,10 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<String>(
-          value: widget.excentricidad.tipoPlataforma,
+          initialValue: widget.excentricidad.tipoPlataforma,
           decoration: _buildInputDecoration('Tipo de Plataforma'),
-          items: AppStacAvanzadoConstants.platformOptions.keys.map((String value) {
+          items:
+              AppStacAvanzadoConstants.platformOptions.keys.map((String value) {
             return DropdownMenuItem<String>(
               value: value,
               child: Text(value),
@@ -115,9 +120,11 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
         const SizedBox(height: 20),
         if (widget.excentricidad.tipoPlataforma != null)
           DropdownButtonFormField<String>(
-            value: widget.excentricidad.puntosIndicador,
+            initialValue: widget.excentricidad.puntosIndicador,
             decoration: _buildInputDecoration('Puntos e Indicador'),
-            items: AppStacAvanzadoConstants.platformOptions[widget.excentricidad.tipoPlataforma]!.map((String value) {
+            items: AppStacAvanzadoConstants
+                .platformOptions[widget.excentricidad.tipoPlataforma]!
+                .map((String value) {
               return DropdownMenuItem<String>(
                 value: value,
                 child: Text(value),
@@ -126,7 +133,8 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
             onChanged: (String? newValue) {
               setState(() {
                 widget.excentricidad.puntosIndicador = newValue;
-                widget.excentricidad.imagenPath = AppStacAvanzadoConstants.optionImages[newValue!];
+                widget.excentricidad.imagenPath =
+                    AppStacAvanzadoConstants.optionImages[newValue!];
                 _updatePositions();
               });
             },
@@ -187,7 +195,8 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
                       future: widget.getD1FromDatabase(),
                       builder: (context, snapshot) {
                         // Mostrar loader mientras carga
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Padding(
                             padding: EdgeInsets.all(8.0),
                             child: SizedBox(
@@ -213,19 +222,23 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
                           onSelected: (String newValue) {
                             setState(() {
                               _indicationControllers[index].text = newValue;
-                              widget.excentricidad.posiciones[index].indicacion = newValue;
+                              widget.excentricidad.posiciones[index]
+                                  .indicacion = newValue;
                               widget.onChanged();
                             });
                           },
                           itemBuilder: (BuildContext context) {
-                            final currentText = _indicationControllers[index].text.trim();
+                            final currentText =
+                                _indicationControllers[index].text.trim();
 
                             // Si está vacío, usa la carga como base
                             final baseValue = double.tryParse(
-                              (currentText.isEmpty
-                                  ? widget.excentricidad.carga
-                                  : currentText).replaceAll(',', '.'),
-                            ) ?? 0.0;
+                                  (currentText.isEmpty
+                                          ? widget.excentricidad.carga
+                                          : currentText)
+                                      .replaceAll(',', '.'),
+                                ) ??
+                                0.0;
 
                             // Generar 11 opciones (5 abajo, actual, 5 arriba)
                             return List.generate(11, (i) {
@@ -241,7 +254,8 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
                       },
                     ),
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (value) {
                     widget.excentricidad.posiciones[index].indicacion = value;
                     widget.onChanged();
@@ -254,7 +268,7 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
                   controller: _returnControllers[index],
                   decoration: _buildInputDecoration('Retorno'),
                   keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+                      const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (value) {
                     widget.excentricidad.posiciones[index].retorno = value;
                     widget.onChanged();
@@ -267,7 +281,6 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
       ),
     );
   }
-
 
   @override
   void dispose() {

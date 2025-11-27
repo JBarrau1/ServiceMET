@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../mnt_prv_avanzado_stil/models/mnt_prv_avanzado_stil_model.dart';
 
-
 class RepetibilidadWidget extends StatefulWidget {
   final Repetibilidad repetibilidad;
   final Future<double> Function() getD1FromDatabase;
   final Function onChanged;
 
   const RepetibilidadWidget({
-    Key? key,
+    super.key,
     required this.repetibilidad,
     required this.getD1FromDatabase,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   _RepetibilidadWidgetState createState() => _RepetibilidadWidgetState();
@@ -37,7 +36,8 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
       List<TextEditingController> retornoControllers = [];
 
       for (var prueba in carga.pruebas) {
-        indicacionControllers.add(TextEditingController(text: prueba.indicacion));
+        indicacionControllers
+            .add(TextEditingController(text: prueba.indicacion));
         retornoControllers.add(TextEditingController(text: prueba.retorno));
       }
 
@@ -54,7 +54,8 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
       }
     } else {
       // Remover cargas excedentes
-      widget.repetibilidad.cargas = widget.repetibilidad.cargas.sublist(0, newCount);
+      widget.repetibilidad.cargas =
+          widget.repetibilidad.cargas.sublist(0, newCount);
     }
     _initializeControllers();
     widget.onChanged();
@@ -90,7 +91,8 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
     setState(() {});
   }
 
-  InputDecoration _buildInputDecoration(String labelText, {Widget? suffixIcon}) {
+  InputDecoration _buildInputDecoration(String labelText,
+      {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
@@ -110,11 +112,13 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<int>(
-          value: widget.repetibilidad.cantidadCargas,
-          items: [1, 2, 3].map((int value) => DropdownMenuItem<int>(
-            value: value,
-            child: Text(value.toString()),
-          )).toList(),
+          initialValue: widget.repetibilidad.cantidadCargas,
+          items: [1, 2, 3]
+              .map((int value) => DropdownMenuItem<int>(
+                    value: value,
+                    child: Text(value.toString()),
+                  ))
+              .toList(),
           onChanged: (value) {
             if (value != null) {
               setState(() {
@@ -127,11 +131,13 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<int>(
-          value: widget.repetibilidad.cantidadPruebas,
-          items: [3, 5, 10].map((int value) => DropdownMenuItem<int>(
-            value: value,
-            child: Text(value.toString()),
-          )).toList(),
+          initialValue: widget.repetibilidad.cantidadPruebas,
+          items: [3, 5, 10]
+              .map((int value) => DropdownMenuItem<int>(
+                    value: value,
+                    child: Text(value.toString()),
+                  ))
+              .toList(),
           onChanged: (value) {
             if (value != null) {
               setState(() {
@@ -151,7 +157,9 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
   List<Widget> _buildCargas() {
     List<Widget> widgets = [];
 
-    for (int cargaIndex = 0; cargaIndex < widget.repetibilidad.cargas.length; cargaIndex++) {
+    for (int cargaIndex = 0;
+        cargaIndex < widget.repetibilidad.cargas.length;
+        cargaIndex++) {
       widgets.addAll([
         Text(
           'CARGA ${cargaIndex + 1}',
@@ -178,7 +186,9 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
   List<Widget> _buildPruebas(int cargaIndex) {
     List<Widget> widgets = [];
 
-    for (int pruebaIndex = 0; pruebaIndex < widget.repetibilidad.cantidadPruebas; pruebaIndex++) {
+    for (int pruebaIndex = 0;
+        pruebaIndex < widget.repetibilidad.cantidadPruebas;
+        pruebaIndex++) {
       widgets.add(
         Column(
           children: [
@@ -190,20 +200,27 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
                     builder: (context, snapshot) {
                       final d1 = snapshot.data ?? 0.1;
                       return TextFormField(
-                        controller: _indicacionControllers[cargaIndex][pruebaIndex],
-                        decoration: _buildInputDecoration('Indicación ${pruebaIndex + 1}').copyWith(
+                        controller: _indicacionControllers[cargaIndex]
+                            [pruebaIndex],
+                        decoration: _buildInputDecoration(
+                                'Indicación ${pruebaIndex + 1}')
+                            .copyWith(
                           suffixIcon: PopupMenuButton<String>(
                             icon: const Icon(Icons.arrow_drop_down),
                             onSelected: (String newValue) {
                               setState(() {
-                                _indicacionControllers[cargaIndex][pruebaIndex].text = newValue;
-                                widget.repetibilidad.cargas[cargaIndex].pruebas[pruebaIndex].indicacion = newValue;
+                                _indicacionControllers[cargaIndex][pruebaIndex]
+                                    .text = newValue;
+                                widget.repetibilidad.cargas[cargaIndex]
+                                    .pruebas[pruebaIndex].indicacion = newValue;
                                 widget.onChanged();
                               });
                             },
                             itemBuilder: (BuildContext context) {
                               final baseValue = double.tryParse(
-                                  _indicacionControllers[cargaIndex][pruebaIndex].text) ??
+                                      _indicacionControllers[cargaIndex]
+                                              [pruebaIndex]
+                                          .text) ??
                                   0.0;
                               return List.generate(11, (index) {
                                 final multiplier = index - 5;
@@ -216,9 +233,11 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
                             },
                           ),
                         ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         onChanged: (value) {
-                          widget.repetibilidad.cargas[cargaIndex].pruebas[pruebaIndex].indicacion = value;
+                          widget.repetibilidad.cargas[cargaIndex]
+                              .pruebas[pruebaIndex].indicacion = value;
                           widget.onChanged();
                         },
                       );
@@ -229,10 +248,12 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
                 Expanded(
                   child: TextFormField(
                     controller: _retornoControllers[cargaIndex][pruebaIndex],
-                    decoration: _buildInputDecoration('Retorno ${pruebaIndex + 1}'),
+                    decoration:
+                        _buildInputDecoration('Retorno ${pruebaIndex + 1}'),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
-                      widget.repetibilidad.cargas[cargaIndex].pruebas[pruebaIndex].retorno = value;
+                      widget.repetibilidad.cargas[cargaIndex]
+                          .pruebas[pruebaIndex].retorno = value;
                       widget.onChanged();
                     },
                   ),

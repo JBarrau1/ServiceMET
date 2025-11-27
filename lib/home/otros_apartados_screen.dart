@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -52,7 +51,8 @@ class OtrosApartadosScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DescargaDeDatosScreen(userName: userName),
+                    builder: (context) =>
+                        DescargaDeDatosScreen(userName: userName),
                   ),
                 );
               },
@@ -185,14 +185,14 @@ class OtrosApartadosScreen extends StatelessWidget {
   }
 
   Widget _buildServiceCard(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required String subtitle,
-        required VoidCallback onTap,
-        required Color color,
-        required Duration delay,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required Color color,
+    required Duration delay,
+  }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -246,7 +246,9 @@ class OtrosApartadosScreen extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: isDarkMode ? Colors.white : const Color(0xFF2C3E50),
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF2C3E50),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -349,7 +351,8 @@ class OtrosApartadosScreen extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD6D4A7).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -376,7 +379,8 @@ class OtrosApartadosScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFF89B2CC).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),

@@ -64,7 +64,7 @@ mixin MetrologicalTestMixin<T extends BaseMetrologicalTest> on State<T> {
   void disposeControllerMaps(List<Map<String, TextEditingController>> maps) {
     for (var map in maps) {
       for (var controller in map.values) {
-        controller?.dispose();
+        controller.dispose();
       }
     }
   }

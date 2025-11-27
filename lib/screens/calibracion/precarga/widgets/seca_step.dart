@@ -1,7 +1,6 @@
 // widgets/seca_step.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../precarga_controller.dart';
@@ -11,10 +10,10 @@ class SecaStep extends StatefulWidget {
   final String fechaServicio;
 
   const SecaStep({
-    Key? key,
+    super.key,
     required this.userName,
     required this.fechaServicio,
-  }) : super(key: key);
+  });
 
   @override
   State<SecaStep> createState() => _SecaStepState();
@@ -182,9 +181,8 @@ class _SecaStepState extends State<SecaStep> {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: controller.secaConfirmed
-              ? Colors.green[300]!
-              : Colors.blue[300]!,
+          color:
+              controller.secaConfirmed ? Colors.green[300]! : Colors.blue[300]!,
           width: 2,
         ),
         boxShadow: [
@@ -240,7 +238,7 @@ class _SecaStepState extends State<SecaStep> {
               ),
             ).animate(delay: 300.ms).fadeIn()
           else
-          // Código SECA - No confirmado (editable)
+            // Código SECA - No confirmado (editable)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -292,8 +290,7 @@ class _SecaStepState extends State<SecaStep> {
                             width: 2,
                           ),
                         ),
-                        contentPadding:
-                        const EdgeInsets.symmetric(vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         hintText: 'C01',
                         hintStyle: GoogleFonts.robotoMono(
                           fontSize: 20,
@@ -304,10 +301,10 @@ class _SecaStepState extends State<SecaStep> {
                       textAlign: TextAlign.center,
                       maxLength: 3,
                       buildCounter: (context,
-                          {required currentLength,
-                            required isFocused,
-                            maxLength}) =>
-                      null,
+                              {required currentLength,
+                              required isFocused,
+                              maxLength}) =>
+                          null,
                       onChanged: (value) {
                         // Validar formato mientras escribe
                         if (value.isEmpty) {
@@ -318,10 +315,13 @@ class _SecaStepState extends State<SecaStep> {
                         if (!RegExp(r'^C\d{0,2}$').hasMatch(value)) {
                           // Revertir al valor anterior
                           final previousText = _cotizacionController.text;
-                          if (previousText.length > 0) {
-                            _cotizacionController.text = previousText.substring(0, previousText.length - 1);
-                            _cotizacionController.selection = TextSelection.fromPosition(
-                              TextPosition(offset: _cotizacionController.text.length),
+                          if (previousText.isNotEmpty) {
+                            _cotizacionController.text = previousText.substring(
+                                0, previousText.length - 1);
+                            _cotizacionController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(
+                                  offset: _cotizacionController.text.length),
                             );
                           }
                           return;
@@ -336,7 +336,8 @@ class _SecaStepState extends State<SecaStep> {
                             );
                             // Actualizar el SECA con el nuevo número
                             ctrl.updateNumeroCotizacion(value);
-                            debugPrint('SECA actualizado a: ${ctrl.generatedSeca}');
+                            debugPrint(
+                                'SECA actualizado a: ${ctrl.generatedSeca}');
                           } catch (e) {
                             debugPrint('Error al actualizar cotización: $e');
                           }
@@ -378,8 +379,8 @@ class _SecaStepState extends State<SecaStep> {
                 ],
               ),
             ).animate(delay: 400.ms).fadeIn().scale(
-              begin: const Offset(0.8, 0.8),
-            ),
+                  begin: const Offset(0.8, 0.8),
+                ),
 
           // ID Sesión
           if (controller.secaConfirmed &&
@@ -423,7 +424,8 @@ class _SecaStepState extends State<SecaStep> {
   Widget _buildAdditionalInfo(
       PrecargaController controller, BuildContext context) {
     // NUEVO: Detectar si tiene códigos temporales
-    final tieneCodigoTemporal = controller.generatedSeca?.contains('NNNN-NN') ?? false;
+    final tieneCodigoTemporal =
+        controller.generatedSeca?.contains('NNNN-NN') ?? false;
 
     return Column(
       children: [
@@ -470,7 +472,10 @@ class _SecaStepState extends State<SecaStep> {
                 ),
               ],
             ),
-          ).animate(delay: 400.ms).fadeIn().scale(begin: const Offset(0.95, 0.95)),
+          )
+              .animate(delay: 400.ms)
+              .fadeIn()
+              .scale(begin: const Offset(0.95, 0.95)),
 
         // Información sobre formato SECA (código existente)
         Container(
@@ -503,9 +508,9 @@ class _SecaStepState extends State<SecaStep> {
                     const SizedBox(height: 4),
                     Text(
                       'El código se genera automáticamente usando:\n'
-                          '• Código de planta ${tieneCodigoTemporal ? "(temporal: NNNN-NN)" : "seleccionado"}\n'
-                          '• Numeración correlativa (C01, C02...)\n'
-                          '• Año actual (${DateTime.now().year.toString().substring(2)})',
+                      '• Código de planta ${tieneCodigoTemporal ? "(temporal: NNNN-NN)" : "seleccionado"}\n'
+                      '• Numeración correlativa (C01, C02...)\n'
+                      '• Año actual (${DateTime.now().year.toString().substring(2)})',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: Colors.orange[700],
@@ -606,8 +611,8 @@ class _SecaStepState extends State<SecaStep> {
             ],
           ),
         ).animate(delay: 700.ms).fadeIn().scale(
-          begin: const Offset(0.9, 0.9),
-        ),
+              begin: const Offset(0.9, 0.9),
+            ),
       ],
     );
   }

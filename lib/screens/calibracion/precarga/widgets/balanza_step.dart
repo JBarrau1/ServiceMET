@@ -393,7 +393,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
   Widget _buildUnidadField(PrecargaController controller) {
     // Siempre mostrar dropdown editable
     return DropdownButtonFormField<String>(
-      value: widget.balanzaControllers['unidades']!.text.isNotEmpty
+      initialValue: widget.balanzaControllers['unidades']!.text.isNotEmpty
           ? widget.balanzaControllers['unidades']!.text
           : null,
       decoration: InputDecoration(
@@ -468,9 +468,10 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
   Widget _buildCategoriaField() {
     return DropdownButtonFormField<String>(
-      value: widget.balanzaControllers['categoria_balanza']!.text.isNotEmpty
-          ? widget.balanzaControllers['categoria_balanza']!.text
-          : null,
+      initialValue:
+          widget.balanzaControllers['categoria_balanza']!.text.isNotEmpty
+              ? widget.balanzaControllers['categoria_balanza']!.text
+              : null,
       decoration: InputDecoration(
         labelText: 'Categoría',
         prefixIcon: const Icon(Icons.category),
@@ -516,33 +517,31 @@ class _BalanzaStepState extends State<BalanzaStep> {
             ),
           ),
           const SizedBox(height: 12),
-          ...fields
-              .map((row) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: row
-                          .map((fieldKey) => Expanded(
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 4),
-                                  child: _buildTextField(
-                                    controller:
-                                        widget.balanzaControllers[fieldKey]!,
-                                    label: fieldKey.toUpperCase(),
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                            decimal: true),
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.allow(
-                                          RegExp(r'^\d*\.?\d*')),
-                                    ],
-                                  ),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ))
-              .toList(),
+          ...fields.map((row) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: row
+                      .map((fieldKey) => Expanded(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: _buildTextField(
+                                controller:
+                                    widget.balanzaControllers[fieldKey]!,
+                                label: fieldKey.toUpperCase(),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'^\d*\.?\d*')),
+                                ],
+                              ),
+                            ),
+                          ))
+                      .toList(),
+                ),
+              )),
         ],
       ),
     );

@@ -1,12 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import '../../../../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
 import '../models/mnt_prv_avanzado_stac_model.dart';
-
 
 class MntPrvAvanzadoStacController {
   final MntPrvAvanzadoStacModel model;
@@ -51,7 +49,8 @@ class MntPrvAvanzadoStacController {
   }
 
   // ✅ NUEVO: Método para guardar solo en BD (sin fotos)
-  Future<void> saveDataToDatabase(BuildContext context, {bool showMessage = true}) async {
+  Future<void> saveDataToDatabase(BuildContext context,
+      {bool showMessage = true}) async {
     try {
       final dbHelper = DatabaseHelperMntPrvAvanzadoStac();
       final Map<String, dynamic> mntPrvData = _prepareDataForSave();
@@ -91,7 +90,6 @@ class MntPrvAvanzadoStacController {
 
       // Luego guardar datos en la base de datos
       await saveDataToDatabase(context, showMessage: true);
-
     } catch (e) {
       if (context.mounted) {
         _showSnackBar(
@@ -120,7 +118,8 @@ class MntPrvAvanzadoStacController {
 
           // ⚠️ Advertir si el archivo es muy grande (> 5MB)
           if (fileSize > 5 * 1024 * 1024) {
-            debugPrint('⚠️ Foto grande detectada: ${label}_${i + 1} - ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
+            debugPrint(
+                '⚠️ Foto grande detectada: ${label}_${i + 1} - ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
           }
 
           final fileName = '${_sanitizeFileName(label)}_${i + 1}.jpg';
@@ -132,12 +131,13 @@ class MntPrvAvanzadoStacController {
         }
       });
 
-      debugPrint('📦 Tamaño total de fotos: ${(totalSize / 1024 / 1024).toStringAsFixed(2)} MB');
+      debugPrint(
+          '📦 Tamaño total de fotos: ${(totalSize / 1024 / 1024).toStringAsFixed(2)} MB');
 
       final zipEncoder = ZipEncoder();
       final zipData = zipEncoder.encode(archive);
 
-      final uint8ListData = Uint8List.fromList(zipData!);
+      final uint8ListData = Uint8List.fromList(zipData);
       final zipFileName =
           '${model.secaValue}_${model.codMetrica}_fotos_${DateTime.now().millisecondsSinceEpoch}.zip';
 
@@ -246,13 +246,16 @@ class MntPrvAvanzadoStacController {
 
       // Protección contra Rayos
       'sistema_tierra': 'Sistema de protección contra rayos conectado a tierra',
-      'conexion_strike_shield': 'Conexión de la correa de tierra del Strike shield',
+      'conexion_strike_shield':
+          'Conexión de la correa de tierra del Strike shield',
       'tension_neutro_tierra': 'Tensión entre neutro y tierra adecuada',
       'impresora_strike_shield': 'Impresora conectada al mismo Strike Shield',
 
       //Verificaciones de Células de Carga (nombres exactos de BD)
-      'elevado_puente': 'Elevado del puente de pesaje y retirado de las celdas de carga',
-      'limpieza_estructura': 'Limpieza e inspección de superficies de acoplamiento de la estructura',
+      'elevado_puente':
+          'Elevado del puente de pesaje y retirado de las celdas de carga',
+      'limpieza_estructura':
+          'Limpieza e inspección de superficies de acoplamiento de la estructura',
       'bearing_cups': 'Limpieza e inspección de bearing cups',
       'celdas_carga': 'Limpieza e inspección de celdas de carga',
       'lubricacion_cabezas': 'Lubricación de cabezas de celdas de carga',
@@ -260,17 +263,22 @@ class MntPrvAvanzadoStacController {
       'lainas_botas': 'Lainas, botas de goma colocadas',
 
       // Terminal
-      'carcasa_lente_teclado': 'Carcasa, lente y el teclado estan limpios, sin daños y sellados',
+      'carcasa_lente_teclado':
+          'Carcasa, lente y el teclado estan limpios, sin daños y sellados',
       'voltaje_bateria': 'Voltaje de la batería es adecuado',
       'teclado_operativo': 'Teclado operativo correctamente',
       'brillo_pantalla': 'Brillo de pantalla adecuado',
       'registros_pdx': 'Registros de rendimiento de cambio PDX OK',
-      'pantallas_servicio': 'Pantallas de servicio de MT indican operación normal',
-      'archivos_respaldados': 'Archivos de configuración respaldados con InSite',
-      'terminal_disponibilidad': 'Terminal devuelto a la disponibilidad operativo',
+      'pantallas_servicio':
+          'Pantallas de servicio de MT indican operación normal',
+      'archivos_respaldados':
+          'Archivos de configuración respaldados con InSite',
+      'terminal_disponibilidad':
+          'Terminal devuelto a la disponibilidad operativo',
 
       // Calibración
-      'calibracion_balanza': 'Calibración de balanza realiza y dentro de tolerancia',
+      'calibracion_balanza':
+          'Calibración de balanza realiza y dentro de tolerancia',
     };
 
     camposMap.forEach((dbKey, modelKey) => addCampo(dbKey, modelKey));
@@ -278,12 +286,13 @@ class MntPrvAvanzadoStacController {
 
   //MEJORADO: Agregar pruebas metrológicas con null-safety
   void _addPruebasMetrologicasData(Map<String, dynamic> data) {
-
     // Excentricidad inicial
-    _addExcentricidadData(data, model.pruebasIniciales.excentricidad, 'inicial');
+    _addExcentricidadData(
+        data, model.pruebasIniciales.excentricidad, 'inicial');
 
     // Repetibilidad inicial
-    _addRepetibilidadData(data, model.pruebasIniciales.repetibilidad, 'inicial');
+    _addRepetibilidadData(
+        data, model.pruebasIniciales.repetibilidad, 'inicial');
 
     // Linealidad inicial
     _addLinealidadData(data, model.pruebasIniciales.linealidad, 'inicial');
@@ -298,7 +307,8 @@ class MntPrvAvanzadoStacController {
     _addLinealidadData(data, model.pruebasFinales.linealidad, 'final');
   }
 
-  void _addExcentricidadData(Map<String, dynamic> data, Excentricidad? exc, String tipo) {
+  void _addExcentricidadData(
+      Map<String, dynamic> data, Excentricidad? exc, String tipo) {
     if (exc?.activo ?? false) {
       data['tipo_plataforma_$tipo'] = exc!.tipoPlataforma ?? '';
       data['puntos_ind_$tipo'] = exc.puntosIndicador ?? '';
@@ -314,7 +324,8 @@ class MntPrvAvanzadoStacController {
     }
   }
 
-  void _addRepetibilidadData(Map<String, dynamic> data, Repetibilidad? rep, String tipo) {
+  void _addRepetibilidadData(
+      Map<String, dynamic> data, Repetibilidad? rep, String tipo) {
     if (rep?.activo ?? false) {
       for (int i = 0; i < rep!.cargas.length; i++) {
         final carga = rep.cargas[i];
@@ -331,7 +342,8 @@ class MntPrvAvanzadoStacController {
     }
   }
 
-  void _addLinealidadData(Map<String, dynamic> data, Linealidad? lin, String tipo) {
+  void _addLinealidadData(
+      Map<String, dynamic> data, Linealidad? lin, String tipo) {
     if (lin?.activo ?? false) {
       for (int i = 0; i < lin!.puntos.length; i++) {
         final punto = lin.puntos[i];
@@ -377,7 +389,8 @@ class MntPrvAvanzadoStacController {
   }
 
   void eliminarFoto(String campo, int index) {
-    if (_fieldPhotos.containsKey(campo) && index < _fieldPhotos[campo]!.length) {
+    if (_fieldPhotos.containsKey(campo) &&
+        index < _fieldPhotos[campo]!.length) {
       _fieldPhotos[campo]!.removeAt(index);
       model.camposEstado[campo]?.eliminarFoto(index);
     }
