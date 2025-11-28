@@ -304,15 +304,15 @@ class DatabaseHelperMntPrvRegularStac {
         
         -- Retorno a Cero
         retorno_cero_inicial_valoracion TEXT DEFAULT '',
-        retorno_cero_inicial_carga REAL DEFAULT '',
+        estabilizacion_inicial TEXT DEFAULT '',
         retorno_cero_inicial_unidad TEXT DEFAULT '',
         retorno_cero_final_valoracion TEXT DEFAULT '',
-        retorno_cero_final_carga REAL DEFAULT '',
+        estabilizacion_final TEXT DEFAULT '',
         retorno_cero_final_unidad TEXT DEFAULT '',
 
-        -- ========================================
+
         -- EXCENTRICIDAD INICIAL
-        -- ========================================
+
         excentricidad_inicial_tipo_plataforma TEXT DEFAULT '',
         excentricidad_inicial_opcion_prueba TEXT DEFAULT '',
         excentricidad_inicial_carga TEXT DEFAULT '',
@@ -343,9 +343,9 @@ class DatabaseHelperMntPrvRegularStac {
         excentricidad_inicial_pos6_retorno TEXT DEFAULT '',
         excentricidad_inicial_pos6_error TEXT DEFAULT '',
         
-        -- ========================================
+
         -- EXCENTRICIDAD FINAL
-        -- ========================================
+
         excentricidad_final_tipo_plataforma TEXT DEFAULT '',
         excentricidad_final_opcion_prueba TEXT DEFAULT '',
         excentricidad_final_carga TEXT DEFAULT '',
@@ -376,9 +376,9 @@ class DatabaseHelperMntPrvRegularStac {
         excentricidad_final_pos6_retorno TEXT DEFAULT '',
         excentricidad_final_pos6_error TEXT DEFAULT '',
 
-        -- ========================================
+
         -- REPETIBILIDAD INICIAL
-        -- ========================================
+
         repetibilidad_inicial_cantidad_cargas TEXT DEFAULT '',
         repetibilidad_inicial_cantidad_pruebas TEXT DEFAULT '',
         
@@ -451,9 +451,9 @@ class DatabaseHelperMntPrvRegularStac {
         repetibilidad_inicial_carga3_prueba10_indicacion TEXT DEFAULT '',
         repetibilidad_inicial_carga3_prueba10_retorno TEXT DEFAULT '',
 
-        -- ========================================
+
         -- REPETIBILIDAD FINAL
-        -- ========================================
+
         repetibilidad_final_cantidad_cargas INTEGER DEFAULT '',
         repetibilidad_final_cantidad_pruebas INTEGER DEFAULT '',
         
@@ -526,9 +526,9 @@ class DatabaseHelperMntPrvRegularStac {
         repetibilidad_final_carga3_prueba10_indicacion REAL DEFAULT '',
         repetibilidad_final_carga3_prueba10_retorno REAL DEFAULT '',
         
-        -- ========================================
+
         -- LINEALIDAD INICIAL
-        -- ========================================
+
         linealidad_inicial_cantidad_puntos INTEGER DEFAULT '',
         linealidad_inicial_punto1_lt REAL DEFAULT '',
         linealidad_inicial_punto1_indicacion REAL DEFAULT '',
@@ -579,9 +579,8 @@ class DatabaseHelperMntPrvRegularStac {
         linealidad_inicial_punto12_retorno REAL DEFAULT '',
         linealidad_inicial_punto12_error REAL DEFAULT '',
         
-        -- ========================================
         -- LINEALIDAD FINAL
-        -- ========================================
+
         linealidad_final_cantidad_puntos INTEGER DEFAULT '',
         linealidad_final_punto1_lt REAL DEFAULT '',
         linealidad_final_punto1_indicacion REAL DEFAULT '',
@@ -632,9 +631,9 @@ class DatabaseHelperMntPrvRegularStac {
         linealidad_final_punto12_retorno REAL DEFAULT '',
         linealidad_final_punto12_error REAL DEFAULT '',
         
-        -- ========================================
+
         -- NUEVOS CAMPOS: LOZAS Y FUNDACIONES
-        -- ========================================
+
         losas_aproximacion_estado TEXT DEFAULT '',
         losas_aproximacion_solucion TEXT DEFAULT '',
         losas_aproximacion_comentario TEXT DEFAULT '',
@@ -644,10 +643,9 @@ class DatabaseHelperMntPrvRegularStac {
         fundaciones_solucion TEXT DEFAULT '',
         fundaciones_comentario TEXT DEFAULT '',
         fundaciones_foto TEXT DEFAULT '',
-        
-        -- ========================================
+
         -- NUEVOS CAMPOS: LIMPIEZA Y DRENAJE
-        -- ========================================
+
         limpieza_perimetro_estado TEXT DEFAULT '',
         limpieza_perimetro_solucion TEXT DEFAULT '',
         limpieza_perimetro_comentario TEXT DEFAULT '',
@@ -668,9 +666,9 @@ class DatabaseHelperMntPrvRegularStac {
         bomba_sumidero_comentario TEXT DEFAULT '',
         bomba_sumidero_foto TEXT DEFAULT '',
         
-        -- ========================================
+
         -- NUEVOS CAMPOS: CHEQUEO
-        -- ========================================
+
         corrosion_estado TEXT DEFAULT '',
         corrosion_solucion TEXT DEFAULT '',
         corrosion_comentario TEXT DEFAULT '',
@@ -710,10 +708,9 @@ class DatabaseHelperMntPrvRegularStac {
         paragolpes_transversales_solucion TEXT DEFAULT '',
         paragolpes_transversales_comentario TEXT DEFAULT '',
         paragolpes_transversales_foto TEXT DEFAULT '',
-        
-        -- ========================================
+
         -- NUEVOS CAMPOS: VERIFICACIONES ELÉCTRICAS
-        -- ========================================
+
         cable_home_run_estado TEXT DEFAULT '',
         cable_home_run_solucion TEXT DEFAULT '',
         cable_home_run_comentario TEXT DEFAULT '',
@@ -754,9 +751,8 @@ class DatabaseHelperMntPrvRegularStac {
         conector_capuchon_comentario TEXT DEFAULT '',
         conector_capuchon_foto TEXT DEFAULT '',
         
-        -- ========================================
         -- NUEVOS CAMPOS: PROTECCIÓN CONTRA RAYOS
-        -- ========================================
+
         sistema_tierra_estado TEXT DEFAULT '',
         sistema_tierra_solucion TEXT DEFAULT '',
         sistema_tierra_comentario TEXT DEFAULT '',
@@ -776,10 +772,9 @@ class DatabaseHelperMntPrvRegularStac {
         impresora_strike_shield_solucion TEXT DEFAULT '',
         impresora_strike_shield_comentario TEXT DEFAULT '',
         impresora_strike_shield_foto TEXT DEFAULT '',
-        
-        -- ========================================
+
         -- NUEVOS CAMPOS: TERMINAL
-        -- ========================================
+
         carcasa_lente_teclado_estado TEXT DEFAULT '',
         carcasa_lente_teclado_solucion TEXT DEFAULT '',
         carcasa_lente_teclado_comentario TEXT DEFAULT '',

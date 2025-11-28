@@ -77,12 +77,7 @@ class _LinealidadFormState extends State<LinealidadForm> {
 
     return SingleChildScrollView(
       controller: _scrollController,
-      padding: EdgeInsets.only(
-        top: kToolbarHeight + 20,
-        left: 16.0,
-        right: 16.0,
-        bottom: 16.0,
-      ),
+      padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
         autovalidateMode: AutovalidateMode.onUserInteraction,

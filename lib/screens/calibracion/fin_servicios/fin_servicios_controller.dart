@@ -206,7 +206,7 @@ class FinServiciosController extends ChangeNotifier {
 
   // --- Logic for Step 2 ---
 
-  Future<void> confirmarYExportar() async {
+  Future<List<Map<String, dynamic>>> prepareExportData() async {
     try {
       final dbHelper = AppDatabase();
       final db = await dbHelper.database;
@@ -223,7 +223,7 @@ class FinServiciosController extends ChangeNotifier {
         _showSnackBar(
             'No hay registros para exportar con este SECA ($secaValue)',
             isError: true);
-        return;
+        return [];
       }
 
       // 1. Solicitar datos adicionales (Dialog logic should be in UI, but we can handle data here)
@@ -236,7 +236,7 @@ class FinServiciosController extends ChangeNotifier {
         // But if we are calling this from the "Finalizar" button directly after filling fields
         _showSnackBar('Complete todos los campos de exportación',
             isError: true);
-        return;
+        return [];
       }
 
       // 2. Actualizar registros con datos adicionales
@@ -261,17 +261,22 @@ class FinServiciosController extends ChangeNotifier {
         whereArgs: [secaValue, 'Balanza Calibrada'],
       );
 
-      // Export logic
-      await _exportToCSV(updatedRows);
-
-      // Navigate to Home
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      return updatedRows;
     } catch (e) {
       _showSnackBar('Error en exportación: $e', isError: true);
+      return [];
     }
+  }
+
+  Future<void> executeExport(List<Map<String, dynamic>> rows) async {
+    // Export logic
+    await _exportToCSV(rows);
+
+    // Navigate to Home
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
   }
 
   Future<void> _exportToCSV(List<Map<String, dynamic>> registros) async {

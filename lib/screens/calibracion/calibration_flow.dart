@@ -90,9 +90,9 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
               const Icon(Icons.check_circle_outline,
                   color: Colors.green, size: 28),
               const SizedBox(width: 12),
-              Text(
+              const Text(
                 'FINALIZAR PRUEBAS',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -101,13 +101,13 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
           ),
           content: Text(
             '¿Estás seguro de que deseas finalizar las pruebas metrológicas?',
-            style: GoogleFonts.inter(fontSize: 15),
+            style: TextStyle(fontSize: 15),
           ),
           actions: <Widget>[
             TextButton(
               child: Text(
                 'Seguir Editando',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[700],
@@ -214,14 +214,6 @@ class _CalibrationFlowScreenState extends State<CalibrationFlowScreen> {
                     color: isDarkMode ? Colors.white : Colors.black,
                     fontWeight: FontWeight.w700,
                     fontSize: 16.0,
-                  ),
-                ),
-                Text(
-                  'Pruebas Metrológicas',
-                  style: GoogleFonts.inter(
-                    color: isDarkMode ? Colors.white70 : Colors.black54,
-                    fontWeight: FontWeight.w400,
-                    fontSize: 12.0,
                   ),
                 ),
               ],

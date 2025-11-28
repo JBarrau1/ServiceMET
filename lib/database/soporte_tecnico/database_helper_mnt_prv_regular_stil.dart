@@ -477,8 +477,8 @@ class DatabaseHelperMntPrvRegularStil {
         limpieza_profunda_foto TEXT DEFAULT '',
         
         -- PRUEBAS METROLÓGICAS INICIALES
-        retorno_cero_inicial TEXT DEFAULT '',
-        carga_retorno_cero_inicial TEXT DEFAULT '',
+        retorno_cero_inicial_valoracion TEXT DEFAULT '',
+        estabilizacion_inicial TEXT DEFAULT '',
         unidad_retorno_cero_inicial TEXT DEFAULT '',
         
         tipo_plataforma_inicial TEXT DEFAULT '',
@@ -727,8 +727,8 @@ class DatabaseHelperMntPrvRegularStil {
         retorno_lin_inicial_12 TEXT DEFAULT '',
         
         -- PRUEBAS METROLÓGICAS FINALES
-        retorno_cero_final TEXT DEFAULT '',
-        carga_retorno_cero_final TEXT DEFAULT '',
+        retorno_cero_final_valoracion TEXT DEFAULT '',
+        estabilizacion_final TEXT DEFAULT '',
         unidad_retorno_cero_final TEXT DEFAULT '',
         
         tipo_plataforma_final TEXT DEFAULT '',

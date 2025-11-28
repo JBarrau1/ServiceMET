@@ -45,16 +45,14 @@ class _RepetibilidadScreenState extends State<RepetibilidadScreen> {
         context: context,
       );
 
-      // ✅ CRÍTICO: Esperar a que initialize() complete ANTES de marcar como initialized
       await _controller.initialize();
 
-      // ✅ Verificar que los controladores se hayan creado correctamente
       if (_controller.cargaControllers.isEmpty) {
         throw Exception('Los controladores no se inicializaron correctamente');
       }
 
       debugPrint(
-          '✅ Controller inicializado: ${_controller.cargaControllers.length} cargas');
+          'Controller inicializado: ${_controller.cargaControllers.length} cargas');
 
       if (mounted) {
         setState(() {
@@ -96,7 +94,6 @@ class _RepetibilidadScreenState extends State<RepetibilidadScreen> {
       );
     }
 
-    // ✅ Mostrar error si hubo problemas
     if (_errorMessage != null) {
       return Center(
         child: Padding(
@@ -133,7 +130,6 @@ class _RepetibilidadScreenState extends State<RepetibilidadScreen> {
       );
     }
 
-    // ✅ Verificación adicional antes de renderizar el form
     if (_controller.cargaControllers.isEmpty) {
       return const Center(
         child: Text('No se pudieron inicializar los controladores'),

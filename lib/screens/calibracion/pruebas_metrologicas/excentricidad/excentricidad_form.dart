@@ -16,12 +16,7 @@ class _ExcentricidadFormState extends State<ExcentricidadForm> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.only(
-        top: kToolbarHeight + 20, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-        left: 16.0, // Tu padding horizontal original
-        right: 16.0, // Tu padding horizontal original
-        bottom: 16.0, // Tu padding inferior original
-      ),
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           const Text(

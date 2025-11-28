@@ -484,7 +484,7 @@ class DatabaseHelperMntPrvAvanzadoStil {
         
         -- PRUEBAS METROLÓGICAS INICIALES
         retorno_cero_inicial TEXT DEFAULT '',
-        carga_retorno_cero_inicial TEXT DEFAULT '',
+        estabilizacion_inicial TEXT DEFAULT '',
         unidad_retorno_cero_inicial TEXT DEFAULT '',
         
         -- Excentricidad Inicial
@@ -619,7 +619,7 @@ class DatabaseHelperMntPrvAvanzadoStil {
         
         -- PRUEBAS METROLÓGICAS FINALES
         retorno_cero_final TEXT DEFAULT '',
-        carga_retorno_cero_final TEXT DEFAULT '',
+        estabilizacion_final TEXT DEFAULT '',
         unidad_retorno_cero_final TEXT DEFAULT '',
         
         -- Excentricidad Final

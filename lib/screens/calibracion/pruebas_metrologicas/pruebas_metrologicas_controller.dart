@@ -54,8 +54,7 @@ class PruebasMetrologicasController extends ChangeNotifier {
       context: context,
       onUpdate: notifyListeners,
     );
-    // Note: RepetibilidadController might need a way to notify listeners if it doesn't accept a callback.
-    // Assuming it works similarly or we might need to modify it.
+
     await repetibilidadController.initialize();
 
     // Initialize LinealidadController
@@ -67,12 +66,8 @@ class PruebasMetrologicasController extends ChangeNotifier {
       sessionId: sessionId,
       onUpdate: notifyListeners,
     );
-    // Linealidad initialization logic (loading from DB etc) might need to be called here or handled within its constructor/init.
-    // Based on LinealidadScreen, it has logic to ask user about existing data.
-    // For now, we'll assume standard loading or we might need to replicate that logic here.
-    // We'll call a load method if available.
-    await linealidadController
-        .loadLinFromPrecargaOrDatabase(); // Assuming this method exists and is public
+
+    await linealidadController.loadLinFromPrecargaOrDatabase();
 
     _isLoading = false;
     notifyListeners();

@@ -108,14 +108,14 @@ class CondicionesFinalesStep extends StatelessWidget {
           const Text(
             '1. INGRESE LAS CONDICIONES AMBIENTALES FINALES:',
             style: TextStyle(
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.left,
           ),
+          const SizedBox(height: 10.0),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               children: [
                 const SizedBox(height: 10.0),
@@ -187,34 +187,68 @@ class CondicionesFinalesStep extends StatelessWidget {
           ),
           const SizedBox(height: 20.0),
           const Text(
-            '2. MANTENIMIENTO:',
+            '2. REGISTRO DE RECOMENDACIONES:',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.left,
           ),
+          const SizedBox(height: 10.0),
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
             child: Column(
               children: [
-                TextFormField(
-                  controller: controller.mantenimientoController,
-                  maxLines: 3,
-                  decoration: _buildInputDecoration('Mantenimiento / Soporte'),
+                DropdownButtonFormField<String>(
+                  decoration: _buildInputDecoration(
+                    'Mantenimiento con ST',
+                  ),
+                  items: ['Sí', 'No'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    controller.mantenimientoController.text = newValue ?? '';
+                  },
+                  validator: (value) =>
+                      value == null ? 'Por favor seleccione una opción' : null,
                 ),
                 const SizedBox(height: 20.0),
-                TextFormField(
-                  controller: controller.ventaPesasController,
-                  maxLines: 3,
-                  decoration: _buildInputDecoration('Venta de Pesas'),
+                DropdownButtonFormField<String>(
+                  decoration: _buildInputDecoration(
+                    'Venta de Pesas',
+                  ),
+                  items: ['Sí', 'No'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    controller.ventaPesasController.text = newValue ?? '';
+                  },
+                  validator: (value) =>
+                      value == null ? 'Por favor seleccione una opción' : null,
                 ),
                 const SizedBox(height: 20.0),
-                TextFormField(
-                  controller: controller.reemplazoController,
-                  maxLines: 3,
-                  decoration: _buildInputDecoration('Reemplazo'),
+                DropdownButtonFormField<String>(
+                  decoration: _buildInputDecoration(
+                    'Reemplazo',
+                  ),
+                  items: ['Sí', 'No'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    controller.reemplazoController.text = newValue ?? '';
+                  },
+                  validator: (value) =>
+                      value == null ? 'Por favor seleccione una opción' : null,
                 ),
               ],
             ),
