@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'linealidad_controller.dart';
+import '../decimal_helper.dart';
 
 class LinearityRow extends StatefulWidget {
   final int index;
@@ -18,42 +19,31 @@ class LinearityRow extends StatefulWidget {
 }
 
 class _LinearityRowState extends State<LinearityRow> {
-  double _dValue = 0.1;
+  Map<String, double> _dValues = {};
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadDValue();
+    _loadDValues();
   }
 
-  Future<void> _loadDValue() async {
+  Future<void> _loadDValues() async {
     try {
-      // Obtener el valor de LT para calcular el D apropiado
-      final ltText = widget.controller.rows[widget.index]['lt']?.text ?? '';
-      final ltValue = double.tryParse(ltText.replaceAll(',', '.')) ?? 0.0;
-
-      final dValue = await widget.controller.getDForCarga(ltValue);
-      setState(() {
-        _dValue = dValue;
-        _isLoading = false;
-      });
+      final dValues = await widget.controller.getAllDValues();
+      if (mounted) {
+        setState(() {
+          _dValues = dValues;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _dValue = 0.1;
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  void didUpdateWidget(LinearityRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Recargar D value cuando cambie el valor de LT
-    final oldLt = oldWidget.controller.rows[widget.index]['lt']?.text ?? '';
-    final newLt = widget.controller.rows[widget.index]['lt']?.text ?? '';
-    if (oldLt != newLt) {
-      _loadDValue();
+      if (mounted) {
+        setState(() {
+          _dValues = {};
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -64,23 +54,21 @@ class _LinearityRowState extends State<LinearityRow> {
     }
 
     final row = widget.controller.rows[widget.index];
-    final decimalPlaces = _getDecimalPlaces(_dValue);
 
     return Column(
       children: [
-        _buildLtField(context, row, decimalPlaces),
+        _buildLtField(context, row),
         const SizedBox(height: 10),
-        _buildIndicacionRetornoFields(row, decimalPlaces),
+        _buildIndicacionRetornoFields(row),
         const Divider(height: 30),
       ],
     );
   }
 
   Widget _buildLtField(
-      BuildContext context,
-      Map<String, TextEditingController> row,
-      int decimalPlaces,
-      ) {
+    BuildContext context,
+    Map<String, TextEditingController> row,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -90,7 +78,7 @@ class _LinearityRowState extends State<LinearityRow> {
               'LT ${widget.index + 1}',
             ),
             keyboardType: TextInputType.number,
-            validator: (value) => _validateLt(value, row, decimalPlaces),
+            validator: (value) => _validateLt(value, row),
             onChanged: (value) {
               final indicacion = row['indicacion'];
               // Siempre que el valor de LT no esté vacío, actualiza 'indicacion'
@@ -101,8 +89,6 @@ class _LinearityRowState extends State<LinearityRow> {
               else {
                 indicacion?.text = '';
               }
-              // Recalcular D value cuando cambia LT
-              _loadDValue();
             },
           ),
         ),
@@ -121,9 +107,8 @@ class _LinearityRowState extends State<LinearityRow> {
   }
 
   Widget _buildIndicacionRetornoFields(
-      Map<String, TextEditingController> row,
-      int decimalPlaces,
-      ) {
+    Map<String, TextEditingController> row,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -131,13 +116,13 @@ class _LinearityRowState extends State<LinearityRow> {
             controller: row['indicacion'],
             decoration: buildInputDecoration(
               'Indicación ${widget.index + 1}',
-              suffixIcon: _buildPopupMenu(row, decimalPlaces),
+              suffixIcon: _buildPopupMenu(row),
             ),
             keyboardType: TextInputType.number,
             validator: (value) => _validateRequired(value),
             onChanged: (value) {
               // Recalcular diferencia cuando cambia la indicación
-              _calculateDifference(row, decimalPlaces);
+              _calculateDifference(row);
             },
           ),
         ),
@@ -157,21 +142,25 @@ class _LinearityRowState extends State<LinearityRow> {
   }
 
   PopupMenuButton<String> _buildPopupMenu(
-      Map<String, TextEditingController> row,
-      int decimalPlaces,
-      ) {
+    Map<String, TextEditingController> row,
+  ) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.arrow_drop_down),
       onSelected: (value) {
         row['indicacion']?.text = value;
-        _calculateDifference(row, decimalPlaces);
+        _calculateDifference(row);
       },
       itemBuilder: (context) {
         final currentText = row['indicacion']?.text ?? '';
-        final baseValue = double.tryParse(currentText.replaceAll(',', '.')) ?? 0.0;
+        final baseValue =
+            double.tryParse(currentText.replaceAll(',', '.')) ?? 0.0;
+
+        // Get dynamic decimal step based on the value
+        final dValue = DecimalHelper.getDecimalForValue(baseValue, _dValues);
+        final decimalPlaces = DecimalHelper.getDecimalPlaces(dValue);
 
         return List.generate(11, (i) {
-          final value = baseValue + ((i - 5) * _dValue);
+          final value = baseValue + ((i - 5) * dValue);
           return PopupMenuItem<String>(
             value: value.toStringAsFixed(decimalPlaces),
             child: Text(value.toStringAsFixed(decimalPlaces)),
@@ -181,19 +170,25 @@ class _LinearityRowState extends State<LinearityRow> {
     );
   }
 
-  void _calculateDifference(Map<String, TextEditingController> row, int decimalPlaces) {
+  void _calculateDifference(Map<String, TextEditingController> row) {
     final ltText = row['lt']?.text ?? '';
     final indicacionText = row['indicacion']?.text ?? '';
 
     if (ltText.isNotEmpty && indicacionText.isNotEmpty) {
       final ltValue = double.tryParse(ltText.replaceAll(',', '.')) ?? 0.0;
-      final indValue = double.tryParse(indicacionText.replaceAll(',', '.')) ?? 0.0;
+      final indValue =
+          double.tryParse(indicacionText.replaceAll(',', '.')) ?? 0.0;
       final difference = indValue - ltValue;
+
+      // Use the decimal places of the indication for the difference
+      final dValue = DecimalHelper.getDecimalForValue(ltValue, _dValues);
+      final decimalPlaces = DecimalHelper.getDecimalPlaces(dValue);
+
       row['difference']?.text = difference.toStringAsFixed(decimalPlaces);
     }
   }
 
-  String? _validateLt(String? value, Map<String, TextEditingController> row, int decimalPlaces) {
+  String? _validateLt(String? value, Map<String, TextEditingController> row) {
     if (value == null || value.isEmpty) {
       return 'Campo obligatorio';
     }
@@ -208,6 +203,10 @@ class _LinearityRowState extends State<LinearityRow> {
       final indValue = double.tryParse(indicacion.replaceAll(',', '.'));
       if (indValue != null) {
         final difference = indValue - ltValue;
+
+        final dValue = DecimalHelper.getDecimalForValue(ltValue, _dValues);
+        final decimalPlaces = DecimalHelper.getDecimalPlaces(dValue);
+
         row['difference']?.text = difference.toStringAsFixed(decimalPlaces);
       }
     }
@@ -219,19 +218,11 @@ class _LinearityRowState extends State<LinearityRow> {
     return value == null || value.isEmpty ? 'Campo obligatorio' : null;
   }
 
-  int _getDecimalPlaces(double dValue) {
-    if (dValue >= 1) return 0;
-    if (dValue >= 0.1) return 1;
-    if (dValue >= 0.01) return 2;
-    if (dValue >= 0.001) return 3;
-    return 1; // por defecto
-  }
-
   InputDecoration buildInputDecoration(
-      String labelText, {
-        Widget? suffixIcon,
-        String? suffixText,
-      }) {
+    String labelText, {
+    Widget? suffixIcon,
+    String? suffixText,
+  }) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(

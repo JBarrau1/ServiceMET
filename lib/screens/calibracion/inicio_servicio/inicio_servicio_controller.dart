@@ -219,6 +219,49 @@ class InicioServicioController extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, double>> getAllDValues() async {
+    try {
+      final dbHelper = AppDatabase();
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> result = await db.query(
+        'registros_calibracion',
+        where: 'seca = ? AND session_id = ?',
+        whereArgs: [secaValue, sessionId],
+        limit: 1,
+      );
+
+      if (result.isNotEmpty) {
+        final data = result.first;
+        return {
+          'd1': double.tryParse(data['d1']?.toString() ?? '') ?? 0.1,
+          'd2': double.tryParse(data['d2']?.toString() ?? '') ?? 0.1,
+          'd3': double.tryParse(data['d3']?.toString() ?? '') ?? 0.1,
+          'pmax1': double.tryParse(data['cap_max1']?.toString() ?? '') ?? 0.0,
+          'pmax2': double.tryParse(data['cap_max2']?.toString() ?? '') ?? 0.0,
+          'pmax3': double.tryParse(data['cap_max3']?.toString() ?? '') ?? 0.0,
+        };
+      }
+      return {
+        'd1': 0.1,
+        'd2': 0.1,
+        'd3': 0.1,
+        'pmax1': 0.0,
+        'pmax2': 0.0,
+        'pmax3': 0.0
+      };
+    } catch (e) {
+      debugPrint('Error getting all D values: $e');
+      return {
+        'd1': 0.1,
+        'd2': 0.1,
+        'd3': 0.1,
+        'pmax1': 0.0,
+        'pmax2': 0.0,
+        'pmax3': 0.0
+      };
+    }
+  }
+
   // --- Navegación y Guardado ---
   void nextStep() {
     if (_currentStep < 1) {

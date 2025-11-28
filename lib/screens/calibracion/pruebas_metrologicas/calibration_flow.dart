@@ -10,7 +10,7 @@ import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilid
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/pruebas_metrologicas_controller.dart';
 import 'package:service_met/screens/calibracion/fin_servicios/fin_servicios_screen.dart';
 import 'package:service_met/screens/calibracion/precarga/widgets/step_indicator.dart';
-import '../../provider/balanza_provider.dart';
+import '../../../provider/balanza_provider.dart';
 
 class CalibrationFlowScreen extends StatefulWidget {
   final String codMetrica;

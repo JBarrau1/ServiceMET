@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:service_met/screens/calibracion/calibration_flow.dart';
+import 'package:service_met/screens/calibracion/pruebas_metrologicas/calibration_flow.dart';
 import 'package:service_met/screens/calibracion/precarga/widgets/step_indicator.dart';
 import '../../../provider/balanza_provider.dart';
 import 'inicio_servicio_controller.dart';

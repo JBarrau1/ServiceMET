@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'excentricidad_controller.dart';
+import '../decimal_helper.dart';
 
 class PositionRow extends StatefulWidget {
   final ExcentricidadController controller;
@@ -16,42 +17,31 @@ class PositionRow extends StatefulWidget {
 }
 
 class _PositionRowState extends State<PositionRow> {
-  double _dValue = 0.1;
+  Map<String, double> _dValues = {};
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadDValue();
+    _loadDValues();
   }
 
-  Future<void> _loadDValue() async {
-    final carga = double.tryParse(
-          widget.controller.cargaController.text.replaceAll(',', '.'),
-        ) ??
-        0.0;
-
+  Future<void> _loadDValues() async {
     try {
-      final dValue = await widget.controller.getDForCarga(carga);
-      setState(() {
-        _dValue = dValue;
-        _isLoading = false;
-      });
+      final dValues = await widget.controller.getDValues();
+      if (mounted) {
+        setState(() {
+          _dValues = dValues;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _dValue = 0.1;
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  void didUpdateWidget(PositionRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Recargar D value cuando cambie la carga
-    if (oldWidget.controller.cargaController.text !=
-        widget.controller.cargaController.text) {
-      _loadDValue();
+      if (mounted) {
+        setState(() {
+          _dValues = {};
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -82,7 +72,7 @@ class _PositionRowState extends State<PositionRow> {
               child: _IndicationField(
                 controller: widget.controller,
                 index: widget.index,
-                dValue: _dValue, // Pasamos el valor ya obtenido
+                dValues: _dValues,
               ),
             ),
             const SizedBox(width: 10),
@@ -109,48 +99,48 @@ class _IndicationField extends StatelessWidget {
   const _IndicationField({
     required this.controller,
     required this.index,
-    required this.dValue,
+    required this.dValues,
   });
 
   final ExcentricidadController controller;
   final int index;
-  final double dValue; // Ahora recibe double directamente
+  final Map<String, double> dValues;
 
   @override
   Widget build(BuildContext context) {
-    final decimalPlaces = _decimalPlacesForStep(dValue);
-
     return TextFormField(
       controller: controller.indicationControllers[index],
       decoration: _buildInputDecoration(
         'Indicación',
-        suffixIcon: (dValue <= 0)
-            ? null
-            : PopupMenuButton<String>(
-                icon: const Icon(Icons.arrow_drop_down),
-                onSelected: (value) {
-                  controller.indicationControllers[index].text = value;
-                },
-                itemBuilder: (context) {
-                  final currentText =
-                      controller.indicationControllers[index].text.trim();
-                  // Si está vacío, usa la carga como base
-                  final baseValue = double.tryParse(
-                        (currentText.isEmpty
-                                ? controller.cargaController.text
-                                : currentText)
-                            .replaceAll(',', '.'),
-                      ) ??
-                      0.0;
+        suffixIcon: PopupMenuButton<String>(
+          icon: const Icon(Icons.arrow_drop_down),
+          onSelected: (value) {
+            controller.indicationControllers[index].text = value;
+          },
+          itemBuilder: (context) {
+            final currentText =
+                controller.indicationControllers[index].text.trim();
+            // Si está vacío, usa la carga como base
+            final baseValue = double.tryParse(
+                  (currentText.isEmpty
+                          ? controller.cargaController.text
+                          : currentText)
+                      .replaceAll(',', '.'),
+                ) ??
+                0.0;
 
-                  // 11 sugerencias (5 abajo, actual, 5 arriba)
-                  return List.generate(11, (i) {
-                    final value = baseValue + ((i - 5) * dValue);
-                    final txt = value.toStringAsFixed(decimalPlaces);
-                    return PopupMenuItem<String>(value: txt, child: Text(txt));
-                  });
-                },
-              ),
+            // Get dynamic decimal step based on the value
+            final dValue = DecimalHelper.getDecimalForValue(baseValue, dValues);
+            final decimalPlaces = DecimalHelper.getDecimalPlaces(dValue);
+
+            // 11 sugerencias (5 abajo, actual, 5 arriba)
+            return List.generate(11, (i) {
+              final value = baseValue + ((i - 5) * dValue);
+              final txt = value.toStringAsFixed(decimalPlaces);
+              return PopupMenuItem<String>(value: txt, child: Text(txt));
+            });
+          },
+        ),
       ),
       keyboardType: TextInputType.number,
       validator: (value) {
@@ -160,14 +150,6 @@ class _IndicationField extends StatelessWidget {
         return null;
       },
     );
-  }
-
-  int _decimalPlacesForStep(double step) {
-    if (step <= 0) return 0;
-    final s = step.toString();
-    if (!s.contains('.')) return 0;
-    final frac = s.split('.').last.replaceFirst(RegExp(r'0+$'), '');
-    return frac.isEmpty ? 0 : frac.length;
   }
 }
 

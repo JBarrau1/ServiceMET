@@ -265,6 +265,20 @@ class MntPrvAvanzadoStilController {
 
   // ✅ MEJORADO: Agregar pruebas metrológicas con null-safety
   void _addPruebasMetrologicasData(Map<String, dynamic> data) {
+    // Retorno a Cero y Estabilidad - Inicial
+    data['retorno_cero_inicial_valoracion'] =
+        model.pruebasIniciales.retornoCero.estado;
+    data['estabilizacion_inicial'] =
+        model.pruebasIniciales.retornoCero.estabilidad;
+    data['unidad_retorno_cero_inicial'] =
+        model.pruebasIniciales.retornoCero.unidad;
+
+    // Retorno a Cero y Estabilidad - Final
+    data['retorno_cero_final_valoracion'] =
+        model.pruebasFinales.retornoCero.estado;
+    data['estabilizacion_final'] = model.pruebasFinales.retornoCero.estabilidad;
+    data['unidad_retorno_cero_final'] = model.pruebasFinales.retornoCero.unidad;
+
     // Excentricidad inicial
     _addExcentricidadData(
         data, model.pruebasIniciales.excentricidad, 'inicial');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:service_met/screens/calibracion/pruebas_metrologicas/repetibilidad/repetibilidad_controller.dart';
+import '../decimal_helper.dart';
 
 class TestRow extends StatefulWidget {
   final RepetibilidadController controller;
@@ -18,54 +19,55 @@ class TestRow extends StatefulWidget {
 }
 
 class _TestRowState extends State<TestRow> {
-  double _dValue = 0.1;
+  Map<String, double> _dValues = {};
   bool _isLoading = true;
   String _lastCargaValue = '';
 
   @override
   void initState() {
     super.initState();
-    _loadDValue();
+    _loadDValues();
     // ✅ AÑADIDO: Listener para detectar cambios en la carga
-    widget.controller.cargaControllers[widget.cargaIndex].addListener(_onCargaChanged);
+    widget.controller.cargaControllers[widget.cargaIndex]
+        .addListener(_onCargaChanged);
   }
 
   @override
   void dispose() {
     // ✅ AÑADIDO: Remover el listener
-    widget.controller.cargaControllers[widget.cargaIndex].removeListener(_onCargaChanged);
+    widget.controller.cargaControllers[widget.cargaIndex]
+        .removeListener(_onCargaChanged);
     super.dispose();
   }
 
   // ✅ NUEVO: Método para manejar cambios en la carga
   void _onCargaChanged() {
-    final currentCargaValue = widget.controller.cargaControllers[widget.cargaIndex].text;
+    final currentCargaValue =
+        widget.controller.cargaControllers[widget.cargaIndex].text;
 
     // Solo recargar si el valor realmente cambió
     if (currentCargaValue != _lastCargaValue) {
       _lastCargaValue = currentCargaValue;
-      _loadDValue();
+      _loadDValues();
     }
   }
 
-  Future<void> _loadDValue() async {
+  Future<void> _loadDValues() async {
     try {
-      final dValue = await widget.controller.getDValueForCargaController(widget.cargaIndex);
+      final dValues = await widget.controller.getAllDValues();
       if (mounted) {
         setState(() {
-          _dValue = dValue;
+          _dValues = dValues;
           _isLoading = false;
         });
-        debugPrint('✅ D Value cargado para carga ${widget.cargaIndex}: $_dValue');
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _dValue = 0.1;
+          _dValues = {};
           _isLoading = false;
         });
       }
-      debugPrint('❌ Error al cargar D Value: $e');
     }
   }
 
@@ -76,10 +78,12 @@ class _TestRowState extends State<TestRow> {
     // ✅ MEJORADO: Verificar si cambió el índice de carga
     if (oldWidget.cargaIndex != widget.cargaIndex) {
       // Remover listener del controlador anterior
-      oldWidget.controller.cargaControllers[oldWidget.cargaIndex].removeListener(_onCargaChanged);
+      oldWidget.controller.cargaControllers[oldWidget.cargaIndex]
+          .removeListener(_onCargaChanged);
       // Añadir listener al nuevo controlador
-      widget.controller.cargaControllers[widget.cargaIndex].addListener(_onCargaChanged);
-      _loadDValue();
+      widget.controller.cargaControllers[widget.cargaIndex]
+          .addListener(_onCargaChanged);
+      _loadDValues();
     }
   }
 
@@ -104,53 +108,54 @@ class _TestRowState extends State<TestRow> {
           children: [
             Expanded(
               child: TextFormField(
-                controller: widget.controller.indicacionControllers[widget.cargaIndex][widget.testIndex],
+                controller: widget.controller
+                    .indicacionControllers[widget.cargaIndex][widget.testIndex],
                 decoration: buildInputDecoration(
                   'Indicación ${widget.testIndex + 1}',
                   suffixIcon: PopupMenuButton<String>(
                     icon: const Icon(Icons.arrow_drop_down),
                     onSelected: (value) {
-                      widget.controller.indicacionControllers[widget.cargaIndex][widget.testIndex].text = value;
+                      widget
+                          .controller
+                          .indicacionControllers[widget.cargaIndex]
+                              [widget.testIndex]
+                          .text = value;
                     },
                     itemBuilder: (context) {
-                      // ✅ USAR _dValue que ya está actualizado
-                      final dValue = _dValue;
-
-                      debugPrint('📊 Generando sugerencias con D=$dValue');
-
-                      // Calcular decimales basado en el valor D
-                      int decimalPlaces = 1;
-                      if (dValue >= 1) {
-                        decimalPlaces = 0;
-                      } else if (dValue >= 0.1) {
-                        decimalPlaces = 1;
-                      } else if (dValue >= 0.01) {
-                        decimalPlaces = 2;
-                      } else if (dValue >= 0.001) {
-                        decimalPlaces = 3;
-                      }
-
                       // Usar la carga como base si el campo está vacío
-                      final currentText = widget.controller.indicacionControllers[widget.cargaIndex][widget.testIndex].text.trim();
-                      final baseValue = double.tryParse(
-                          (currentText.isEmpty
-                              ? widget.controller.cargaControllers[widget.cargaIndex].text
-                              : currentText).replaceAll(',', '.')
-                      ) ?? 0.0;
+                      final currentText = widget
+                          .controller
+                          .indicacionControllers[widget.cargaIndex]
+                              [widget.testIndex]
+                          .text
+                          .trim();
+                      final baseValue = double.tryParse((currentText.isEmpty
+                                  ? widget.controller
+                                      .cargaControllers[widget.cargaIndex].text
+                                  : currentText)
+                              .replaceAll(',', '.')) ??
+                          0.0;
 
-                      debugPrint('📊 Valor base: $baseValue, Decimales: $decimalPlaces');
+                      // Get dynamic decimal step based on the value
+                      final dValue =
+                          DecimalHelper.getDecimalForValue(baseValue, _dValues);
+                      final decimalPlaces =
+                          DecimalHelper.getDecimalPlaces(dValue);
 
                       // Generar 11 sugerencias (5 abajo, actual, 5 arriba)
                       return List.generate(11, (i) {
                         final value = baseValue + ((i - 5) * dValue);
-                        final formattedValue = value.toStringAsFixed(decimalPlaces);
+                        final formattedValue =
+                            value.toStringAsFixed(decimalPlaces);
 
                         return PopupMenuItem<String>(
                           value: formattedValue,
                           child: Text(
                             formattedValue,
                             style: i == 5
-                                ? const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)
+                                ? const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue)
                                 : null,
                           ),
                         );
@@ -170,14 +175,18 @@ class _TestRowState extends State<TestRow> {
             const SizedBox(width: 10),
             Expanded(
               child: TextFormField(
-                controller: widget.controller.retornoControllers[widget.cargaIndex][widget.testIndex],
+                controller: widget.controller
+                    .retornoControllers[widget.cargaIndex][widget.testIndex],
                 decoration: buildInputDecoration(
                   'Retorno ${widget.testIndex + 1}',
                 ),
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
                   if (value.isEmpty) {
-                    widget.controller.retornoControllers[widget.cargaIndex][widget.testIndex].text = '0';
+                    widget
+                        .controller
+                        .retornoControllers[widget.cargaIndex][widget.testIndex]
+                        .text = '0';
                   }
                 },
                 validator: (value) {
@@ -196,10 +205,10 @@ class _TestRowState extends State<TestRow> {
   }
 
   InputDecoration buildInputDecoration(
-      String labelText, {
-        Widget? suffixIcon,
-        String? suffixText,
-      }) {
+    String labelText, {
+    Widget? suffixIcon,
+    String? suffixText,
+  }) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(

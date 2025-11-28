@@ -262,6 +262,7 @@ class CondicionesFinalesStep extends StatelessWidget {
             ),
             textAlign: TextAlign.left,
           ),
+          const SizedBox(height: 10.0),
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),

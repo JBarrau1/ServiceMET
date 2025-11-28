@@ -48,6 +48,44 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
         ),
         const SizedBox(height: 20.0),
 
+        // Retorno a Cero
+        DropdownButtonFormField<String>(
+          value: widget.pruebas.retornoCero.estado,
+          decoration: _buildInputDecoration('Retorno a Cero'),
+          items: const [
+            DropdownMenuItem(value: '1 Bueno', child: Text('1 Bueno')),
+            DropdownMenuItem(value: '2 Aceptable', child: Text('2 Aceptable')),
+            DropdownMenuItem(value: '3 Malo', child: Text('3 Malo')),
+            DropdownMenuItem(value: '4 No aplica', child: Text('4 No aplica')),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              widget.pruebas.retornoCero.estado = value;
+              widget.onChanged();
+            }
+          },
+        ),
+        const SizedBox(height: 20.0),
+
+        // Estabilidad
+        DropdownButtonFormField<String>(
+          value: widget.pruebas.retornoCero.estabilidad,
+          decoration: _buildInputDecoration('Estabilidad'),
+          items: const [
+            DropdownMenuItem(value: '1 Bueno', child: Text('1 Bueno')),
+            DropdownMenuItem(value: '2 Aceptable', child: Text('2 Aceptable')),
+            DropdownMenuItem(value: '3 Malo', child: Text('3 Malo')),
+            DropdownMenuItem(value: '4 No aplica', child: Text('4 No aplica')),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              widget.pruebas.retornoCero.estabilidad = value;
+              widget.onChanged();
+            }
+          },
+        ),
+        const SizedBox(height: 20.0),
+
         // Excentricidad
         SwitchListTile(
           title: Text(

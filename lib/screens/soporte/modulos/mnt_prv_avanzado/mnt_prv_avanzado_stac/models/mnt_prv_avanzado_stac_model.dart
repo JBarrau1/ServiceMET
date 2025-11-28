@@ -129,11 +129,13 @@ class PruebasMetrologicas {
 
 class RetornoCero {
   String estado;
+  String estabilidad;
   String valor;
   String unidad;
 
   RetornoCero({
     this.estado = '1 Bueno',
+    this.estabilidad = '1 Bueno',
     this.valor = '',
     this.unidad = 'kg',
   });
@@ -141,6 +143,7 @@ class RetornoCero {
   // Constructor de copia
   RetornoCero.fromOther(RetornoCero other)
       : estado = other.estado,
+        estabilidad = other.estabilidad,
         valor = other.valor,
         unidad = other.unidad;
 }
