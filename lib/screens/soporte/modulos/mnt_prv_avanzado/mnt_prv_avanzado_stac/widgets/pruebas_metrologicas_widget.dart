@@ -50,7 +50,7 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
 
         // Retorno a Cero
         DropdownButtonFormField<String>(
-          value: widget.pruebas.retornoCero.estado,
+          initialValue: widget.pruebas.retornoCero.estado,
           decoration: _buildInputDecoration('Retorno a Cero'),
           items: const [
             DropdownMenuItem(value: '1 Bueno', child: Text('1 Bueno')),
@@ -69,7 +69,7 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
 
         // Estabilidad
         DropdownButtonFormField<String>(
-          value: widget.pruebas.retornoCero.estabilidad,
+          initialValue: widget.pruebas.retornoCero.estabilidad,
           decoration: _buildInputDecoration('Estabilidad'),
           items: const [
             DropdownMenuItem(value: '1 Bueno', child: Text('1 Bueno')),

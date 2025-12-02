@@ -185,7 +185,7 @@ class _InspeccionVisualFieldState extends State<InspeccionVisualField> {
     final opciones = _getOptionsForLabel(widget.label);
 
     return DropdownButtonFormField<String>(
-      value: currentValue.isEmpty ? null : currentValue,
+      initialValue: currentValue.isEmpty ? null : currentValue,
       decoration: InputDecoration(
         labelText: 'Estado',
         border: OutlineInputBorder(

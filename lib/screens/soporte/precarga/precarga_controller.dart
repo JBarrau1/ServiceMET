@@ -412,8 +412,9 @@ class PrecargaControllerSop extends ChangeNotifier {
     _secaConfirmed = true;
 
     if (clienteName != null) _selectedClienteName = clienteName;
-    if (clienteRazonSocial != null)
+    if (clienteRazonSocial != null) {
       _selectedClienteRazonSocial = clienteRazonSocial;
+    }
     if (plantaDir != null) _selectedPlantaDir = plantaDir;
     if (plantaDep != null) _selectedPlantaDep = plantaDep;
     if (plantaNombre != null) _selectedPlantaNombre = plantaNombre;
@@ -624,8 +625,9 @@ class PrecargaControllerSop extends ChangeNotifier {
 
   Future<void> confirmSeca(String userName, String fechaServicio) async {
     if (_generatedSeca == null) throw Exception('No hay OTST generado');
-    if (_tableName == null)
+    if (_tableName == null) {
       throw Exception('No se ha seleccionado tipo de servicio');
+    }
 
     try {
       final dbHelper = _getDatabaseHelper();

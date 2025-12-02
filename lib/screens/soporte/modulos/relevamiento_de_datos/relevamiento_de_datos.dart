@@ -251,19 +251,40 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 80,
           title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'RELEVAMIENTO DE DATOS',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
               Text(
-                'Código: ${widget.codMetrica}',
-                style: const TextStyle(fontSize: 12),
+                'RELEVAMIENTO DE DATOS',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: isDarkMode ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'CÓDIGO MET: ${widget.codMetrica}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
+          backgroundColor: isDarkMode ? Colors.transparent : Colors.white,
+          elevation: 0,
+          flexibleSpace: isDarkMode
+              ? ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                    child: Container(color: Colors.black.withOpacity(0.1)),
+                  ),
+                )
+              : null,
+          centerTitle: true,
           actions: [
             if (_isSaving)
               const Padding(
@@ -296,104 +317,84 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
 
   Widget _buildProgressBar(bool isDarkMode) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[900] : Colors.grey[100],
+        color: isDarkMode ? Colors.black26 : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
-        children: List.generate(_steps.length, (index) {
-          final step = _steps[index];
-          final isActive = index == _currentStep;
-          final isCompleted = index < _currentStep;
-
-          return Expanded(
-            child: GestureDetector(
-              onTap: () async {
-                if (index < _currentStep) {
-                  await _saveCurrentStep();
-                  setState(() => _currentStep = index);
-                }
-              },
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      if (index > 0)
-                        Expanded(
-                          child: Container(
-                            height: 2,
-                            color: isCompleted
-                                ? Colors.green
-                                : isDarkMode
-                                    ? Colors.grey[700]
-                                    : Colors.grey[300],
-                          ),
-                        ),
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isActive
-                              ? Colors.blue
-                              : isCompleted
-                                  ? Colors.green
-                                  : isDarkMode
-                                      ? Colors.grey[800]
-                                      : Colors.grey[300],
-                        ),
-                        child: Icon(
-                          isCompleted ? Icons.check : step.icon,
-                          color: isActive || isCompleted
-                              ? Colors.white
-                              : isDarkMode
-                                  ? Colors.grey[600]
-                                  : Colors.grey[600],
-                          size: 20,
-                        ),
-                      ),
-                      if (index < _steps.length - 1)
-                        Expanded(
-                          child: Container(
-                            height: 2,
-                            color: isCompleted
-                                ? Colors.green
-                                : isDarkMode
-                                    ? Colors.grey[700]
-                                    : Colors.grey[300],
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    step.title,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight:
-                          isActive ? FontWeight.bold : FontWeight.normal,
-                      color: isActive
-                          ? Colors.blue
-                          : isDarkMode
-                              ? Colors.white70
-                              : Colors.black87,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+      child: Column(
+        children: [
+          // Título del paso actual
+          Row(
+            children: [
+              Icon(
+                _steps[_currentStep].icon,
+                color: Theme.of(context).primaryColor,
+                size: 24,
               ),
-            ),
-          );
-        }),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Paso ${_currentStep + 1} de ${_steps.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                    Text(
+                      _steps[_currentStep].title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      _steps[_currentStep].subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.white60 : Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Barra de progreso visual
+          Row(
+            children: List.generate(_steps.length, (index) {
+              final isCompleted = index < _currentStep;
+              final isCurrent = index == _currentStep;
+
+              return Expanded(
+                child: Container(
+                  height: 4,
+                  margin: EdgeInsets.only(
+                    left: index == 0 ? 0 : 4,
+                    right: index == _steps.length - 1 ? 0 : 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isCompleted || isCurrent
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
@@ -433,10 +434,10 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[900] : Colors.white,
+        color: isDarkMode ? Colors.black26 : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -444,20 +445,26 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
       ),
       child: Row(
         children: [
+          // Botón Anterior
           if (_currentStep > 0)
             Expanded(
-              child: OutlinedButton.icon(
+              child: ElevatedButton.icon(
                 onPressed: _isSaving ? null : _previousStep,
                 icon: const Icon(Icons.arrow_back),
                 label: const Text('ANTERIOR'),
-                style: OutlinedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[600],
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
             ),
-          if (_currentStep > 0) const SizedBox(width: 16),
+
+          if (_currentStep > 0) const SizedBox(width: 12),
+
+          // Botón Siguiente o Finalizar
           Expanded(
-            flex: 2,
+            flex: _currentStep == 0 ? 1 : 2,
             child: ElevatedButton.icon(
               onPressed: _isSaving
                   ? null
@@ -470,16 +477,14 @@ class _RelevamientoDeDatosScreenState extends State<RelevamientoDeDatosScreen> {
                     : Icons.check_circle,
               ),
               label: Text(
-                _currentStep < _steps.length - 1
-                    ? 'SIGUIENTE'
-                    : 'FINALIZAR SERVICIO',
+                _currentStep < _steps.length - 1 ? 'SIGUIENTE' : 'FINALIZAR',
               ),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: _currentStep < _steps.length - 1
-                    ? Colors.blue
-                    : Colors.green,
+                    ? const Color(0xFF195375)
+                    : const Color(0xFF167D1D),
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ),

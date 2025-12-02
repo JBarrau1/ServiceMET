@@ -9,6 +9,7 @@ class CampoInspeccionWidget extends StatefulWidget {
   final CampoEstado campo;
   final RelevamientoDeDatosController controller;
   final VoidCallback onChanged;
+  final List<String>? customOptions; // ✅ Nuevo parámetro opcional
 
   const CampoInspeccionWidget({
     super.key,
@@ -16,6 +17,7 @@ class CampoInspeccionWidget extends StatefulWidget {
     required this.campo,
     required this.controller,
     required this.onChanged,
+    this.customOptions, // ✅ Inicializar
   });
 
   @override
@@ -45,8 +47,11 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final estado = widget.campo.initialValue;
-    final color = _colorMap[estado] ?? Colors.grey;
-    final icon = _iconMap[estado] ?? Icons.help_outline;
+
+    // ✅ Usar color/icono por defecto si no está en el mapa (para opciones personalizadas)
+    final color =
+        _colorMap[estado] ?? (isDarkMode ? Colors.blueAccent : Colors.blue);
+    final icon = _iconMap[estado] ?? Icons.info_outline;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -134,10 +139,6 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
                   _buildDropdownEstado(),
                   const SizedBox(height: 16),
 
-                  // Dropdown de Solución
-                  _buildDropdownSolucion(),
-                  const SizedBox(height: 16),
-
                   // Campo de comentario
                   TextField(
                     decoration: InputDecoration(
@@ -173,35 +174,61 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
   }
 
   Widget _buildDropdownEstado() {
-    final opciones = ['1 Bueno', '2 Aceptable', '3 Malo', '4 No aplica'];
+    // ✅ Usar opciones personalizadas si existen, sino las por defecto
+    final opciones = widget.customOptions ??
+        ['1 Bueno', '2 Aceptable', '3 Malo', '4 No aplica'];
+
+    // ✅ Validar que el valor inicial esté en las opciones
+    String initialValue = widget.campo.initialValue;
+    if (initialValue.isEmpty || !opciones.contains(initialValue)) {
+      initialValue = opciones.first;
+      // Actualizar el modelo si el valor cambió forzosamente
+      if (initialValue != widget.campo.initialValue) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              widget.campo.initialValue = initialValue;
+              widget.onChanged();
+            });
+          }
+        });
+      }
+    }
 
     return DropdownButtonFormField<String>(
-      initialValue: widget.campo.initialValue.isEmpty
-          ? '4 No aplica'
-          : widget.campo.initialValue,
+      value:
+          initialValue, // ✅ Usar value en lugar de initialValue para control reactivo
       decoration: InputDecoration(
-        labelText: 'Estado',
+        labelText: widget.customOptions != null
+            ? 'Selección'
+            : 'Estado', // Etiqueta dinámica
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
         prefixIcon: Icon(
-          _iconMap[widget.campo.initialValue] ?? Icons.help_outline,
-          color: _colorMap[widget.campo.initialValue] ?? Colors.grey,
+          _iconMap[initialValue] ??
+              Icons.check_circle_outline, // Icono por defecto
+          color: _colorMap[initialValue] ?? Colors.blue, // Color por defecto
         ),
       ),
       items: opciones.map((String value) {
-        final color = _colorMap[value]!;
-        final icon = _iconMap[value]!;
+        final color = _colorMap[value] ?? Colors.black87;
+        final icon = _iconMap[value] ?? Icons.circle_outlined;
 
         return DropdownMenuItem<String>(
           value: value,
           child: Row(
             children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
+              if (widget.customOptions == null) ...[
+                // Solo mostrar iconos si son opciones estándar
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+              ],
               Text(
                 value,
-                style: TextStyle(color: color, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                    color: widget.customOptions != null ? null : color,
+                    fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -211,64 +238,6 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
         if (newValue != null) {
           setState(() {
             widget.campo.initialValue = newValue;
-            widget.onChanged();
-          });
-        }
-      },
-    );
-  }
-
-  Widget _buildDropdownSolucion() {
-    final opciones = ['Sí', 'Se intentó', 'No', 'No aplica'];
-    final iconos = {
-      'Sí': Icons.check_circle_outline,
-      'Se intentó': Icons.build_circle_outlined,
-      'No': Icons.cancel_rounded,
-      'No aplica': Icons.block_outlined,
-    };
-    final colores = {
-      'Sí': Colors.green,
-      'Se intentó': Colors.orange,
-      'No': Colors.red,
-      'No aplica': Colors.grey,
-    };
-
-    return DropdownButtonFormField<String>(
-      initialValue: widget.campo.solutionValue.isEmpty
-          ? 'No aplica'
-          : widget.campo.solutionValue,
-      decoration: InputDecoration(
-        labelText: 'Solución',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        prefixIcon: Icon(
-          iconos[widget.campo.solutionValue] ?? Icons.help_outline,
-          color: colores[widget.campo.solutionValue] ?? Colors.grey,
-        ),
-      ),
-      items: opciones.map((String value) {
-        final color = colores[value]!;
-        final icon = iconos[value]!;
-
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                value,
-                style: TextStyle(color: color, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-      onChanged: (newValue) {
-        if (newValue != null) {
-          setState(() {
-            widget.campo.solutionValue = newValue;
             widget.onChanged();
           });
         }

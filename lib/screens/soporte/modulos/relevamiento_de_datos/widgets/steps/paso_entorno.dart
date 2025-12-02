@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../../models/relevamiento_de_datos_model.dart';
 import '../../controllers/relevamiento_de_datos_controller.dart';
 import '../../utils/constants.dart';
+import '../campo_inspeccion_widget.dart';
 
-class PasoEntorno extends StatelessWidget {
+class PasoEntorno extends StatefulWidget {
   final RelevamientoDeDatosModel model;
   final RelevamientoDeDatosController controller;
   final VoidCallback onChanged;
@@ -16,21 +17,34 @@ class PasoEntorno extends StatelessWidget {
   });
 
   @override
+  State<PasoEntorno> createState() => _PasoEntornoState();
+}
+
+class _PasoEntornoState extends State<PasoEntorno> {
+  bool _allGoodState = false;
+
+  @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context),
-          const SizedBox(height: 24),
+          _buildSectionHeader(context),
+          _buildSectorCheckbox(),
+          const SizedBox(height: 16),
 
-          // Campos de entorno con dropdowns
+          // Campos de entorno usando CampoInspeccionWidget
           ...AppConstants.entornoCampos.entries.map((entry) {
-            return _buildEnvironmentField(
-              context,
-              entry.key,
-              entry.value,
+            final campo = entry.key;
+            final opciones = entry.value;
+
+            return CampoInspeccionWidget(
+              label: campo,
+              campo: widget.model.camposEstado[campo]!,
+              controller: widget.controller,
+              onChanged: widget.onChanged,
+              customOptions: opciones, // ✅ Pasar opciones personalizadas
             );
           }),
         ],
@@ -38,7 +52,7 @@ class PasoEntorno extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildSectionHeader(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -88,66 +102,66 @@ class PasoEntorno extends StatelessWidget {
     );
   }
 
-  Widget _buildEnvironmentField(
-    BuildContext context,
-    String label,
-    List<String> options,
-  ) {
-    final campo = model.camposEstado[label];
-    if (campo == null) return const SizedBox.shrink();
-
-    // Asegurar que el valor actual esté en las opciones
-    String currentValue = campo.initialValue;
-    if (!options.contains(currentValue)) {
-      currentValue = options.first;
-      campo.initialValue = currentValue;
-    }
-
-    return Column(
-      children: [
-        DropdownButtonFormField<String>(
-          value: currentValue,
-          decoration: InputDecoration(
-            labelText: label,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            prefixIcon: const Icon(Icons.location_on_outlined),
-          ),
-          items: options.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-          onChanged: (newValue) {
-            if (newValue != null) {
-              campo.initialValue = newValue;
-              onChanged();
-            }
-          },
+  Widget _buildSectorCheckbox() {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _allGoodState
+            ? Colors.green.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _allGoodState
+              ? Colors.green.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
+          width: 1,
         ),
-        const SizedBox(height: 16),
-        TextField(
-          decoration: InputDecoration(
-            labelText: 'Comentario $label',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            prefixIcon: const Icon(Icons.comment_outlined),
+      ),
+      child: CheckboxListTile(
+        title: const Text(
+          'Marcar todo el sector "ENTORNO" como "Buen Estado"',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
-          maxLines: 2,
-          onChanged: (value) {
-            campo.comentario = value;
-            onChanged();
-          },
-          controller: TextEditingController(text: campo.comentario)
-            ..selection = TextSelection.collapsed(
-              offset: campo.comentario.length,
-            ),
         ),
-        const SizedBox(height: 24),
-      ],
+        subtitle: Text(
+          _allGoodState
+              ? 'Todos los campos se establecerán en "1 Bueno" con comentario "En buen estado"'
+              : 'Active esta opción para aplicar "Buen Estado" a todos los campos del sector',
+          style: TextStyle(
+            fontSize: 12,
+            color: _allGoodState ? Colors.green[700] : Colors.grey[600],
+          ),
+        ),
+        value: _allGoodState,
+        onChanged: (bool? value) {
+          _toggleAllGoodState(value ?? false);
+        },
+        activeColor: Colors.green,
+        controlAffinity: ListTileControlAffinity.leading,
+      ),
     );
+  }
+
+  void _toggleAllGoodState(bool isGood) {
+    setState(() {
+      _allGoodState = isGood;
+
+      if (isGood) {
+        // Aplicar "1 Bueno" a todos los campos de entorno
+        for (final campo in AppConstants.entornoCampos.keys) {
+          final campoEstado = widget.model.camposEstado[campo];
+          if (campoEstado != null) {
+            campoEstado.initialValue = '1 Bueno';
+            campoEstado.comentario = 'En buen estado';
+          }
+        }
+      }
+      // Si se desactiva, los campos mantienen sus valores actuales
+
+      widget.onChanged();
+    });
   }
 }

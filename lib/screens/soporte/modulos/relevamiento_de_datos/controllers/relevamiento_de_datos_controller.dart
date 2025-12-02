@@ -183,10 +183,6 @@ class RelevamientoDeDatosController {
       'hora_fin': model.horaFin,
       'comentario_general': model.comentarioGeneral,
       'recomendaciones': model.recomendacion,
-      'estado_fisico': model.estadoFisico,
-      'estado_operacional': model.estadoOperacional,
-      'estado_metrologico': model.estadoMetrologico,
-      'fecha_prox_servicio': model.fechaProxServicio,
     };
 
     _addCamposEstadoData(data);
@@ -244,66 +240,66 @@ class RelevamientoDeDatosController {
 
   // ✅ MEJORADO: Agregar pruebas metrológicas FINALES únicamente
   void _addPruebasMetrologicasData(Map<String, dynamic> data) {
-    // Retorno a Cero y Estabilidad - SOLO FINAL (sin inicial)
-    data['retorno_cero_final_valoracion'] =
-        model.pruebasFinales.retornoCero.estado;
-    data['estabilizacion_final'] = model.pruebasFinales.retornoCero.estabilidad;
-    data['unidad_retorno_cero_final'] = model.pruebasFinales.retornoCero.unidad;
+    // Retorno a Cero y Estabilidad - SOLO FINAL (sin sufijo "_final" en BD)
+    data['retorno_cero'] = model.pruebasFinales.retornoCero.estado;
+    data['carga_retorno_cero'] = model.pruebasFinales.retornoCero.estabilidad;
 
-    // Excentricidad final
-    _addExcentricidadData(data, model.pruebasFinales.excentricidad, 'final');
+    // Excentricidad final (NO usa sufijo en BD, solo números)
+    _addExcentricidadData(data, model.pruebasFinales.excentricidad);
 
-    // Repetibilidad final
-    _addRepetibilidadData(data, model.pruebasFinales.repetibilidad, 'final');
+    // Repetibilidad final (NO usa sufijo en BD, solo números)
+    _addRepetibilidadData(data, model.pruebasFinales.repetibilidad);
 
-    // Linealidad final
-    _addLinealidadData(data, model.pruebasFinales.linealidad, 'final');
+    // Linealidad final (NO usa sufijo en BD)
+    _addLinealidadData(data, model.pruebasFinales.linealidad);
   }
 
-  void _addExcentricidadData(
-      Map<String, dynamic> data, Excentricidad? exc, String tipo) {
+  void _addExcentricidadData(Map<String, dynamic> data, Excentricidad? exc) {
     if (exc?.activo ?? false) {
-      data['tipo_plataforma_$tipo'] = exc!.tipoPlataforma ?? '';
-      data['puntos_ind_$tipo'] = exc.puntosIndicador ?? '';
-      data['carga_exc_$tipo'] = exc.carga;
+      // BD usa: tipo_plataforma, puntos_ind, carga (sin sufijo)
+      data['tipo_plataforma'] = exc!.tipoPlataforma ?? '';
+      data['puntos_ind'] = exc.puntosIndicador ?? '';
+      data['carga'] = exc.carga;
 
+      // BD usa: posicion1, indicacion1, retorno1, etc. (sin sufijo)
       for (int i = 0; i < exc.posiciones.length; i++) {
         final pos = exc.posiciones[i];
         final num = i + 1;
-        data['posicion_${tipo}_$num'] = pos.posicion;
-        data['indicacion_${tipo}_$num'] = pos.indicacion;
-        data['retorno_${tipo}_$num'] = pos.retorno;
+        data['posicion$num'] = pos.posicion;
+        data['indicacion$num'] = pos.indicacion;
+        data['retorno$num'] = pos.retorno;
       }
     }
   }
 
-  void _addRepetibilidadData(
-      Map<String, dynamic> data, Repetibilidad? rep, String tipo) {
+  void _addRepetibilidadData(Map<String, dynamic> data, Repetibilidad? rep) {
     if (rep?.activo ?? false) {
       for (int i = 0; i < rep!.cargas.length; i++) {
         final carga = rep.cargas[i];
         final cargaNum = i + 1;
-        data['repetibilidad${cargaNum}_$tipo'] = carga.valor;
+        // BD usa: repetibilidad1, repetibilidad2, repetibilidad3 (sin sufijo)
+        data['repetibilidad$cargaNum'] = carga.valor;
 
         for (int j = 0; j < carga.pruebas.length; j++) {
           final prueba = carga.pruebas[j];
           final testNum = j + 1;
-          data['indicacion${cargaNum}_${tipo}_$testNum'] = prueba.indicacion;
-          data['retorno${cargaNum}_${tipo}_$testNum'] = prueba.retorno;
+          // BD usa: indicacion1_1, retorno1_1, etc. (sin sufijo)
+          data['indicacion${cargaNum}_$testNum'] = prueba.indicacion;
+          data['retorno${cargaNum}_$testNum'] = prueba.retorno;
         }
       }
     }
   }
 
-  void _addLinealidadData(
-      Map<String, dynamic> data, Linealidad? lin, String tipo) {
+  void _addLinealidadData(Map<String, dynamic> data, Linealidad? lin) {
     if (lin?.activo ?? false) {
       for (int i = 0; i < lin!.puntos.length; i++) {
         final punto = lin.puntos[i];
         final num = i + 1;
-        data['lin_${tipo}_$num'] = punto.lt;
-        data['ind_${tipo}_$num'] = punto.indicacion;
-        data['retorno_lin_${tipo}_$num'] = punto.retorno;
+        // BD usa: lin1, ind1, retorno_lin1 (sin sufijo)
+        data['lin$num'] = punto.lt;
+        data['ind$num'] = punto.indicacion;
+        data['retorno_lin$num'] = punto.retorno;
       }
     }
   }

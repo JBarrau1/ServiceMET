@@ -72,12 +72,12 @@ class PrecargasAjusteStep extends StatelessWidget {
               title: const Text('¿Se realizó Ajuste?'),
               value: controller.isAjusteRealizado,
               onChanged: controller.setIsAjusteRealizado,
-              activeColor: Colors.orange,
+              activeThumbColor: Colors.orange,
             ),
             if (controller.isAjusteRealizado) ...[
               const SizedBox(height: 10.0),
               DropdownButtonFormField<String>(
-                value: controller.tipoAjusteController.text.isEmpty
+                initialValue: controller.tipoAjusteController.text.isEmpty
                     ? null
                     : controller.tipoAjusteController.text,
                 decoration: _buildInputDecoration('Tipo de Ajuste'),

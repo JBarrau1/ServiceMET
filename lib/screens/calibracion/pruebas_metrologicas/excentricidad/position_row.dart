@@ -82,8 +82,9 @@ class _PositionRowState extends State<PositionRow> {
                 decoration: _buildInputDecoration('Retorno'),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Campo obligatorio';
+                  }
                   return null;
                 },
               ),

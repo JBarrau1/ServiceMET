@@ -57,7 +57,7 @@ class InspeccionVisualStep extends StatelessWidget {
 
         // Tiempos
         DropdownButtonFormField<String>(
-          value: controller.tiempoMin,
+          initialValue: controller.tiempoMin,
           decoration: _buildInputDecoration(
               'Tiempo de estabilización de Pesas (en Minutos):'),
           items: const [
@@ -70,7 +70,7 @@ class InspeccionVisualStep extends StatelessWidget {
         ),
         const SizedBox(height: 20.0),
         DropdownButtonFormField<String>(
-          value: controller.tiempoBalanza,
+          initialValue: controller.tiempoBalanza,
           decoration:
               _buildInputDecoration('Tiempo previo a operacion de Balanza:'),
           items: const [

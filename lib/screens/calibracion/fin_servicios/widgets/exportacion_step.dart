@@ -173,7 +173,7 @@ class ExportacionStep extends StatelessWidget {
                         labelText: 'EMP NB 23001',
                         border: OutlineInputBorder(),
                       ),
-                      value: controller.selectedEmp23001,
+                      initialValue: controller.selectedEmp23001,
                       items: ['Sí', 'No'].map((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
@@ -220,7 +220,7 @@ class ExportacionStep extends StatelessWidget {
                         labelText: 'Regla de Aceptación',
                         border: OutlineInputBorder(),
                       ),
-                      value: controller.selectedReglaAceptacion,
+                      initialValue: controller.selectedReglaAceptacion,
                       items: ['Ninguna', 'Simple', 'Conservadora']
                           .map((String value) {
                         return DropdownMenuItem<String>(
