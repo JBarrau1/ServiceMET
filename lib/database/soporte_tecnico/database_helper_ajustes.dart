@@ -275,18 +275,18 @@ class DatabaseHelperAjustes {
         unidades TEXT DEFAULT '',
         ubicacion TEXT DEFAULT '',
         num_celdas TEXT DEFAULT '',
-        cap_max1 REAL DEFAULT '',
-        d1 REAL DEFAULT '',
-        e1 REAL DEFAULT '',
-        dec1 REAL DEFAULT '',
-        cap_max2 REAL DEFAULT '',
-        d2 REAL DEFAULT '',
-        e2 REAL DEFAULT '',
-        dec2 REAL DEFAULT '',
-        cap_max3 REAL DEFAULT '',
-        d3 REAL DEFAULT '',
-        e3 REAL DEFAULT '',
-        dec3 REAL DEFAULT '',
+        cap_max1 TEXT DEFAULT '',
+        d1 TEXT DEFAULT '',
+        e1 TEXT DEFAULT '',
+        dec1 TEXT DEFAULT '',
+        cap_max2 TEXT DEFAULT '',
+        d2 TEXT DEFAULT '',
+        e2 TEXT DEFAULT '',
+        dec2 TEXT DEFAULT '',
+        cap_max3 TEXT DEFAULT '',
+        d3 TEXT DEFAULT '',
+        e3 TEXT DEFAULT '',
+        dec3 TEXT DEFAULT '',
         
         --DATOS SERVICIO 
         fecha_servicio TEXT DEFAULT '',
@@ -307,10 +307,10 @@ class DatabaseHelperAjustes {
         
         -- Retorno a Cero
         retorno_cero_inicial_valoracion TEXT DEFAULT '',
-        retorno_cero_inicial_carga REAL DEFAULT '',
+        retorno_cero_inicial_carga TEXT DEFAULT '',
         retorno_cero_inicial_unidad TEXT DEFAULT '',
         retorno_cero_final_valoracion TEXT DEFAULT '',
-        retorno_cero_final_carga REAL DEFAULT '',
+        retorno_cero_final_carga TEXT DEFAULT '',
         retorno_cero_final_unidad TEXT DEFAULT '',
 
         -- Excentricidad Inicial

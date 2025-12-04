@@ -196,7 +196,7 @@ class _CampoInspeccionWidgetState extends State<CampoInspeccionWidget> {
     }
 
     return DropdownButtonFormField<String>(
-      value:
+      initialValue:
           initialValue, // ✅ Usar value en lugar de initialValue para control reactivo
       decoration: InputDecoration(
         labelText: widget.customOptions != null

@@ -173,6 +173,9 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           plantaNombre: registro['planta']?.toString(), // NUEVO
         );
 
+        // Cargar equipos seleccionados (pesas y termohigrómetros)
+        await controller.loadEquiposFromSession(registro);
+
         await Future.delayed(const Duration(milliseconds: 200));
 
         if (widget.initialStep > 0 && widget.initialStep <= 4) {

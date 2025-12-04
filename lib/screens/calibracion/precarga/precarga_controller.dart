@@ -1045,6 +1045,79 @@ class PrecargaController extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  Future<void> loadEquiposFromSession(Map<String, dynamic> registro) async {
+    try {
+      _selectedEquipos.clear();
+      _selectedTermohigrometros.clear();
+
+      // Cargar Pesas (equipo1 - equipo5)
+      for (int i = 1; i <= 5; i++) {
+        final codInstrumento = registro['equipo$i']?.toString();
+        if (codInstrumento != null && codInstrumento.isNotEmpty) {
+          // Buscar en la lista de equipos cargados para tener todos los datos
+          final dynamic equipoFound = _equipos.firstWhere(
+            (e) => e['cod_instrumento'] == codInstrumento,
+            orElse: () => <String, dynamic>{},
+          );
+
+          final Map<String, dynamic> equipoOriginal =
+              Map<String, dynamic>.from(equipoFound as Map);
+
+          if (equipoOriginal.isNotEmpty) {
+            final Map<String, dynamic> equipoConDatos = {
+              ...equipoOriginal,
+              'tipo': 'pesa',
+              'cantidad': registro['cantidad$i']?.toString() ?? '1',
+              // Usar datos guardados en sesión si existen, o los del maestro
+              'cert_fecha': registro['certificado$i']?.toString() ??
+                  equipoOriginal['cert_fecha'],
+              'ente_calibrador': registro['ente_calibrador$i']?.toString() ??
+                  equipoOriginal['ente_calibrador'],
+              'estado':
+                  registro['estado$i']?.toString() ?? equipoOriginal['estado'],
+            };
+            _selectedEquipos.add(equipoConDatos);
+          }
+        }
+      }
+
+      // Cargar Termohigrómetros (equipo6 - equipo7)
+      for (int i = 6; i <= 7; i++) {
+        final codInstrumento = registro['equipo$i']?.toString();
+        if (codInstrumento != null && codInstrumento.isNotEmpty) {
+          // Buscar en la lista de equipos cargados
+          final dynamic equipoFound = _equipos.firstWhere(
+            (e) => e['cod_instrumento'] == codInstrumento,
+            orElse: () => <String, dynamic>{},
+          );
+
+          final Map<String, dynamic> equipoOriginal =
+              Map<String, dynamic>.from(equipoFound as Map);
+
+          if (equipoOriginal.isNotEmpty) {
+            final Map<String, dynamic> equipoConDatos = {
+              ...equipoOriginal,
+              'tipo': 'termohigrometro',
+              'cantidad': registro['cantidad$i']?.toString() ?? '1',
+              'cert_fecha': registro['certificado$i']?.toString() ??
+                  equipoOriginal['cert_fecha'],
+              'ente_calibrador': registro['ente_calibrador$i']?.toString() ??
+                  equipoOriginal['ente_calibrador'],
+              'estado':
+                  registro['estado$i']?.toString() ?? equipoOriginal['estado'],
+            };
+            _selectedTermohigrometros.add(equipoConDatos);
+          }
+        }
+      }
+
+      updateStepErrors();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al cargar equipos de la sesión: $e');
+    }
+  }
 }
 
 // Excepción personalizada para SECA existente
