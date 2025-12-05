@@ -75,6 +75,9 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       'd3': TextEditingController(),
       'e3': TextEditingController(),
       'dec3': TextEditingController(),
+      'tecnologia': TextEditingController(),
+      'clase': TextEditingController(),
+      'rango': TextEditingController(),
     };
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

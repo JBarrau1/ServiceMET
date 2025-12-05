@@ -104,6 +104,9 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
       'd3': TextEditingController(),
       'e3': TextEditingController(),
       'dec3': TextEditingController(),
+      'tecnologia': TextEditingController(),
+      'clase': TextEditingController(),
+      'rango': TextEditingController(),
     };
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

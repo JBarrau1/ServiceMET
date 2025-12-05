@@ -46,7 +46,11 @@ class DatabaseService {
         d3 TEXT,
         e3 TEXT,
         dec3 TEXT,
-        categoria TEXT
+        categoria TEXT,
+        tecnologia TEXT,
+        clase TEXT,
+        tipo TEXT,
+        rango TEXT
       )
     ''');
 
@@ -96,10 +100,10 @@ class DatabaseService {
 
   // Insertar datos de precarga
   Future<void> insertPrecargaData(
-      Database db,
-      String table,
-      Map<String, dynamic> data,
-      ) async {
+    Database db,
+    String table,
+    Map<String, dynamic> data,
+  ) async {
     final Map<String, dynamic> rowData;
 
     switch (table) {
@@ -145,6 +149,10 @@ class DatabaseService {
           'e3': data['e3']?.toString() ?? '',
           'dec3': data['dec3']?.toString() ?? '',
           'categoria': data['categoria']?.toString() ?? '',
+          'tecnologia': data['tecnologia']?.toString() ?? '',
+          'clase': data['clase']?.toString() ?? '',
+          'tipo': data['tipo']?.toString() ?? '',
+          'rango': data['rango']?.toString() ?? '',
         };
         break;
 

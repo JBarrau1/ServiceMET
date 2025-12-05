@@ -51,7 +51,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
     widget.balanzaControllers['cod_int']?.text =
         balanza['cod_interno']?.toString() ?? '';
     widget.balanzaControllers['tipo_equipo']?.text =
-        balanza['tipo_instrumento']?.toString() ?? '';
+        balanza['tipo']?.toString() ?? ''; // CAMBIO: Usar columna 'tipo'
     widget.balanzaControllers['marca']?.text =
         balanza['marca']?.toString() ?? '';
     widget.balanzaControllers['modelo']?.text =
@@ -85,6 +85,14 @@ class _BalanzaStepState extends State<BalanzaStep> {
     widget.balanzaControllers['e3']?.text = balanza['e3']?.toString() ?? '0';
     widget.balanzaControllers['dec3']?.text =
         balanza['dec3']?.toString() ?? '0';
+
+    // Nuevos campos informativos
+    widget.balanzaControllers['tecnologia']?.text =
+        balanza['tecnologia']?.toString() ?? '';
+    widget.balanzaControllers['clase']?.text =
+        balanza['clase']?.toString() ?? '';
+    widget.balanzaControllers['rango']?.text =
+        balanza['rango']?.toString() ?? '';
   }
 
   @override
@@ -221,6 +229,26 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
           const SizedBox(height: 16),
 
+          // Tecnología (Informativo)
+          _buildTextField(
+            controller: widget.balanzaControllers['tecnologia']!,
+            label: 'Tecnología',
+            prefixIcon: Icons.memory,
+            readOnly: true,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Clase (Informativo)
+          _buildTextField(
+            controller: widget.balanzaControllers['clase']!,
+            label: 'Clase',
+            prefixIcon: Icons.class_,
+            readOnly: true,
+          ),
+
+          const SizedBox(height: 16),
+
           // Código interno
           _buildTextField(
             controller: widget.balanzaControllers['cod_int']!,
@@ -271,6 +299,16 @@ class _BalanzaStepState extends State<BalanzaStep> {
             controller: widget.balanzaControllers['ubicacion']!,
             label: 'Ubicación',
             prefixIcon: Icons.location_on,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Rango (Informativo)
+          _buildTextField(
+            controller: widget.balanzaControllers['rango']!,
+            label: 'Rango Visual',
+            prefixIcon: Icons.linear_scale,
+            readOnly: true,
           ),
 
           const SizedBox(height: 16),

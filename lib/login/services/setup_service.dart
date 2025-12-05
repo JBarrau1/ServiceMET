@@ -381,6 +381,10 @@ class SetupService {
             'e3': data['e3']?.toString().trim() ?? '',
             'dec3': data['dec3']?.toString().trim() ?? '',
             'categoria': data['categoria']?.toString().trim() ?? '',
+            'tecnologia': data['tecnologia']?.toString().trim() ?? '',
+            'clase': data['clase']?.toString().trim() ?? '',
+            'tipo': data['tipo']?.toString().trim() ?? '',
+            'rango': data['rango']?.toString().trim() ?? '',
           };
 
         case 'inf':

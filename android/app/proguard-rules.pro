@@ -21,3 +21,7 @@
 # Reglas para net.sourceforge.jtds
 -keep class net.sourceforge.jtds.** { *; }
 -dontwarn net.sourceforge.jtds.**
+
+# Reglas para mssql_connection
+-keep class com.example.mssql_connection.** { *; }
+-dontwarn com.example.mssql_connection.**

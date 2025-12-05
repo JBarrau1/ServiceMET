@@ -98,7 +98,7 @@ class PrecargasAjusteStep extends StatelessWidget {
                   controller: controller.cargasPesasController,
                   decoration: _buildInputDecoration(
                       'Cargas de Pesas Patrón Utilizadas'),
-                  keyboardType: TextInputType.number,
+                  keyboardType: TextInputType.text,
                 ),
               ],
             ],
