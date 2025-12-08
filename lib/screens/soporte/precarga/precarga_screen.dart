@@ -117,6 +117,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
   Future<void> _initializeData() async {
     try {
       await controller.fetchClientes();
+      if (!mounted) return;
 
       if (widget.sessionId != null && widget.secaValue != null) {
         await _loadExistingSession();
@@ -181,6 +182,8 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
         limit: 1,
       );
 
+      if (!mounted) return;
+
       if (rows.isEmpty) {
         debugPrint('No se encontró registro con OTST: ${widget.secaValue}');
         return;
@@ -205,10 +208,12 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
       final plantaCodigo = registroActual['cod_planta']?.toString();
       if (plantaCodigo != null && plantaCodigo.isNotEmpty) {
         await controller.fetchBalanzas(plantaCodigo);
+        if (!mounted) return;
         debugPrint('Balanzas cargadas: ${controller.balanzas.length}');
       }
 
       await Future.delayed(const Duration(milliseconds: 200));
+      if (!mounted) return;
 
       if (widget.initialStep >= -1 && widget.initialStep <= 4) {
         controller.setCurrentStep(widget.initialStep);

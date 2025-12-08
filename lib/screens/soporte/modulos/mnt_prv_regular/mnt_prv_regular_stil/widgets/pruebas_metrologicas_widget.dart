@@ -8,6 +8,7 @@ class PruebasMetrologicasWidget extends StatefulWidget {
   final PruebasMetrologicas pruebas;
   final bool isInicial;
   final Function onChanged;
+  final Future<List<String>> Function(String, String) getIndicationSuggestions;
   final Future<double> Function() getD1FromDatabase;
 
   const PruebasMetrologicasWidget({
@@ -15,6 +16,7 @@ class PruebasMetrologicasWidget extends StatefulWidget {
     required this.pruebas,
     required this.isInicial,
     required this.onChanged,
+    required this.getIndicationSuggestions,
     required this.getD1FromDatabase,
   });
 
@@ -106,7 +108,7 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
         if (widget.pruebas.excentricidad != null)
           ExcentricidadWidget(
             excentricidad: widget.pruebas.excentricidad!,
-            getD1FromDatabase: widget.getD1FromDatabase,
+            getIndicationSuggestions: widget.getIndicationSuggestions,
             onChanged: widget.onChanged,
           ),
 
@@ -132,7 +134,7 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
         if (widget.pruebas.repetibilidad != null)
           RepetibilidadWidget(
             repetibilidad: widget.pruebas.repetibilidad!,
-            getD1FromDatabase: widget.getD1FromDatabase,
+            getIndicationSuggestions: widget.getIndicationSuggestions,
             onChanged: widget.onChanged,
           ),
 
@@ -159,6 +161,7 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
           LinealidadWidget(
             linealidad: widget.pruebas.linealidad!,
             onChanged: widget.onChanged,
+            getD1FromDatabase: widget.getD1FromDatabase,
           ),
       ],
     );

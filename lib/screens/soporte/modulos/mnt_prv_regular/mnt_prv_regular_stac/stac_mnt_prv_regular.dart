@@ -471,6 +471,7 @@ class _StacMntPrvRegularStacScreenState
         return PasoPruebasIniciales(
           model: _model,
           controller: _controller,
+          getIndicationSuggestions: _controller.getIndicationSuggestions,
           getD1FromDatabase: _getD1FromCache,
           onChanged: () => setState(() {}),
         );
@@ -555,6 +556,7 @@ class _StacMntPrvRegularStacScreenState
         return PasoPruebasFinales(
           model: _model,
           controller: _controller,
+          getIndicationSuggestions: _controller.getIndicationSuggestions,
           getD1FromDatabase: _getD1FromCache,
           onChanged: () => setState(() {}),
         );

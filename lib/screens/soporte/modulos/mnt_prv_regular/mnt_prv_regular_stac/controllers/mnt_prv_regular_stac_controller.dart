@@ -48,6 +48,69 @@ class MntPrvRegularStacController {
     }
   }
 
+  // ✅ NUEVO: Lógica de decimales
+  Future<double> getDForCarga(double carga) async {
+    try {
+      final dbHelper = DatabaseHelperMntPrvRegularStac();
+      final db = await dbHelper.database;
+
+      final results = await db.query(
+        'mnt_prv_regular_stac',
+        columns: ['d1', 'd2', 'd3', 'cap_max1', 'cap_max2', 'cap_max3'],
+        where: 'session_id = ? AND cod_metrica = ?',
+        whereArgs: [model.sessionId, model.codMetrica],
+        limit: 1,
+      );
+
+      if (results.isNotEmpty) {
+        final data = results.first;
+        final d1 = double.tryParse(data['d1']?.toString() ?? '') ?? 0.1;
+        final d2 = double.tryParse(data['d2']?.toString() ?? '') ?? 0.1;
+        final d3 = double.tryParse(data['d3']?.toString() ?? '') ?? 0.1;
+
+        final capMax1 =
+            double.tryParse(data['cap_max1']?.toString() ?? '') ?? 0.0;
+        final capMax2 =
+            double.tryParse(data['cap_max2']?.toString() ?? '') ?? 0.0;
+        final capMax3 =
+            double.tryParse(data['cap_max3']?.toString() ?? '') ?? 0.0;
+
+        if (carga <= capMax1 && capMax1 > 0) return d1;
+        if (carga <= capMax2 && capMax2 > 0) return d2;
+        if (carga <= capMax3 && capMax3 > 0) return d3;
+        return d1;
+      }
+      return 0.1;
+    } catch (e) {
+      debugPrint('Error al obtener D: $e');
+      return 0.1;
+    }
+  }
+
+  int getDecimalPlaces(double dValue) {
+    if (dValue >= 1) return 0;
+    if (dValue >= 0.1) return 1;
+    if (dValue >= 0.01) return 2;
+    if (dValue >= 0.001) return 3;
+    return 1;
+  }
+
+  Future<List<String>> getIndicationSuggestions(
+      String cargaText, String currentValue) async {
+    final carga = double.tryParse(cargaText.replaceAll(',', '.')) ?? 0.0;
+    final dValue = await getDForCarga(carga);
+    final decimalPlaces = getDecimalPlaces(dValue);
+
+    // Si el valor actual está vacío, usa la carga como base
+    final baseText = currentValue.trim().isEmpty ? cargaText : currentValue;
+    final baseValue = double.tryParse(baseText.replaceAll(',', '.')) ?? carga;
+
+    return List.generate(11, (i) {
+      final value = baseValue + ((i - 5) * dValue);
+      return value.toStringAsFixed(decimalPlaces);
+    });
+  }
+
   // ✅ NUEVO: Método para guardar solo en BD (sin fotos)
   Future<void> saveDataToDatabase(BuildContext context,
       {bool showMessage = true}) async {

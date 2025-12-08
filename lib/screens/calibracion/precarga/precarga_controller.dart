@@ -953,6 +953,12 @@ class PrecargaController extends ChangeNotifier {
     try {
       final dbHelper = AppDatabase();
 
+      // Filtrar campos que solo son visuales y no deben guardarse
+      final dataToSave = Map<String, String>.from(balanzaData);
+      dataToSave.remove('tecnologia');
+      dataToSave.remove('clase');
+      dataToSave.remove('rango');
+
       final registro = {
         'seca': _generatedSeca!,
         'session_id': _generatedSessionId!,
@@ -967,7 +973,7 @@ class PrecargaController extends ChangeNotifier {
         'foto_balanza': _fotosTomadas ? 1 : 0,
         'n_reca': nReca,
         'sticker': sticker,
-        ...balanzaData,
+        ...dataToSave,
       };
 
       // GUARDAR SOLO LAS PESAS PATRÓN SELECCIONADAS (equipo1 a equipo5)

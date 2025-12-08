@@ -927,6 +927,12 @@ class PrecargaControllerSop extends ChangeNotifier {
 
       final dbHelper = _getDatabaseHelper();
 
+      // Filtrar campos que solo son visuales y no deben guardarse
+      final dataToSave = Map<String, String>.from(balanzaData);
+      dataToSave.remove('tecnologia');
+      dataToSave.remove('clase');
+      dataToSave.remove('rango');
+
       final registro = {
         'session_id': _generatedSessionId!,
         'tipo_servicio': _selectedTipoServicioLabel ?? _selectedTipoServicio,
@@ -940,7 +946,7 @@ class PrecargaControllerSop extends ChangeNotifier {
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
         'cod_planta': _selectedPlantaCodigo ?? '',
         'foto_balanza': _fotosTomadas ? '1' : '0',
-        ...balanzaData,
+        ...dataToSave,
       };
 
       await dbHelper.upsertRegistro(registro);

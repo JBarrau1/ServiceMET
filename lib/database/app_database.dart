@@ -237,7 +237,7 @@ class AppDatabase {
       await db.execute('''
       CREATE TABLE registros_calibracion (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        --INF CLIENTE Y PERSONAL
+        --INF ADICIONAL
         cliente TEXT DEFAULT '',
         razon_social TEXT DEFAULT '',
         planta TEXT DEFAULT '',
@@ -665,7 +665,8 @@ class AppDatabase {
         indicar TEXT DEFAULT '',
         factor TEXT DEFAULT '',
         regla_aceptacion TEXT DEFAULT '',
-        estado_servicio_bal TEXT DEFAULT ''
+        estado_servicio_bal TEXT DEFAULT '',
+        tipo_servicio TEXT DEFAULT ''
       )
       ''');
 

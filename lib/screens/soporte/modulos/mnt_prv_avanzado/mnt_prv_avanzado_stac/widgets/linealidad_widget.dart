@@ -5,11 +5,13 @@ import '../models/mnt_prv_avanzado_stac_model.dart';
 class LinealidadWidget extends StatefulWidget {
   final Linealidad linealidad;
   final Function onChanged;
+  final Future<double> Function() getD1FromDatabase;
 
   const LinealidadWidget({
     super.key,
     required this.linealidad,
     required this.onChanged,
+    required this.getD1FromDatabase,
   });
 
   @override
@@ -169,7 +171,77 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
           Expanded(
             child: TextFormField(
               controller: _indicacionControllers[index],
-              decoration: _buildInputDecoration('Indicación ${index + 1}'),
+              decoration: _buildInputDecoration(
+                'Indicación ${index + 1}',
+                suffixIcon: FutureBuilder<double>(
+                  future: widget.getD1FromDatabase(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return const Tooltip(
+                        message: 'Error al cargar d1',
+                        child: Icon(Icons.error_outline, color: Colors.red),
+                      );
+                    }
+                    final d1 = snapshot.data ?? 0.1;
+
+                    return PopupMenuButton<String>(
+                      icon: const Icon(Icons.arrow_drop_down),
+                      onSelected: (String newValue) {
+                        setState(() {
+                          _indicacionControllers[index].text = newValue;
+                          widget.linealidad.puntos[index].indicacion = newValue;
+                          widget.onChanged();
+                        });
+                      },
+                      itemBuilder: (BuildContext context) {
+                        final currentText =
+                            _indicacionControllers[index].text.trim();
+                        final baseValue = double.tryParse(
+                              (currentText.isEmpty
+                                      ? widget.linealidad.puntos[index].lt
+                                      : currentText)
+                                  .replaceAll(',', '.'),
+                            ) ??
+                            0.0;
+
+                        // Determinar decimales basados en d1
+                        int decimals = 1;
+                        if (d1 > 0) {
+                          if (d1 % 1 == 0) {
+                            decimals = 0;
+                          } else {
+                            final d1Str = d1.toString();
+                            if (d1Str.contains('.')) {
+                              decimals = d1Str.split('.')[1].length;
+                            }
+                          }
+                        }
+                        // Limitar a 4 decimales por seguridad
+                        if (decimals > 4) decimals = 4;
+
+                        return List.generate(11, (i) {
+                          final value = baseValue + ((i - 5) * d1);
+                          final txt = value.toStringAsFixed(decimals);
+                          return PopupMenuItem<String>(
+                            value: txt,
+                            child: Text(txt),
+                          );
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               onChanged: (value) {

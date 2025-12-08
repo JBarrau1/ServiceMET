@@ -306,7 +306,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
           // Rango (Informativo)
           _buildTextField(
             controller: widget.balanzaControllers['rango']!,
-            label: 'Rango Visual',
+            label: 'Rango',
             prefixIcon: Icons.linear_scale,
             readOnly: true,
           ),

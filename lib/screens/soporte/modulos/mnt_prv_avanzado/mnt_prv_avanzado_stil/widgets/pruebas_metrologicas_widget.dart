@@ -159,6 +159,7 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
           LinealidadWidget(
             linealidad: widget.pruebas.linealidad!,
             onChanged: widget.onChanged,
+            getD1FromDatabase: widget.getD1FromDatabase,
           ),
       ],
     );

@@ -3,13 +3,13 @@ import '../models/mnt_prv_regular_stac_model.dart';
 
 class RepetibilidadWidget extends StatefulWidget {
   final Repetibilidad repetibilidad;
-  final Future<double> Function() getD1FromDatabase;
+  final Future<List<String>> Function(String, String) getIndicationSuggestions;
   final Function onChanged;
 
   const RepetibilidadWidget({
     super.key,
     required this.repetibilidad,
-    required this.getD1FromDatabase,
+    required this.getIndicationSuggestions,
     required this.onChanged,
   });
 
@@ -195,10 +195,12 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
             Row(
               children: [
                 Expanded(
-                  child: FutureBuilder<double>(
-                    future: widget.getD1FromDatabase(),
+                  child: FutureBuilder<List<String>>(
+                    future: widget.getIndicationSuggestions(
+                        widget.repetibilidad.cargas[cargaIndex].valor,
+                        _indicacionControllers[cargaIndex][pruebaIndex].text),
                     builder: (context, snapshot) {
-                      final d1 = snapshot.data ?? 0.1;
+                      final suggestions = snapshot.data ?? [];
                       return TextFormField(
                         controller: _indicacionControllers[cargaIndex]
                             [pruebaIndex],
@@ -217,19 +219,12 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
                               });
                             },
                             itemBuilder: (BuildContext context) {
-                              final baseValue = double.tryParse(
-                                      _indicacionControllers[cargaIndex]
-                                              [pruebaIndex]
-                                          .text) ??
-                                  0.0;
-                              return List.generate(11, (index) {
-                                final multiplier = index - 5;
-                                final value = baseValue + (multiplier * d1);
+                              return suggestions.map((String value) {
                                 return PopupMenuItem<String>(
-                                  value: value.toStringAsFixed(1),
-                                  child: Text(value.toStringAsFixed(1)),
+                                  value: value,
+                                  child: Text(value),
                                 );
-                              });
+                              }).toList();
                             },
                           ),
                         ),

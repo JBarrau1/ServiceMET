@@ -4,13 +4,13 @@ import '../utils/constants.dart';
 
 class ExcentricidadWidget extends StatefulWidget {
   final Excentricidad excentricidad;
-  final Future<double> Function() getD1FromDatabase;
+  final Future<List<String>> Function(String, String) getIndicationSuggestions;
   final Function onChanged;
 
   const ExcentricidadWidget({
     super.key,
     required this.excentricidad,
-    required this.getD1FromDatabase,
+    required this.getIndicationSuggestions,
     required this.onChanged,
   });
 
@@ -190,32 +190,12 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
                   controller: _indicationControllers[index],
                   decoration: _buildInputDecoration(
                     'Indicación',
-                    suffixIcon: FutureBuilder<double>(
-                      future: widget.getD1FromDatabase(),
+                    suffixIcon: FutureBuilder<List<String>>(
+                      future: widget.getIndicationSuggestions(
+                          widget.excentricidad.carga,
+                          _indicationControllers[index].text),
                       builder: (context, snapshot) {
-                        // Mostrar loader mientras carga
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        }
-
-                        // Manejar errores
-                        if (snapshot.hasError) {
-                          return const Tooltip(
-                            message: 'Error al cargar d1',
-                            child: Icon(Icons.error_outline, color: Colors.red),
-                          );
-                        }
-                        // Obtener d1 o usar valor por defecto
-                        final d1 = snapshot.data ?? 0.1;
-
+                        final suggestions = snapshot.data ?? [];
                         return PopupMenuButton<String>(
                           icon: const Icon(Icons.arrow_drop_down),
                           onSelected: (String newValue) {
@@ -227,27 +207,12 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
                             });
                           },
                           itemBuilder: (BuildContext context) {
-                            final currentText =
-                                _indicationControllers[index].text.trim();
-
-                            // Si está vacío, usa la carga como base
-                            final baseValue = double.tryParse(
-                                  (currentText.isEmpty
-                                          ? widget.excentricidad.carga
-                                          : currentText)
-                                      .replaceAll(',', '.'),
-                                ) ??
-                                0.0;
-
-                            // Generar 11 opciones (5 abajo, actual, 5 arriba)
-                            return List.generate(11, (i) {
-                              final value = baseValue + ((i - 5) * d1);
-                              final txt = value.toStringAsFixed(1); // 1 decimal
+                            return suggestions.map((String value) {
                               return PopupMenuItem<String>(
-                                value: txt,
-                                child: Text(txt),
+                                value: value,
+                                child: Text(value),
                               );
-                            });
+                            }).toList();
                           },
                         );
                       },
