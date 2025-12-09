@@ -22,15 +22,21 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
   final List<TextEditingController> _ltControllers = [];
   final List<TextEditingController> _indicacionControllers = [];
   final List<TextEditingController> _retornoControllers = [];
-  final TextEditingController _cargaController = TextEditingController();
-  final TextEditingController _incrementoController = TextEditingController();
+
+  // Controladores para Método 2
+  final TextEditingController _iLsubnController = TextEditingController();
+  final TextEditingController _lsubnController = TextEditingController();
+  final TextEditingController _ioController = TextEditingController();
+  final TextEditingController _ltnController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _initializeControllers();
-    _incrementoController.text = widget.linealidad.incremento;
-    _cargaController.text = widget.linealidad.carga;
+    _iLsubnController.text = widget.linealidad.iLsubn;
+    _lsubnController.text = widget.linealidad.lsubn;
+    _ioController.text = widget.linealidad.io;
+    _ltnController.text = widget.linealidad.ltn;
   }
 
   void _initializeControllers() {
@@ -62,17 +68,55 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     widget.linealidad.ultimaCargaLt = '0';
   }
 
-  void _calcularSumatoria() {
-    final cargaLn = double.tryParse(widget.linealidad.ultimaCargaLt) ?? 0;
-    final cargaCliente = double.tryParse(_cargaController.text) ?? 0;
-    final sumatoria = (cargaLn + cargaCliente).toStringAsFixed(2);
+  void _calcularMetodo2() {
+    final iLsubn = double.tryParse(_iLsubnController.text) ?? 0.0;
 
-    _incrementoController.text = sumatoria;
-    widget.linealidad.incremento = sumatoria;
+    if (widget.linealidad.puntos.isEmpty) {
+      _lsubnController.text = iLsubn.toStringAsFixed(2);
+      _calcularLtn();
+      return;
+    }
+
+    // Buscar la carga LT más cercana a I(Lsubn)
+    double closestLt = double.infinity;
+    double closestDifference = 0.0;
+
+    for (var punto in widget.linealidad.puntos) {
+      final lt = double.tryParse(punto.lt) ?? 0.0;
+      final indicacion = double.tryParse(punto.indicacion) ?? 0.0;
+      final difference = indicacion - lt;
+
+      if ((iLsubn - lt).abs() < (iLsubn - closestLt).abs()) {
+        closestLt = lt;
+        closestDifference = difference;
+      }
+    }
+
+    // Calcular Lsubn
+    final lsubn = iLsubn - closestDifference;
+    _lsubnController.text = lsubn.toStringAsFixed(2);
+    widget.linealidad.lsubn = lsubn.toStringAsFixed(2);
+
+    _calcularLtn();
+  }
+
+  void _calcularLtn() {
+    final lsubn = double.tryParse(_lsubnController.text) ?? 0.0;
+    final io = double.tryParse(_ioController.text) ?? 0.0;
+    final ltn = lsubn + io;
+
+    _ltnController.text = ltn.toStringAsFixed(2);
+    widget.linealidad.ltn = ltn.toStringAsFixed(2);
     widget.onChanged();
   }
 
   void _agregarFila() {
+    if (widget.linealidad.puntos.length >= 12) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Máximo 12 cargas permitidas')));
+      return;
+    }
+
     setState(() {
       widget.linealidad.puntos.add(PuntoLinealidad());
       _ltControllers.add(TextEditingController());
@@ -82,9 +126,9 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
   }
 
   void _removerFila(int index) {
-    if (widget.linealidad.puntos.length <= 2) {
+    if (widget.linealidad.puntos.length <= 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Debe mantener al menos 2 filas')));
+          const SnackBar(content: Text('Debe mantener al menos 1 fila')));
       return;
     }
 
@@ -101,16 +145,22 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
   }
 
   void _guardarCarga() {
-    if (_incrementoController.text.isEmpty) return;
+    if (_ltnController.text.isEmpty) return;
+
+    if (widget.linealidad.puntos.length >= 12) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Máximo 12 cargas permitidas')));
+      return;
+    }
 
     setState(() {
       // Buscar primera fila vacía
       for (int i = 0; i < widget.linealidad.puntos.length; i++) {
         if (widget.linealidad.puntos[i].lt.isEmpty) {
-          widget.linealidad.puntos[i].lt = _incrementoController.text;
-          widget.linealidad.puntos[i].indicacion = _incrementoController.text;
-          _ltControllers[i].text = _incrementoController.text;
-          _indicacionControllers[i].text = _incrementoController.text;
+          widget.linealidad.puntos[i].lt = _ltnController.text;
+          widget.linealidad.puntos[i].indicacion = _ltnController.text;
+          _ltControllers[i].text = _ltnController.text;
+          _indicacionControllers[i].text = _ltnController.text;
           _actualizarUltimaCarga();
           _limpiarCampos();
           return;
@@ -118,23 +168,28 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
       }
 
       // Si no hay filas vacías, agregar nueva
-      _agregarFila();
-      final lastIndex = widget.linealidad.puntos.length - 1;
-      widget.linealidad.puntos[lastIndex].lt = _incrementoController.text;
-      widget.linealidad.puntos[lastIndex].indicacion =
-          _incrementoController.text;
-      _ltControllers[lastIndex].text = _incrementoController.text;
-      _indicacionControllers[lastIndex].text = _incrementoController.text;
-      _actualizarUltimaCarga();
-      _limpiarCampos();
+      if (widget.linealidad.puntos.length < 12) {
+        _agregarFila();
+        final lastIndex = widget.linealidad.puntos.length - 1;
+        widget.linealidad.puntos[lastIndex].lt = _ltnController.text;
+        widget.linealidad.puntos[lastIndex].indicacion = _ltnController.text;
+        _ltControllers[lastIndex].text = _ltnController.text;
+        _indicacionControllers[lastIndex].text = _ltnController.text;
+        _actualizarUltimaCarga();
+        _limpiarCampos();
+      }
     });
   }
 
   void _limpiarCampos() {
-    _cargaController.clear();
-    _incrementoController.clear();
-    widget.linealidad.carga = '';
-    widget.linealidad.incremento = '';
+    _iLsubnController.clear();
+    _lsubnController.clear();
+    _ioController.clear();
+    _ltnController.clear();
+    widget.linealidad.iLsubn = '';
+    widget.linealidad.lsubn = '';
+    widget.linealidad.io = '0';
+    widget.linealidad.ltn = '';
     widget.onChanged();
   }
 
@@ -267,28 +322,28 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
         ),
         const SizedBox(height: 20),
 
-        // Sección de Carga e Incremento
+        // Sección Método 2
         Row(
           children: [
             Expanded(
               child: TextFormField(
-                readOnly: true,
-                controller: TextEditingController(
-                    text: widget.linealidad.ultimaCargaLt),
-                decoration: _buildInputDecoration('Última Carga de LT'),
+                controller: _iLsubnController,
+                decoration: _buildInputDecoration('I(Lsubn)'),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (value) {
+                  widget.linealidad.iLsubn = value;
+                  _calcularMetodo2();
+                },
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: TextFormField(
-                controller: _cargaController,
-                decoration: _buildInputDecoration('Carga'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (value) {
-                  widget.linealidad.carga = value;
-                  _calcularSumatoria();
-                },
+                controller: _lsubnController,
+                decoration: _buildInputDecoration('Lsubn'),
+                readOnly: true,
+                style: const TextStyle(color: Colors.lightGreen),
               ),
             ),
           ],
@@ -298,18 +353,32 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
           children: [
             Expanded(
               child: TextFormField(
-                controller: _incrementoController,
-                decoration: _buildInputDecoration('Incremento'),
-                readOnly: true,
+                controller: _ioController,
+                decoration: _buildInputDecoration('Io'),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (value) {
+                  widget.linealidad.io = value;
+                  _calcularLtn();
+                },
               ),
             ),
             const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: _guardarCarga,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: const Text('GUARDAR CARGA'),
+            Expanded(
+              child: TextFormField(
+                controller: _ltnController,
+                decoration: _buildInputDecoration('LTn'),
+                readOnly: true,
+                style: const TextStyle(color: Colors.lightGreen),
+              ),
             ),
           ],
+        ),
+        const SizedBox(height: 15.0),
+        ElevatedButton(
+          onPressed: _guardarCarga,
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          child: const Text('GUARDAR LTn'),
         ),
         const SizedBox(height: 20.0),
         const Text(
@@ -332,14 +401,16 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton.icon(
-              onPressed: _agregarFila,
+              onPressed:
+                  widget.linealidad.puntos.length < 12 ? _agregarFila : null,
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text('Agregar Fila'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
             ),
             ElevatedButton.icon(
-              onPressed: () =>
-                  _removerFila(widget.linealidad.puntos.length - 1),
+              onPressed: widget.linealidad.puntos.length > 1
+                  ? () => _removerFila(widget.linealidad.puntos.length - 1)
+                  : null,
               icon: const Icon(Icons.remove, color: Colors.white),
               label: const Text('Eliminar Fila'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -361,8 +432,10 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     for (var controller in _retornoControllers) {
       controller.dispose();
     }
-    _cargaController.dispose();
-    _incrementoController.dispose();
+    _iLsubnController.dispose();
+    _lsubnController.dispose();
+    _ioController.dispose();
+    _ltnController.dispose();
     super.dispose();
   }
 }

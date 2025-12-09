@@ -207,8 +207,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<PrecargaController>(
-      create: (_) => controller,
+    return ChangeNotifierProvider<PrecargaController>.value(
+      value: controller,
       child: Scaffold(
         appBar: _buildAppBar(),
         body: Consumer<PrecargaController>(
@@ -466,8 +466,10 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
   Future<void> _confirmSeca() async {
     try {
       await controller.confirmSeca(widget.userName, _fechaController.text);
+      if (!mounted) return;
       _showSnackBar('SECA confirmado: ${controller.generatedSeca}');
     } catch (e) {
+      if (!mounted) return;
       if (e is SecaExistsException) {
         _showExistingSecaDialog(e.fechaUltimoServicio);
       } else {
@@ -535,10 +537,12 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                 try {
                   await controller.createNewSecaSession(
                       widget.userName, _fechaController.text);
+                  if (!dialogContext.mounted) return;
                   Navigator.of(dialogContext).pop();
                   _showSnackBar(
                       'Nueva sesión creada: ${controller.generatedSessionId}');
                 } catch (e) {
+                  if (!dialogContext.mounted) return;
                   Navigator.of(dialogContext).pop();
                   _showSnackBar('Error al crear sesión: $e', isError: true);
                 }
@@ -571,6 +575,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
         balanzaData: balanzaData,
       );
 
+      if (!mounted) return;
+
       _showSnackBar('Datos guardados correctamente');
 
       // NUEVO: Mostrar confirmación de guardado de fotos
@@ -583,12 +589,14 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           photoCount: photoCount,
           directoryPath: controller.baseFotoPath!,
         );
+        if (!mounted) return;
       }
 
       // Crear ZIP de fotos
       String? zipPath;
       try {
         zipPath = await controller.createPhotosZip();
+        if (!mounted) return;
         if (zipPath != null) {
           _showSnackBar('ZIP creado: $zipPath', isError: false);
         }

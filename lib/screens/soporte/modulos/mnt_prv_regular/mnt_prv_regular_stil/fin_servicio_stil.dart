@@ -342,7 +342,6 @@ class _FinServicioMntPrvStilScreenState
     final cardOpacity = isDarkMode ? 0.4 : 0.2;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 80,
         title: Column(
@@ -381,12 +380,7 @@ class _FinServicioMntPrvStilScreenState
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          top: kToolbarHeight + MediaQuery.of(context).padding.top + 40,
-          left: 16.0,
-          right: 16.0,
-          bottom: 16.0,
-        ),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

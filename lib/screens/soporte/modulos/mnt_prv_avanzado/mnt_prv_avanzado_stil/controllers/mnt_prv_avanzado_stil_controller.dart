@@ -16,7 +16,7 @@ class MntPrvAvanzadoStilController {
     model.copiarPruebasInicialesAFinales();
   }
 
-  // ✅ OPTIMIZADO: Obtener d1 sin múltiples consultas
+  // OPTIMIZADO: Obtener d1 sin múltiples consultas
   Future<double> getD1FromDatabase() async {
     try {
       final dbHelper = DatabaseHelperMntPrvAvanzadoStil();
@@ -48,7 +48,7 @@ class MntPrvAvanzadoStilController {
     }
   }
 
-  // ✅ NUEVO: Método para guardar solo en BD (sin fotos)
+  // NUEVO: Método para guardar solo en BD (sin fotos)
   Future<void> saveDataToDatabase(BuildContext context,
       {bool showMessage = true}) async {
     try {

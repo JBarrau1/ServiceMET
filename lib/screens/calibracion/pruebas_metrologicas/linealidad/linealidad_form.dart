@@ -126,7 +126,8 @@ class _LinealidadFormState extends State<LinealidadForm> {
     );
   }
 
-  Future<void> _saveDataToDatabase(BuildContext context, LinealidadController controller) async {
+  Future<void> _saveDataToDatabase(
+      BuildContext context, LinealidadController controller) async {
     try {
       await controller.saveDataToDatabase();
       if (context.mounted) {
@@ -180,7 +181,6 @@ class _LinealidadFormState extends State<LinealidadForm> {
     }
   }
 
-
   Widget _buildMethod1Fields(LinealidadController controller) {
     return Column(
       children: [
@@ -197,7 +197,8 @@ class _LinealidadFormState extends State<LinealidadForm> {
           children: [
             Expanded(
               child: TextFormField(
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 controller: controller.ltnController,
                 decoration: buildInputDecoration('LTn'),
                 onChanged: (_) => _calculateLsubn(controller),
@@ -206,7 +207,8 @@ class _LinealidadFormState extends State<LinealidadForm> {
             const SizedBox(width: 10),
             Expanded(
               child: TextFormField(
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 controller: controller.cpController,
                 decoration: buildInputDecoration('I(LTn)'),
                 onChanged: (_) => _calculateLsubn(controller),
@@ -247,9 +249,12 @@ class _LinealidadFormState extends State<LinealidadForm> {
           children: [
             Expanded(
               child: TextFormField(
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 controller: controller.iLsubnController,
-                decoration: buildInputDecoration('I(Lsubn)',),
+                decoration: buildInputDecoration(
+                  'I(Lsubn)',
+                ),
                 onChanged: (value) {
                   final iLsubn = double.tryParse(value) ?? 0.0;
                   double closestLt = double.infinity;
@@ -257,7 +262,8 @@ class _LinealidadFormState extends State<LinealidadForm> {
 
                   for (var row in controller.rows) {
                     final lt = double.tryParse(row['lt']?.text ?? '') ?? 0.0;
-                    final indicacion = double.tryParse(row['indicacion']?.text ?? '') ?? 0.0;
+                    final indicacion =
+                        double.tryParse(row['indicacion']?.text ?? '') ?? 0.0;
                     final difference = indicacion - lt;
 
                     if ((iLsubn - lt).abs() < (iLsubn - closestLt).abs()) {
@@ -271,10 +277,14 @@ class _LinealidadFormState extends State<LinealidadForm> {
 
                   if (controller.rows.isNotEmpty &&
                       (controller.rows[0]['lt']?.text.isEmpty ?? true)) {
-                    controller.ltnController.text = (lsubn + 500).toStringAsFixed(2);
+                    controller.ltnController.text =
+                        (lsubn + 500).toStringAsFixed(2);
                   } else {
-                    final lastLt = double.tryParse(controller.rows.last['lt']?.text ?? '') ?? 0.0;
-                    controller.ltnController.text = (lsubn + lastLt).toStringAsFixed(2);
+                    final lastLt = double.tryParse(
+                            controller.rows.last['lt']?.text ?? '') ??
+                        0.0;
+                    controller.ltnController.text =
+                        (lsubn + lastLt).toStringAsFixed(2);
                   }
                 },
               ),
@@ -284,7 +294,9 @@ class _LinealidadFormState extends State<LinealidadForm> {
               child: TextFormField(
                 controller: controller.lsubnController,
                 readOnly: true,
-                decoration: buildInputDecoration('Lsubn',),
+                decoration: buildInputDecoration(
+                  'Lsubn',
+                ),
               ),
             ),
           ],
@@ -296,10 +308,14 @@ class _LinealidadFormState extends State<LinealidadForm> {
               child: TextFormField(
                 controller: controller.ioController,
                 keyboardType: TextInputType.number,
-                decoration: buildInputDecoration('Io',),
+                decoration: buildInputDecoration(
+                  'Io',
+                ),
                 onChanged: (value) {
-                  final cp = double.tryParse(controller.cpController.text) ?? 0.0;
-                  final lsubn = double.tryParse(controller.lsubnController.text) ?? 0.0;
+                  final cp =
+                      double.tryParse(controller.cpController.text) ?? 0.0;
+                  final lsubn =
+                      double.tryParse(controller.lsubnController.text) ?? 0.0;
                   final io = double.tryParse(value) ?? 0.0;
                   final ltn = (cp + lsubn) - io;
                   controller.ltnController.text = ltn.toStringAsFixed(2);
@@ -311,7 +327,9 @@ class _LinealidadFormState extends State<LinealidadForm> {
               child: TextFormField(
                 controller: controller.ltnController,
                 readOnly: true,
-                decoration: buildInputDecoration('LTn',),
+                decoration: buildInputDecoration(
+                  'LTn',
+                ),
               ),
             ),
           ],
@@ -326,7 +344,6 @@ class _LinealidadFormState extends State<LinealidadForm> {
     );
   }
 
-
   Widget _buildRowsSection(LinealidadController controller) {
     return Column(
       key: _rowsSectionKey, // ← Key para la sección de filas
@@ -340,7 +357,6 @@ class _LinealidadFormState extends State<LinealidadForm> {
         const SizedBox(height: 3.0),
         Text('Total de cargas: ${controller.rows.length} / 60'),
         const SizedBox(height: 20.0),
-
         if (controller.rows.length > 12)
           Text(
             '⚠️ Está ingresando más de 12 cargas, lo cual supera lo recomendado.',
@@ -349,11 +365,10 @@ class _LinealidadFormState extends State<LinealidadForm> {
               fontWeight: FontWeight.bold,
             ),
           ),
-
         const SizedBox(height: 10),
         ...List.generate(
           controller.rows.length,
-              (index) => LinearityRow(
+          (index) => LinearityRow(
             index: index,
             controller: controller,
             onRemove: () => setState(() {
@@ -371,23 +386,24 @@ class _LinealidadFormState extends State<LinealidadForm> {
               ),
               onPressed: controller.rows.length < 60
                   ? () {
-                setState(() {
-                  controller.addRow();
-                  _scrollToNewRow(); // ← Auto-scroll al agregar fila
-                });
-              }
+                      setState(() {
+                        controller.addRow();
+                        _scrollToNewRow(); // ← Auto-scroll al agregar fila
+                      });
+                    }
                   : null,
               icon: const Icon(Icons.add),
               label: const Text('Agregar Carga'),
             ),
+            const SizedBox(width: 12),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFc11515),
               ),
               onPressed: controller.rows.length > 6
                   ? () => setState(() {
-                controller.removeRow(controller.rows.length - 1);
-              })
+                        controller.removeRow(controller.rows.length - 1);
+                      })
                   : null,
               icon: const Icon(Icons.remove),
               label: const Text('Eliminar Carga'),
@@ -398,7 +414,8 @@ class _LinealidadFormState extends State<LinealidadForm> {
     );
   }
 
-  Widget _buildActionButtons(LinealidadController controller, BuildContext context) {
+  Widget _buildActionButtons(
+      LinealidadController controller, BuildContext context) {
     return Column(
       children: [
         const SizedBox(height: 20),
@@ -447,10 +464,10 @@ class _LinealidadFormState extends State<LinealidadForm> {
   }
 
   InputDecoration buildInputDecoration(
-      String labelText, {
-        Widget? suffixIcon,
-        String? suffixText,
-      }) {
+    String labelText, {
+    Widget? suffixIcon,
+    String? suffixText,
+  }) {
     return InputDecoration(
       labelText: labelText,
       border: OutlineInputBorder(

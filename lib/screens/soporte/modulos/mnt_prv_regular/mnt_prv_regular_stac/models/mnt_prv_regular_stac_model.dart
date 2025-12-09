@@ -254,6 +254,13 @@ class Linealidad {
   String ultimaCargaLt;
   String carga;
   String incremento;
+
+  // Campos para Método 2
+  String iLsubn;
+  String lsubn;
+  String io;
+  String ltn;
+
   List<PuntoLinealidad> puntos;
 
   Linealidad({
@@ -261,6 +268,10 @@ class Linealidad {
     this.ultimaCargaLt = '0',
     this.carga = '',
     this.incremento = '',
+    this.iLsubn = '',
+    this.lsubn = '',
+    this.io = '0',
+    this.ltn = '',
     List<PuntoLinealidad>? puntos,
   }) : puntos = puntos ?? [];
 
@@ -270,6 +281,10 @@ class Linealidad {
         ultimaCargaLt = other.ultimaCargaLt,
         carga = other.carga,
         incremento = other.incremento,
+        iLsubn = other.iLsubn,
+        lsubn = other.lsubn,
+        io = other.io,
+        ltn = other.ltn,
         puntos = other.puntos
             .map((punto) => PuntoLinealidad.fromOther(punto))
             .toList();

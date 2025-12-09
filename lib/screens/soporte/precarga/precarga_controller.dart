@@ -26,6 +26,14 @@ class PrecargaControllerSop extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   // Controllers de balanza - PERSISTENTES para evitar memory leaks
   late final Map<String, TextEditingController> _balanzaControllers;
 
@@ -437,6 +445,8 @@ class PrecargaControllerSop extends ChangeNotifier {
       String path = join(await getDatabasesPath(), 'precarga_database.db');
       final db = await openDatabase(path);
 
+      if (_disposed) return;
+
       final plantaId = DateTime.now().millisecondsSinceEpoch.toString();
       final depId = DateTime.now().millisecondsSinceEpoch.toString();
 
@@ -453,6 +463,8 @@ class PrecargaControllerSop extends ChangeNotifier {
       await db.close();
 
       await fetchPlantas(_selectedClienteId!);
+
+      if (_disposed) return;
 
       final uniqueKey = '${plantaId}_$depId';
       selectPlanta(uniqueKey);
@@ -474,6 +486,7 @@ class PrecargaControllerSop extends ChangeNotifier {
       _clientes = clientesList;
       _filteredClientes = clientesList;
       await db.close();
+      if (_disposed) return;
       notifyListeners();
     } catch (e) {
       throw Exception('Error al cargar clientes: $e');
@@ -542,6 +555,7 @@ class PrecargaControllerSop extends ChangeNotifier {
 
       _plantas = plantasModificadas;
       await db.close();
+      if (_disposed) return;
       notifyListeners();
     } catch (e) {
       throw Exception('Error al cargar plantas: $e');
@@ -642,6 +656,7 @@ class PrecargaControllerSop extends ChangeNotifier {
       } else {
         await createNewSecaSession(userName, fechaServicio);
       }
+      if (_disposed) return;
     } catch (e) {
       rethrow;
     }
@@ -676,6 +691,8 @@ class PrecargaControllerSop extends ChangeNotifier {
       };
 
       await dbHelper.upsertRegistro(registro);
+
+      if (_disposed) return;
 
       _secaConfirmed = true;
       updateStepErrors();
@@ -754,6 +771,7 @@ class PrecargaControllerSop extends ChangeNotifier {
 
       _balanzas = processedBalanzas;
       await db.close();
+      if (_disposed) return;
       notifyListeners();
     } catch (e) {
       debugPrint('Error al cargar balanzas: $e');
@@ -830,6 +848,7 @@ class PrecargaControllerSop extends ChangeNotifier {
           // Guardar directamente en memoria, sin carpeta previa
           _balanzaPhotos['identificacion']!.add(File(photo.path));
           _fotosTomadas = true;
+          if (_disposed) return;
           notifyListeners();
         } catch (e) {
           throw Exception('Error al procesar foto: $e');
@@ -950,6 +969,8 @@ class PrecargaControllerSop extends ChangeNotifier {
       };
 
       await dbHelper.upsertRegistro(registro);
+
+      if (_disposed) return;
 
       _isDataSaved = true;
       notifyListeners();

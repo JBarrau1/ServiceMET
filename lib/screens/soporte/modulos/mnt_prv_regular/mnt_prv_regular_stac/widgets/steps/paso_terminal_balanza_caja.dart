@@ -6,7 +6,7 @@ import '../campo_inspeccion_widget.dart';
 // ============================================
 // PASO 2: TERMINAL DE PESAJE
 // ============================================
-class PasoTerminal extends StatelessWidget {
+class PasoTerminal extends StatefulWidget {
   final MntPrvRegularStacModel model;
   final MntPrvRegularStacController controller;
   final VoidCallback onChanged;
@@ -17,6 +17,13 @@ class PasoTerminal extends StatelessWidget {
     required this.controller,
     required this.onChanged,
   });
+
+  @override
+  State<PasoTerminal> createState() => _PasoTerminalState();
+}
+
+class _PasoTerminalState extends State<PasoTerminal> {
+  bool _isAllGood = false;
 
   @override
   Widget build(BuildContext context) {
@@ -45,18 +52,80 @@ class PasoTerminal extends StatelessWidget {
             icon: Icons.computer_outlined,
             color: Colors.purple,
           ),
+          _buildAllGoodCheckbox(campos),
           const SizedBox(height: 24),
           ...campos.map((campo) {
             return CampoInspeccionWidget(
               label: campo,
-              campo: model.camposEstado[campo]!,
-              controller: controller,
-              onChanged: onChanged,
+              campo: widget.model.camposEstado[campo]!,
+              controller: widget.controller,
+              onChanged: widget.onChanged,
             );
           }),
         ],
       ),
     );
+  }
+
+  Widget _buildAllGoodCheckbox(List<String> campos) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _isAllGood
+            ? Colors.green.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _isAllGood
+              ? Colors.green.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: CheckboxListTile(
+        title: const Text(
+          'Marcar todo como "Buen Estado"',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          _isAllGood
+              ? 'Todos los campos están en "1 Bueno" con comentario "En buen estado"'
+              : 'Active esta opción para aplicar "Buen Estado" a todos los campos',
+          style: TextStyle(
+            fontSize: 12,
+            color: _isAllGood ? Colors.green[700] : Colors.grey[600],
+          ),
+        ),
+        value: _isAllGood,
+        onChanged: (bool? value) {
+          _toggleAllGood(value ?? false, campos);
+        },
+        activeColor: Colors.green,
+        controlAffinity: ListTileControlAffinity.leading,
+      ),
+    );
+  }
+
+  void _toggleAllGood(bool isGood, List<String> campos) {
+    setState(() {
+      _isAllGood = isGood;
+
+      if (isGood) {
+        for (final fieldName in campos) {
+          final campo = widget.model.camposEstado[fieldName];
+          if (campo != null) {
+            campo.initialValue = '1 Bueno';
+            campo.comentario = 'En buen estado';
+            campo.solutionValue = 'No aplica';
+          }
+        }
+        widget.onChanged();
+      }
+    });
   }
 
   Widget _buildHeader(
@@ -113,7 +182,7 @@ class PasoTerminal extends StatelessWidget {
 // ============================================
 // PASO 3: ESTADO DE BALANZA
 // ============================================
-class PasoBalanza extends StatelessWidget {
+class PasoBalanza extends StatefulWidget {
   final MntPrvRegularStacModel model;
   final MntPrvRegularStacController controller;
   final VoidCallback onChanged;
@@ -124,6 +193,13 @@ class PasoBalanza extends StatelessWidget {
     required this.controller,
     required this.onChanged,
   });
+
+  @override
+  State<PasoBalanza> createState() => _PasoBalanzaState();
+}
+
+class _PasoBalanzaState extends State<PasoBalanza> {
+  bool _isAllGood = false;
 
   @override
   Widget build(BuildContext context) {
@@ -148,18 +224,80 @@ class PasoBalanza extends StatelessWidget {
             icon: Icons.balance_outlined,
             color: Colors.teal,
           ),
+          _buildAllGoodCheckbox(campos),
           const SizedBox(height: 24),
           ...campos.map((campo) {
             return CampoInspeccionWidget(
               label: campo,
-              campo: model.camposEstado[campo]!,
-              controller: controller,
-              onChanged: onChanged,
+              campo: widget.model.camposEstado[campo]!,
+              controller: widget.controller,
+              onChanged: widget.onChanged,
             );
           }),
         ],
       ),
     );
+  }
+
+  Widget _buildAllGoodCheckbox(List<String> campos) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _isAllGood
+            ? Colors.green.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _isAllGood
+              ? Colors.green.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: CheckboxListTile(
+        title: const Text(
+          'Marcar todo como "Buen Estado"',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          _isAllGood
+              ? 'Todos los campos están en "1 Bueno" con comentario "En buen estado"'
+              : 'Active esta opción para aplicar "Buen Estado" a todos los campos',
+          style: TextStyle(
+            fontSize: 12,
+            color: _isAllGood ? Colors.green[700] : Colors.grey[600],
+          ),
+        ),
+        value: _isAllGood,
+        onChanged: (bool? value) {
+          _toggleAllGood(value ?? false, campos);
+        },
+        activeColor: Colors.green,
+        controlAffinity: ListTileControlAffinity.leading,
+      ),
+    );
+  }
+
+  void _toggleAllGood(bool isGood, List<String> campos) {
+    setState(() {
+      _isAllGood = isGood;
+
+      if (isGood) {
+        for (final fieldName in campos) {
+          final campo = widget.model.camposEstado[fieldName];
+          if (campo != null) {
+            campo.initialValue = '1 Bueno';
+            campo.comentario = 'En buen estado';
+            campo.solutionValue = 'No aplica';
+          }
+        }
+        widget.onChanged();
+      }
+    });
   }
 
   Widget _buildHeader(
@@ -216,7 +354,7 @@ class PasoBalanza extends StatelessWidget {
 // ============================================
 // PASO 4: CAJA SUMADORA
 // ============================================
-class PasoCajaSumadora extends StatelessWidget {
+class PasoCajaSumadora extends StatefulWidget {
   final MntPrvRegularStacModel model;
   final MntPrvRegularStacController controller;
   final VoidCallback onChanged;
@@ -227,6 +365,13 @@ class PasoCajaSumadora extends StatelessWidget {
     required this.controller,
     required this.onChanged,
   });
+
+  @override
+  State<PasoCajaSumadora> createState() => _PasoCajaSumadoraState();
+}
+
+class _PasoCajaSumadoraState extends State<PasoCajaSumadora> {
+  bool _isAllGood = false;
 
   @override
   Widget build(BuildContext context) {
@@ -244,11 +389,15 @@ class PasoCajaSumadora extends StatelessWidget {
       'Estado de borneas',
     ];
 
+    final allCampos = [...camposPlataforma, ...camposCajaSumadora];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildAllGoodCheckbox(allCampos),
+          const SizedBox(height: 16),
           _buildHeader(
             context,
             title: 'BALANZA | PLATAFORMA',
@@ -260,9 +409,9 @@ class PasoCajaSumadora extends StatelessWidget {
           ...camposPlataforma.map((campo) {
             return CampoInspeccionWidget(
               label: campo,
-              campo: model.camposEstado[campo]!,
-              controller: controller,
-              onChanged: onChanged,
+              campo: widget.model.camposEstado[campo]!,
+              controller: widget.controller,
+              onChanged: widget.onChanged,
             );
           }),
           const SizedBox(height: 32),
@@ -277,14 +426,75 @@ class PasoCajaSumadora extends StatelessWidget {
           ...camposCajaSumadora.map((campo) {
             return CampoInspeccionWidget(
               label: campo,
-              campo: model.camposEstado[campo]!,
-              controller: controller,
-              onChanged: onChanged,
+              campo: widget.model.camposEstado[campo]!,
+              controller: widget.controller,
+              onChanged: widget.onChanged,
             );
           }),
         ],
       ),
     );
+  }
+
+  Widget _buildAllGoodCheckbox(List<String> campos) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _isAllGood
+            ? Colors.green.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _isAllGood
+              ? Colors.green.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: CheckboxListTile(
+        title: const Text(
+          'Marcar todo como "Buen Estado"',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          _isAllGood
+              ? 'Todos los campos están en "1 Bueno" con comentario "En buen estado"'
+              : 'Active esta opción para aplicar "Buen Estado" a todos los campos',
+          style: TextStyle(
+            fontSize: 12,
+            color: _isAllGood ? Colors.green[700] : Colors.grey[600],
+          ),
+        ),
+        value: _isAllGood,
+        onChanged: (bool? value) {
+          _toggleAllGood(value ?? false, campos);
+        },
+        activeColor: Colors.green,
+        controlAffinity: ListTileControlAffinity.leading,
+      ),
+    );
+  }
+
+  void _toggleAllGood(bool isGood, List<String> campos) {
+    setState(() {
+      _isAllGood = isGood;
+
+      if (isGood) {
+        for (final fieldName in campos) {
+          final campo = widget.model.camposEstado[fieldName];
+          if (campo != null) {
+            campo.initialValue = '1 Bueno';
+            campo.comentario = 'En buen estado';
+            campo.solutionValue = 'No aplica';
+          }
+        }
+        widget.onChanged();
+      }
+    });
   }
 
   Widget _buildHeader(

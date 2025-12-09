@@ -14,6 +14,14 @@ class PrecargaController extends ChangeNotifier {
   String? _baseFotoPath;
   String? get baseFotoPath => _baseFotoPath;
 
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   // Estados del flujo
   int _currentStep = 0;
   bool _isDataSaved = false;
@@ -325,6 +333,8 @@ class PrecargaController extends ChangeNotifier {
       String path = join(await getDatabasesPath(), 'precarga_database.db');
       final db = await openDatabase(path);
 
+      if (_disposed) return;
+
       final plantaId = DateTime.now().millisecondsSinceEpoch.toString();
       final depId = (DateTime.now().millisecondsSinceEpoch + 1)
           .toString(); // +1 para evitar duplicados
@@ -394,6 +404,7 @@ class PrecargaController extends ChangeNotifier {
       _clientes = clientesList;
       _filteredClientes = clientesList;
       await db.close();
+      if (_disposed) return;
       notifyListeners();
     } catch (e) {
       throw Exception('Error al cargar clientes: $e');
@@ -490,6 +501,7 @@ class PrecargaController extends ChangeNotifier {
 
       _plantas = plantasModificadas;
       await db.close();
+      if (_disposed) return;
       notifyListeners();
     } catch (e) {
       throw Exception('Error al cargar plantas: $e');
@@ -598,6 +610,7 @@ class PrecargaController extends ChangeNotifier {
       } else {
         await createNewSecaSession(userName, fechaServicio);
       }
+      if (_disposed) return;
     } catch (e) {
       rethrow;
     }
@@ -621,6 +634,8 @@ class PrecargaController extends ChangeNotifier {
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
         'cod_planta': _selectedPlantaCodigo ?? 'No especificado',
       });
+
+      if (_disposed) return;
 
       _secaConfirmed = true;
       updateStepErrors();
@@ -675,6 +690,7 @@ class PrecargaController extends ChangeNotifier {
 
       _balanzas = processedBalanzas;
       await db.close();
+      if (_disposed) return;
       notifyListeners();
     } catch (e) {
       throw Exception('Error al cargar balanzas: $e');
@@ -789,6 +805,7 @@ class PrecargaController extends ChangeNotifier {
 
       _equipos = equiposList;
       await db.close();
+      if (_disposed) return;
       notifyListeners();
     } catch (e) {
       throw Exception('Error al cargar equipos: $e');
