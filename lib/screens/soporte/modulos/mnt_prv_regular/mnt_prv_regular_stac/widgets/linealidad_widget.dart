@@ -21,6 +21,7 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
   final List<TextEditingController> _ltControllers = [];
   final List<TextEditingController> _indicacionControllers = [];
   final List<TextEditingController> _retornoControllers = [];
+  final List<TextEditingController> _differenceControllers = [];
 
   // Controladores para Método 2
   final TextEditingController _iLsubnController = TextEditingController();
@@ -42,11 +43,14 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     _ltControllers.clear();
     _indicacionControllers.clear();
     _retornoControllers.clear();
+    _differenceControllers.clear();
 
     for (var punto in widget.linealidad.puntos) {
       _ltControllers.add(TextEditingController(text: punto.lt));
       _indicacionControllers.add(TextEditingController(text: punto.indicacion));
       _retornoControllers.add(TextEditingController(text: punto.retorno));
+      _differenceControllers.add(TextEditingController());
+      _calcularDiferencia(_differenceControllers.length - 1);
     }
   }
 
@@ -121,6 +125,7 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
       _ltControllers.add(TextEditingController());
       _indicacionControllers.add(TextEditingController());
       _retornoControllers.add(TextEditingController(text: '0'));
+      _differenceControllers.add(TextEditingController());
     });
   }
 
@@ -136,9 +141,11 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
       _ltControllers[index].dispose();
       _indicacionControllers[index].dispose();
       _retornoControllers[index].dispose();
+      _differenceControllers[index].dispose();
       _ltControllers.removeAt(index);
       _indicacionControllers.removeAt(index);
       _retornoControllers.removeAt(index);
+      _differenceControllers.removeAt(index);
       _actualizarUltimaCarga();
     });
   }
@@ -192,6 +199,177 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     widget.onChanged();
   }
 
+  void _calcularDiferencia(int index) {
+    if (index < 0 || index >= _ltControllers.length) return;
+
+    final ltText = _ltControllers[index].text.replaceAll(',', '.');
+    final indicacionText =
+        _indicacionControllers[index].text.replaceAll(',', '.');
+
+    if (ltText.isNotEmpty && indicacionText.isNotEmpty) {
+      final lt = double.tryParse(ltText) ?? 0.0;
+      final indicacion = double.tryParse(indicacionText) ?? 0.0;
+      final diferencia = indicacion - lt;
+
+      // Intentar respetar los decimales de la indicación
+      int decimals = 1;
+      if (indicacionText.contains('.')) {
+        decimals = indicacionText.split('.')[1].length;
+      }
+
+      _differenceControllers[index].text = diferencia.toStringAsFixed(decimals);
+    } else {
+      _differenceControllers[index].text = '';
+    }
+  }
+
+  // DIÁLOGO PARA SUMAR CARGAS (Calculadora Flexible)
+  Future<void> _showSummationDialog(int currentIndex) async {
+    // 1. Obtener cargas anteriores válidas
+    final previousLoads = <Map<String, dynamic>>[];
+    for (int i = 0; i < currentIndex; i++) {
+      final val =
+          double.tryParse(_ltControllers[i].text.replaceAll(',', '.')) ?? 0.0;
+      if (val > 0) {
+        previousLoads.add({'index': i, 'value': val, 'selected': false});
+      }
+    }
+
+    // 2. Lista para valores manuales temporales
+    final manualValues = <double>[];
+    final manualInputController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            double sumPrevious = previousLoads
+                .where((item) => item['selected'] == true)
+                .fold(0.0, (sum, item) => sum + (item['value'] as double));
+
+            double sumManual = manualValues.fold(0.0, (sum, val) => sum + val);
+
+            double totalSum = sumPrevious + sumManual;
+
+            return AlertDialog(
+              title: const Text('Compositor de Carga'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // SECCIÓN 1: Cargas Anteriores
+                      if (previousLoads.isNotEmpty) ...[
+                        const Text('Cargas Anteriores:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: previousLoads.length,
+                          itemBuilder: (context, i) {
+                            return CheckboxListTile(
+                              dense: true,
+                              title: Text(
+                                  'Carga ${previousLoads[i]['index'] + 1}: ${previousLoads[i]['value']}'),
+                              value: previousLoads[i]['selected'],
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  previousLoads[i]['selected'] = value!;
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        const Divider(),
+                      ],
+
+                      // SECCIÓN 2: Agregar Manual
+                      const Text('Agregar Carga Manual:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: manualInputController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              decoration:
+                                  const InputDecoration(hintText: 'Ej. 20000'),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle,
+                                color: Colors.green),
+                            onPressed: () {
+                              final val = double.tryParse(manualInputController
+                                      .text
+                                      .replaceAll(',', '.')) ??
+                                  0.0;
+                              if (val > 0) {
+                                setState(() {
+                                  manualValues.add(val);
+                                  manualInputController.clear();
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+
+                      // SECCIÓN 3: Lista de Manuales
+                      if (manualValues.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        const Text('Manuales Agregados:',
+                            style: TextStyle(fontStyle: FontStyle.italic)),
+                        Wrap(
+                          spacing: 8.0,
+                          children: manualValues.asMap().entries.map((entry) {
+                            return Chip(
+                              label: Text('${entry.value}'),
+                              onDeleted: () {
+                                setState(() {
+                                  manualValues.removeAt(entry.key);
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                Text('Total: ${totalSum.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue)),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _ltControllers[currentIndex].text =
+                        totalSum.toStringAsFixed(2);
+                    _calcularDiferencia(currentIndex);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   InputDecoration _buildInputDecoration(String labelText,
       {Widget? suffixIcon}) {
     return InputDecoration(
@@ -204,106 +382,143 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
   Widget _buildFilaLinealidad(int index) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: TextFormField(
-              controller: _ltControllers[index],
-              decoration: _buildInputDecoration('LT ${index + 1}'),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              onChanged: (value) {
-                widget.linealidad.puntos[index].lt = value;
-                widget.linealidad.puntos[index].indicacion = value;
-                _indicacionControllers[index].text = value;
-                _actualizarUltimaCarga();
-                widget.onChanged();
-              },
-            ),
+          // Fila 1: Carga (LT) y Error (Diferencia)
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _ltControllers[index],
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (value) {
+                    widget.linealidad.puntos[index].lt = value;
+                    widget.linealidad.puntos[index].indicacion =
+                        value; // Copiar a indicación por defecto
+                    _indicacionControllers[index].text =
+                        value; // Reflejar en controlador
+                    _actualizarUltimaCarga();
+                    _calcularDiferencia(index);
+                    widget.onChanged();
+                  },
+                  decoration: _buildInputDecoration('LT ${index + 1}').copyWith(
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calculate, color: Colors.blue),
+                      onPressed: () => _showSummationDialog(index),
+                      tooltip: 'Componer Carga',
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextFormField(
+                  controller: _differenceControllers[index],
+                  decoration: _buildInputDecoration('Error'),
+                  readOnly: true,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextFormField(
-              controller: _indicacionControllers[index],
-              decoration: _buildInputDecoration(
-                'Indicación ${index + 1}',
-                suffixIcon: FutureBuilder<double>(
-                  future: widget.getD1FromDatabase(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    }
-                    if (snapshot.hasError) {
-                      return const Tooltip(
-                        message: 'Error al cargar d1',
-                        child: Icon(Icons.error_outline, color: Colors.red),
-                      );
-                    }
-                    final d1 = snapshot.data ?? 0.1;
-
-                    return PopupMenuButton<String>(
-                      icon: const Icon(Icons.arrow_drop_down),
-                      onSelected: (String newValue) {
-                        setState(() {
-                          _indicacionControllers[index].text = newValue;
-                          widget.linealidad.puntos[index].indicacion = newValue;
-                          widget.onChanged();
-                        });
-                      },
-                      itemBuilder: (BuildContext context) {
-                        final currentText =
-                            _indicacionControllers[index].text.trim();
-                        final baseValue = double.tryParse(
-                              (currentText.isEmpty
-                                      ? widget.linealidad.puntos[index].lt
-                                      : currentText)
-                                  .replaceAll(',', '.'),
-                            ) ??
-                            0.0;
-
-                        // Determinar decimales basados en d1
-                        int decimals = 1;
-                        if (d1 > 0) {
-                          if (d1 % 1 == 0) {
-                            decimals = 0;
-                          } else {
-                            final d1Str = d1.toString();
-                            if (d1Str.contains('.')) {
-                              decimals = d1Str.split('.')[1].length;
-                            }
-                          }
-                        }
-                        // Limitar a 4 decimales por seguridad
-                        if (decimals > 4) decimals = 4;
-
-                        return List.generate(11, (i) {
-                          final value = baseValue + ((i - 5) * d1);
-                          final txt = value.toStringAsFixed(decimals);
-                          return PopupMenuItem<String>(
-                            value: txt,
-                            child: Text(txt),
+          const SizedBox(height: 8),
+          // Fila 2: Indicación y Retorno
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _indicacionControllers[index],
+                  decoration: _buildInputDecoration(
+                    'Indicación ${index + 1}',
+                    suffixIcon: FutureBuilder<double>(
+                      future: widget.getD1FromDatabase(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
                           );
-                        });
+                        }
+                        final d1 = snapshot.data ?? 0.1;
+
+                        return PopupMenuButton<String>(
+                          icon: const Icon(Icons.arrow_drop_down),
+                          onSelected: (String newValue) {
+                            setState(() {
+                              _indicacionControllers[index].text = newValue;
+                              widget.linealidad.puntos[index].indicacion =
+                                  newValue;
+                              _calcularDiferencia(index);
+                              widget.onChanged();
+                            });
+                          },
+                          itemBuilder: (BuildContext context) {
+                            final currentText =
+                                _indicacionControllers[index].text.trim();
+                            final baseValue = double.tryParse(
+                                  (currentText.isEmpty
+                                          ? widget.linealidad.puntos[index].lt
+                                          : currentText)
+                                      .replaceAll(',', '.'),
+                                ) ??
+                                0.0;
+
+                            int decimals = 1;
+                            if (d1 > 0) {
+                              if (d1 % 1 == 0) {
+                                decimals = 0;
+                              } else {
+                                final d1Str = d1.toString();
+                                if (d1Str.contains('.')) {
+                                  decimals = d1Str.split('.')[1].length;
+                                }
+                              }
+                            }
+                            if (decimals > 4) decimals = 4;
+
+                            return List.generate(11, (i) {
+                              final value = baseValue + ((i - 5) * d1);
+                              final txt = value.toStringAsFixed(decimals);
+                              return PopupMenuItem<String>(
+                                value: txt,
+                                child: Text(txt),
+                              );
+                            });
+                          },
+                        );
                       },
-                    );
+                    ),
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (value) {
+                    widget.linealidad.puntos[index].indicacion = value;
+                    _calcularDiferencia(index);
+                    widget.onChanged();
                   },
                 ),
               ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              onChanged: (value) {
-                widget.linealidad.puntos[index].indicacion = value;
-                widget.onChanged();
-              },
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextFormField(
+                  controller: _retornoControllers[index],
+                  decoration: _buildInputDecoration('Retorno (0)'),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (value) {
+                    widget.linealidad.puntos[index].retorno = value;
+                    widget.onChanged();
+                  },
+                ),
+              ),
+            ],
           ),
+          const Divider(),
         ],
       ),
     );
@@ -431,8 +646,12 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     for (var controller in _retornoControllers) {
       controller.dispose();
     }
+    for (var controller in _differenceControllers) {
+      controller.dispose();
+    }
     _iLsubnController.dispose();
     _lsubnController.dispose();
+    _ioController.dispose();
     _ioController.dispose();
     _ltnController.dispose();
     super.dispose();

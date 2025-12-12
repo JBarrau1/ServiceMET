@@ -137,7 +137,7 @@ class RetornoCero {
     this.estado = '1 Bueno',
     this.estabilidad = '1 Bueno',
     this.valor = '',
-    this.unidad = 'kg',
+    this.unidad = '',
   });
 
   // Constructor de copia

@@ -99,8 +99,8 @@ class LoginForm extends StatelessWidget {
                     isAddingNewUser
                         ? 'Ingresa credenciales del nuevo usuario'
                         : hasUsers
-                        ? 'Ingresa tu contraseña para continuar'
-                        : 'Agrega tu primer usuario para comenzar',
+                            ? 'Ingresa tu contraseña para continuar'
+                            : 'Agrega tu primer usuario para comenzar',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: isDark ? Colors.white60 : Colors.black54,
@@ -195,34 +195,34 @@ class LoginForm extends StatelessWidget {
                       onPressed: loading ? null : onLogin,
                       child: loading
                           ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
                           : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isAddingNewUser || !hasUsers
-                                ? Icons.person_add
-                                : Icons.login,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            isAddingNewUser || !hasUsers
-                                ? 'Agregar Usuario'
-                                : 'Iniciar sesión',
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  isAddingNewUser || !hasUsers
+                                      ? Icons.person_add
+                                      : Icons.login,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isAddingNewUser || !hasUsers
+                                      ? 'Agregar Usuario'
+                                      : 'Iniciar sesión',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
 
@@ -270,7 +270,8 @@ class LoginForm extends StatelessWidget {
             onPressed: loading ? null : onLoginDemo,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              foregroundColor: const Color(0xFFFF9800), // color naranja para texto e ícono
+              foregroundColor:
+                  const Color(0xFFFF9800), // color naranja para texto e ícono
               overlayColor: const Color(0xFFFF9800).withOpacity(0.12),
               // backgroundColor: const Color(0xFFFF9800), // descomenta si quieres fondo naranja
             ),
@@ -294,7 +295,6 @@ class LoginForm extends StatelessWidget {
               ],
             ),
           ),
-
 
           const SizedBox(height: 8),
 
@@ -322,7 +322,7 @@ class LoginForm extends StatelessWidget {
           Column(
             children: [
               Text(
-                'versión 11.4.281125',
+                'versión 11.5.121225',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   color: isDark ? Colors.white38 : Colors.black38,
