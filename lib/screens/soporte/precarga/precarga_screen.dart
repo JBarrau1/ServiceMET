@@ -19,7 +19,8 @@ import '../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.d
 import '../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
 import '../../../database/soporte_tecnico/database_helper_relevamiento.dart';
 import '../../../database/soporte_tecnico/database_helper_verificaciones.dart';
-import '../modulos/ajuste_verificaciones/stac_ajuste_verificaciones.dart';
+import '../modulos/ajuste_verificaciones/stac_ajuste_verificaciones.dart'
+    hide StepData;
 import '../modulos/diagnostico/stac_diagnostico.dart';
 import '../modulos/instalacion/stac_instalacion.dart';
 import '../modulos/mnt_correctivo/stac_mnt_correctivo.dart';

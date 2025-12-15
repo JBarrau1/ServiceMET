@@ -1,17 +1,15 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui';
-import 'package:service_met/screens/soporte/componentes/test_container.dart';
-import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:service_met/provider/balanza_provider.dart';
-import '../../../../database/soporte_tecnico/database_helper_ajustes.dart';
-import 'fin_servicio_ajustes_verificaciones.dart';
+import 'package:service_met/screens/soporte/modulos/ajuste_verificaciones/fin_servicio_ajustes_verificaciones.dart';
+import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/models/mnt_prv_regular_stil_model.dart';
+import 'controllers/ajuste_verificaciones_controller.dart';
+import 'models/ajuste_verificaciones_model.dart';
+import 'widgets/paso_pruebas_iniciales.dart';
+import 'widgets/paso_pruebas_finales.dart';
+import 'widgets/paso_comentarios_final.dart';
 
 class StacAjusteVerificacionesScreen extends StatefulWidget {
   final String sessionId;
@@ -34,358 +32,151 @@ class StacAjusteVerificacionesScreen extends StatefulWidget {
   });
 
   @override
-  State<StacAjusteVerificacionesScreen> createState() =>
+  _StacAjusteVerificacionesScreenState createState() =>
       _StacAjusteVerificacionesScreenState();
 }
 
 class _StacAjusteVerificacionesScreenState
     extends State<StacAjusteVerificacionesScreen> {
-  final TextEditingController _horaController = TextEditingController();
-  final TextEditingController _horaFinController = TextEditingController();
-  final List<TextEditingController> _comentariosControllers = [];
-  final List<FocusNode> _comentariosFocusNodes = [];
-  int _comentariosCount = 0;
+  late AjusteVerificacionesModel _model;
+  late AjusteVerificacionesController _controller;
 
-  late Map<String, dynamic> _initialTestsData;
-  late Map<String, dynamic> _finalTestsData;
-
-  final ImagePicker _imagePicker = ImagePicker();
-  final Map<String, Map<String, dynamic>> _fieldData = {};
-  final Map<String, List<File>> _fieldPhotos = {};
-  final ValueNotifier<bool> _isSaveButtonPressed = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _isDataSaved = ValueNotifier<bool>(false);
+  int _currentStep = 0;
+  bool _isSaving = false;
   DateTime? _lastPressedTime;
+  double? _cachedD1; // ✅ Cachear d1 para evitar múltiples consultas
+
+  final List<StepData> _steps = [
+    StepData(
+      title: 'Pruebas Iniciales',
+      subtitle: 'Metrología Inicial',
+      icon: Icons.science_outlined,
+    ),
+    StepData(
+      title: 'Pruebas Finales',
+      subtitle: 'Metrología Final',
+      icon: Icons.task_alt_outlined,
+    ),
+    StepData(
+      title: 'Comentarios',
+      subtitle: 'Observaciones y Cierre',
+      icon: Icons.comment_outlined,
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
+    _initializeModel();
+    _controller = AjusteVerificacionesController(model: _model);
     _actualizarHora();
+    _loadD1Value();
+  }
 
-    _initialTestsData = <String, dynamic>{};
-    _finalTestsData = <String, dynamic>{};
-
-    // Forzar actualización de la UI después de la inicialización
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
+  Future<void> _loadD1Value() async {
+    try {
+      _cachedD1 = await _controller.getD1FromDatabase();
+    } catch (e) {
+      try {
+        final balanza = Provider.of<BalanzaProvider>(context, listen: false)
+            .selectedBalanza;
+        _cachedD1 = balanza?.d1 ?? 0.1;
+      } catch (e) {
+        _cachedD1 = 0.1;
       }
-    });
-  }
-
-  void _showSnackBar(BuildContext context, String message,
-      {Color? backgroundColor, Color? textColor}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(
-              color: textColor ?? Colors.black), // Texto blanco por defecto
-        ),
-        backgroundColor:
-            backgroundColor ?? Colors.grey, // Fondo naranja por defecto
-      ),
-    );
-  }
-
-  void _agregarComentario(BuildContext context) {
-    if (_comentariosCount >= 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Máximo 10 comentarios permitidos'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
     }
-
-    setState(() {
-      _comentariosControllers.add(TextEditingController());
-      _comentariosFocusNodes.add(FocusNode());
-      _comentariosCount++;
-    });
+    if (mounted) setState(() {});
   }
 
-  void _eliminarComentario(int index) {
-    setState(() {
-      _comentariosControllers[index].dispose();
-      _comentariosFocusNodes[index].dispose();
-      _comentariosControllers.removeAt(index);
-      _comentariosFocusNodes.removeAt(index);
-      _comentariosCount--;
-    });
+  Future<double> _getD1FromCache() async {
+    return _cachedD1 ?? 0.1;
+  }
+
+  void _initializeModel() {
+    _model = AjusteVerificacionesModel(
+      codMetrica: widget.codMetrica,
+      sessionId: widget.sessionId,
+      secaValue: widget.secaValue,
+      pruebasIniciales: PruebasMetrologicas(),
+      pruebasFinales: PruebasMetrologicas(),
+    );
   }
 
   void _actualizarHora() {
     final ahora = DateTime.now();
     final horaFormateada = DateFormat('HH:mm:ss').format(ahora);
-    _horaController.text = horaFormateada;
+    _model.horaInicio = horaFormateada;
   }
 
-  Future<bool> _onWillPop(BuildContext context) async {
-    final now = DateTime.now();
-    if (_lastPressedTime == null ||
-        now.difference(_lastPressedTime!) > const Duration(seconds: 2)) {
-      _lastPressedTime = now;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Presione nuevamente para retroceder. Los datos registrados se perderán.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return false;
+  Future<void> _saveCurrentStep() async {
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      await _controller.saveDataToDatabase(context, showMessage: false);
+      debugPrint('✅ Paso $_currentStep guardado automáticamente');
+    } catch (e) {
+      debugPrint('❌ Error al guardar paso $_currentStep: $e');
+      _showSnackBar('Error al guardar: ${e.toString()}', isError: true);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  bool _validateCurrentStep() {
+    // Validaciones básicas si se requieren
+    if (_currentStep == 2) {
+      if (_model.horaFin.isEmpty) {
+        _showSnackBar('Por favor registre la hora final', isError: true);
+        return false;
+      }
     }
     return true;
   }
 
-  Future<void> _saveAllDataAndPhotos(BuildContext context) async {
-    // Verificar si el widget está montado antes de continuar
-    if (!mounted) return;
-
-    _isSaveButtonPressed.value = true; // Mostrar indicador de carga
-
-    try {
-      // Verificar si hay fotos en alguno de los campos
-      bool hasPhotos = _fieldPhotos.values.any((photos) => photos.isNotEmpty);
-
-      if (hasPhotos) {
-        // Guardar las fotos en un archivo ZIP
-        final archive = Archive();
-        _fieldPhotos.forEach((label, photos) {
-          for (var i = 0; i < photos.length; i++) {
-            final file = photos[i];
-            final fileName = '${label}_${i + 1}.jpg';
-            archive.addFile(ArchiveFile(
-                fileName, file.lengthSync(), file.readAsBytesSync()));
-          }
-        });
-
-        final zipEncoder = ZipEncoder();
-        final zipData = zipEncoder.encode(archive);
-
-        final uint8ListData = Uint8List.fromList(zipData);
-        final zipFileName =
-            '${widget.secaValue}_${widget.codMetrica}_ajustes_verificaciones.zip';
-
-        final params = SaveFileDialogParams(
-          data: uint8ListData,
-          fileName: zipFileName,
-          mimeTypesFilter: ['application/zip'],
-        );
-
-        try {
-          final filePath = await FlutterFileDialog.saveFile(params: params);
-          if (filePath != null) {
-            _showSnackBar(context, 'Fotos guardadas en $filePath');
-          } else {
-            _showSnackBar(context, 'No se seleccionó ninguna carpeta');
-          }
-        } catch (e) {
-          _showSnackBar(context, 'Error al guardar el archivo: $e');
-        }
-      } else {
-        _showSnackBar(
-          context,
-          'No se tomaron fotografías. Solo se guardarán los datos.',
-          backgroundColor: Colors.orange,
-        );
-      }
-
-      // Validar campos requeridos
-      if (_horaController.text.isEmpty) {
-        _showSnackBar(context, 'Por favor ingrese la hora de inicio',
-            backgroundColor: Colors.red);
-        return;
-      }
-
-      if (_horaFinController.text.isEmpty) {
-        _showSnackBar(context, 'Por favor ingrese la hora final',
-            backgroundColor: Colors.red);
-        return;
-      }
-
-      // Guardar los datos en la base de datos
-      await _saveAllMetrologicalTests(context);
-    } catch (e) {
-      _showSnackBar(context, 'Error al guardar: ${e.toString()}');
-      debugPrint('Error al guardar: $e');
-    } finally {
-      if (mounted) {
-        _isSaveButtonPressed.value =
-            false; // Asegurarse de ocultar el indicador de carga
-      }
+  Future<void> _goToStep(int step) async {
+    if (step > _currentStep && !_validateCurrentStep()) {
+      return;
     }
+
+    await _saveCurrentStep();
+
+    setState(() {
+      _currentStep = step;
+    });
   }
 
-  Future<void> _saveAllMetrologicalTests(BuildContext context) async {
-    try {
-      // ✅ Usar DatabaseHelperSop
-      final dbHelper = DatabaseHelperAjustes();
+  Future<bool> _onWillPop() async {
+    final now = DateTime.now();
 
-      // Preparar comentarios
-      final Map<String, dynamic> comentariosData = {};
-      for (int i = 0; i < _comentariosControllers.length; i++) {
-        comentariosData['comentario_${i + 1}'] =
-            _comentariosControllers[i].text.isNotEmpty
-                ? _comentariosControllers[i].text
-                : null;
-      }
-
-      // ✅ Convertir todos los datos a un mapa para la base de datos
-      final Map<String, dynamic> dbData = {
-        // ✅ AGREGAR CAMPOS CLAVE
-        'session_id': widget.sessionId,
-        'cod_metrica': widget.codMetrica,
-        'otst': widget.secaValue,
-
-        // Campos existentes
-        'tipo_servicio': 'ajustes y verificaciones',
-        'hora_inicio': _horaController.text,
-        'hora_fin': _horaFinController.text,
-        'estado_servicio': 'Completo',
-
-        // Datos de pruebas metrológicas
-        ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
-        ..._convertTestDataToDbFormat(_finalTestsData, 'final'),
-
-        // Comentarios
-        ...comentariosData,
-      };
-
-      // ✅ Agregar datos de campos de inspección (si existen)
-      _fieldData.forEach((label, fieldData) {
-        final key = _getFieldKey(label);
-        dbData[key] = fieldData['initial_value'] ?? '';
-        dbData['${key}_solucion'] = fieldData['solution_value'] ?? '';
-
-        // Agregar fotos si existen
-        final fotos =
-            _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ?? '';
-        if (fotos.isNotEmpty) {
-          dbData['${key}_foto'] = fotos;
-        }
-      });
-
-      // ✅ USAR UPSERT (actualiza si existe, inserta si no)
-      await dbHelper.upsertRegistroRelevamiento(dbData);
+    if (_lastPressedTime == null ||
+        now.difference(_lastPressedTime!) > const Duration(seconds: 2)) {
+      _lastPressedTime = now;
 
       _showSnackBar(
-        context,
-        'Datos guardados exitosamente',
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
+        'Presione nuevamente para salir. Los datos se guardarán automáticamente.',
+        isError: false,
       );
 
-      setState(() {
-        _isDataSaved.value = true;
-      });
-    } catch (e) {
-      _showSnackBar(
-        context,
-        'Error al guardar: ${e.toString()}',
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-      debugPrint('Error al guardar: $e');
-      _isDataSaved.value = false;
+      await _saveCurrentStep();
+
+      return false;
     }
+
+    return true;
   }
 
-  String _getFieldKey(String label) {
-    // Convertir etiquetas a claves de base de datos
-    return label
-        .toLowerCase()
-        .replaceAll(' ', '_')
-        .replaceAll('á', 'a')
-        .replaceAll('é', 'e')
-        .replaceAll('í', 'i')
-        .replaceAll('ó', 'o')
-        .replaceAll('ú', 'u')
-        .replaceAll('ñ', 'n')
-        .replaceAll('(', '')
-        .replaceAll(')', '')
-        .replaceAll('/', '_');
-  }
-
-  Map<String, dynamic> _convertTestDataToDbFormat(
-    Map<String, dynamic> testData,
-    String testType,
-  ) {
-    final Map<String, dynamic> result = {};
-
-    // Retorno a Cero
-    if (testData['return_to_zero'] != null) {
-      final rtz = testData['return_to_zero'];
-      result['retorno_cero_${testType}_valoracion'] = rtz['value'] ?? '';
-      result['retorno_cero_${testType}_carga'] =
-          double.tryParse(rtz['load']?.toString() ?? '0') ?? 0;
-      result['retorno_cero_${testType}_unidad'] = rtz['unit'] ?? 'kg';
-    }
-
-    // Excentricidad
-    if (testData['eccentricity'] != null) {
-      final ecc = testData['eccentricity'];
-      result['excentricidad_${testType}_tipo_plataforma'] =
-          ecc['platform'] ?? '';
-      result['excentricidad_${testType}_opcion_prueba'] = ecc['option'] ?? '';
-      result['excentricidad_${testType}_carga'] =
-          double.tryParse(ecc['load']?.toString() ?? '0') ?? 0;
-      result['excentricidad_${testType}_ruta_imagen'] = ecc['imagePath'] ?? '';
-      final positions = ecc['positions'] ?? [];
-      result['excentricidad_${testType}_cantidad_posiciones'] =
-          positions.length.toString();
-
-      for (int i = 0; i < positions.length && i < 6; i++) {
-        final pos = positions[i];
-        final prefix = 'excentricidad_${testType}_pos${i + 1}';
-        final indicacion =
-            double.tryParse(pos['indication']?.toString() ?? '0') ?? 0;
-        final posicion =
-            double.tryParse(pos['position']?.toString() ?? '0') ?? 0;
-        final retorno = double.tryParse(pos['return']?.toString() ?? '0') ?? 0;
-
-        result['${prefix}_numero'] = pos['position']?.toString() ?? '';
-        result['${prefix}_indicacion'] = indicacion;
-        result['${prefix}_retorno'] = retorno;
-        result['${prefix}_error'] = indicacion - posicion;
-      }
-    }
-
-    // Repetibilidad
-    if (testData['repeatability'] != null) {
-      final rep = testData['repeatability'];
-      final loadCount = rep['repetibilityCount'] ?? 1;
-      final rowCount = rep['rowCount'] ?? 3;
-
-      result['repetibilidad_${testType}_cantidad_cargas'] =
-          loadCount.toString();
-      result['repetibilidad_${testType}_cantidad_pruebas'] =
-          rowCount.toString();
-
-      final loads = rep['loads'] ?? [];
-
-      for (int i = 0; i < loads.length && i < 3; i++) {
-        final load = loads[i];
-        final loadPrefix = 'repetibilidad_${testType}_carga${i + 1}';
-        result['${loadPrefix}_valor'] =
-            double.tryParse(load['value']?.toString() ?? '0') ?? 0;
-
-        final indications = load['indications'] ?? [];
-
-        for (int j = 0; j < indications.length && j < 10; j++) {
-          final indication =
-              double.tryParse(indications[j]['value']?.toString() ?? '0') ?? 0;
-          final returnVal =
-              double.tryParse(indications[j]['return']?.toString() ?? '0') ?? 0;
-
-          final testPrefix = '${loadPrefix}_prueba${j + 1}';
-          result['${testPrefix}_indicacion'] = indication;
-          result['${testPrefix}_retorno'] = returnVal;
-        }
-      }
-    }
-
-    return result;
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: isError ? 3 : 2),
+      ),
+    );
   }
 
   @override
@@ -394,7 +185,7 @@ class _StacAjusteVerificacionesScreenState
     final balanza = Provider.of<BalanzaProvider>(context).selectedBalanza;
 
     return WillPopScope(
-      onWillPop: () => _onWillPop(context),
+      onWillPop: _onWillPop,
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 80,
@@ -402,7 +193,7 @@ class _StacAjusteVerificacionesScreenState
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'SOPORTE TÉCNICO',
+                'AJUSTES Y VERIFICACIONES',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -411,7 +202,7 @@ class _StacAjusteVerificacionesScreenState
               ),
               const SizedBox(height: 5),
               Text(
-                'CÓDIGO METRICA: ${widget.codMetrica}',
+                'CÓDIGO MET: ${widget.codMetrica}',
                 style: TextStyle(
                   fontSize: 10,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -425,288 +216,240 @@ class _StacAjusteVerificacionesScreenState
           flexibleSpace: isDarkMode
               ? ClipRect(
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(color: Colors.black.withOpacity(0.4)),
+                    filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                    child: Container(color: Colors.black.withOpacity(0.1)),
                   ),
                 )
               : null,
           centerTitle: true,
+          actions: [
+            if (_isSaving)
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+          ],
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              const Text(
-                'AJUSTES METROLÓGICOS Y/O\nVERIFICACIONES IBMETRO',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _horaController,
-                decoration: InputDecoration(
-                  labelText: 'Hora de Inicio de Servicio',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  suffixIcon: const Icon(Icons.access_time),
-                ),
-                readOnly: true,
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info,
-                      color: isDarkMode ? Colors.white70 : Colors.black54,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'La hora se extrae automáticamente del sistema, este campo no es editable.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDarkMode ? Colors.white70 : Colors.black54,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Pruebas Metrológicas Iniciales
-              MetrologicalTestsContainer(
-                testType: 'Inicial',
-                initialData: _initialTestsData,
-                onTestsDataChanged: (data) {
-                  setState(() {
-                    _initialTestsData = data;
-                  });
-                },
-              ),
-              const SizedBox(height: 20.0),
-              // Pruebas Metrológicas Finales
-              MetrologicalTestsContainer(
-                testType: 'Final',
-                initialData: _finalTestsData,
-                onTestsDataChanged: (data) {
-                  setState(() {
-                    _finalTestsData = data;
-                  });
-                },
-              ),
-              // Estado Final de la Balanza
-              const SizedBox(height: 20),
-              const Text(
-                'COMENTARIOS',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFf5b041),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              // Botón para agregar comentarios
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton.icon(
-                  onPressed: () => _agregarComentario(context),
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text(
-                    'Agregar Comentario',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFeCA400),
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20.0),
-
-              // Lista de comentarios
-              Column(
-                children:
-                    List.generate(_comentariosControllers.length, (index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _comentariosControllers[index],
-                            focusNode: _comentariosFocusNodes[index],
-                            decoration: InputDecoration(
-                              labelText: 'Comentario ${index + 1}',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              suffixText:
-                                  '${_comentariosControllers[index].text.length}/200',
-                              suffixStyle: TextStyle(
-                                color:
-                                    _comentariosControllers[index].text.length >
-                                            200
-                                        ? Colors.red
-                                        : Colors.grey,
-                              ),
-                            ),
-                            maxLength: 200,
-                            maxLines: 3,
-                            buildCounter: (context,
-                                    {required currentLength,
-                                    required isFocused,
-                                    maxLength}) =>
-                                null,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _eliminarComentario(index),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ),
-
-              if (_comentariosControllers.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'No hay comentarios agregados',
-                    style: TextStyle(
-                        color: Colors.grey, fontStyle: FontStyle.italic),
-                  ),
-                ),
-              const SizedBox(height: 20.0),
-              TextFormField(
-                controller: _horaFinController,
-                decoration: InputDecoration(
-                  labelText: 'Hora Final del Servicio',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.access_time),
-                    onPressed: () {
-                      final ahora = DateTime.now();
-                      final horaFormateada =
-                          DateFormat('HH:mm:ss').format(ahora);
-                      _horaFinController.text = horaFormateada;
-                    },
-                  ),
-                ),
-                readOnly: true,
-              ),
-              const SizedBox(height: 20.0),
-              // Botones de acción
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: _isSaveButtonPressed,
-                      builder: (context, isSaving, child) {
-                        return ElevatedButton(
-                          onPressed: isSaving
-                              ? null
-                              : () => _saveAllDataAndPhotos(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF195375),
-                          ),
-                          child: isSaving
-                              ? const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text('Guardando...',
-                                        style: TextStyle(fontSize: 16)),
-                                  ],
-                                )
-                              : const Text('GUARDAR DATOS'),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _isDataSaved,
-                    builder: (context, isSaved, child) {
-                      return Expanded(
-                        child: ElevatedButton(
-                          onPressed: isSaved
-                              ? () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          FinServicioAjustesVerificacionesScreen(
-                                        nReca: widget.nReca,
-                                        secaValue: widget.secaValue,
-                                        sessionId: widget.sessionId,
-                                        codMetrica: widget.codMetrica,
-                                        userName: widget.userName,
-                                        clienteId: widget.clienteId,
-                                        plantaCodigo: widget.plantaCodigo,
-                                        tableName: 'ajustes_metrologicos',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isSaved ? const Color(0xFF167D1D) : Colors.grey,
-                          ),
-                          child: const Text('SIGUIENTE'),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
+        body: Column(
+          children: [
+            _buildProgressBar(isDarkMode),
+            Expanded(
+              child: _buildStepContent(),
+            ),
+            _buildNavigationButtons(isDarkMode),
+          ],
         ),
       ),
     );
   }
 
-  InputDecoration _buildInputDecoration(String labelText,
-      {Widget? suffixIcon}) {
-    return InputDecoration(
-      labelText: labelText,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
-      suffixIcon: suffixIcon, // Agregar el parámetro suffixIcon
+  Widget _buildProgressBar(bool isDarkMode) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.black26 : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                _steps[_currentStep].icon,
+                color: Theme.of(context).primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Paso ${_currentStep + 1} de ${_steps.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                    Text(
+                      _steps[_currentStep].title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      _steps[_currentStep].subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.white60 : Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: List.generate(_steps.length, (index) {
+              final isCompleted = index < _currentStep;
+              final isCurrent = index == _currentStep;
+
+              return Expanded(
+                child: Container(
+                  height: 4,
+                  margin: EdgeInsets.only(
+                    left: index == 0 ? 0 : 4,
+                    right: index == _steps.length - 1 ? 0 : 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isCompleted || isCurrent
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 
-  @override
-  void dispose() {
-    for (var controller in _comentariosControllers) {
-      controller.dispose();
+  Widget _buildStepContent() {
+    switch (_currentStep) {
+      case 0:
+        return PasoPruebasIniciales(
+          model: _model,
+          controller: _controller,
+          onChanged: () => setState(() {}),
+          getIndicationSuggestions: _controller.getIndicationSuggestions,
+          getD1FromDatabase: _getD1FromCache,
+        );
+      case 1:
+        return PasoPruebasFinales(
+          model: _model,
+          controller: _controller,
+          onChanged: () => setState(() {}),
+          getIndicationSuggestions: _controller.getIndicationSuggestions,
+          getD1FromDatabase: _getD1FromCache,
+        );
+      case 2:
+        return PasoComentariosFinal(
+          model: _model,
+          onChanged: () => setState(() {}),
+        );
+      default:
+        return const Center(child: Text('Paso no encontrado'));
     }
-    for (var focusNode in _comentariosFocusNodes) {
-      focusNode.dispose();
-    }
-    _horaController.dispose();
-    _horaFinController.dispose();
-    _isSaveButtonPressed.dispose();
-    _isDataSaved.dispose();
-    super.dispose();
   }
+
+  Widget _buildNavigationButtons(bool isDarkMode) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.black26 : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _goToStep(_currentStep - 1),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('ANTERIOR'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[600],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          if (_currentStep > 0) const SizedBox(width: 12),
+          Expanded(
+            flex: _currentStep == 0 ? 1 : 2,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving
+                  ? null
+                  : () async {
+                      if (_currentStep < _steps.length - 1) {
+                        await _goToStep(_currentStep + 1);
+                      } else {
+                        if (_validateCurrentStep()) {
+                          // Al finalizar, usamos saveData para incluir las fotos
+                          await _controller.saveData(context);
+
+                          if (!mounted) return;
+
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  FinServicioAjustesVerificacionesScreen(
+                                sessionId: widget.sessionId,
+                                secaValue: widget.secaValue,
+                                codMetrica: widget.codMetrica,
+                                nReca: widget.nReca,
+                                userName: widget.userName,
+                                clienteId: widget.clienteId,
+                                plantaCodigo: widget.plantaCodigo,
+                                tableName: 'ajustes_metrologicos',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    },
+              icon: Icon(
+                _currentStep < _steps.length - 1
+                    ? Icons.arrow_forward
+                    : Icons.check_circle,
+              ),
+              label: Text(
+                _currentStep < _steps.length - 1 ? 'SIGUIENTE' : 'FINALIZAR',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _currentStep < _steps.length - 1
+                    ? const Color(0xFF195375)
+                    : const Color(0xFF167D1D),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class StepData {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  StepData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
 }
