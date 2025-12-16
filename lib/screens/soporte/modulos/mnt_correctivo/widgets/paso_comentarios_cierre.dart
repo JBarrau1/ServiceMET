@@ -46,11 +46,8 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          const Text(
-            'COMENTARIOS FINALES',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
+          _buildHeader(context),
+          const SizedBox(height: 24),
           ...List.generate(3, (index) => _buildComentarioField(index)),
           // Solo mostramos 3 por defecto para no saturar, podemos poner boton "Agregar mas"
           // O mostrar todos si tienen texto.
@@ -135,6 +132,56 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
         onChanged: (val) {
           widget.model.comentarios[index] = val;
         },
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Colors.green.withOpacity(0.1)
+            : Colors.green.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.green.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.assignment_turned_in_outlined,
+            color: Colors.green,
+            size: 32,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'COMENTARIOS Y CIERRE',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Conclusión del mantenimiento correctivo',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

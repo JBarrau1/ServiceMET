@@ -130,23 +130,21 @@ class DiagnosticoController {
         final zipEncoder = ZipEncoder();
         final zipData = zipEncoder.encode(archive);
 
-        if (zipData != null) {
-          final uint8ListData = Uint8List.fromList(zipData);
-          final zipFileName =
-              '${model.secaValue}_${model.codMetrica}_diagnostico.zip';
+        final uint8ListData = Uint8List.fromList(zipData);
+        final zipFileName =
+            '${model.secaValue}_${model.codMetrica}_diagnostico.zip';
 
-          final params = SaveFileDialogParams(
-            data: uint8ListData,
-            fileName: zipFileName,
-            mimeTypesFilter: ['application/zip'],
+        final params = SaveFileDialogParams(
+          data: uint8ListData,
+          fileName: zipFileName,
+          mimeTypesFilter: ['application/zip'],
+        );
+
+        final filePath = await FlutterFileDialog.saveFile(params: params);
+        if (filePath != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Fotos guardadas en $filePath')),
           );
-
-          final filePath = await FlutterFileDialog.saveFile(params: params);
-          if (filePath != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Fotos guardadas en $filePath')),
-            );
-          }
         }
       } catch (e) {
         debugPrint('Error al guardar fotos: $e');

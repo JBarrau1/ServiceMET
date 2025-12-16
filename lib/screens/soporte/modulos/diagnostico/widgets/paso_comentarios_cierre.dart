@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/diagnostico_model.dart';
 import '../controllers/diagnostico_controller.dart';
 import 'package:intl/intl.dart';
-import '../fin_servicio_diagnostico.dart'; // Importar pantalla de fin de servicio
 
 class PasoComentariosCierre extends StatefulWidget {
   final DiagnosticoModel model;
@@ -19,44 +18,12 @@ class PasoComentariosCierre extends StatefulWidget {
 }
 
 class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
-  bool _isSaving = false;
-  bool _isSaved = false;
-
   void _actualizarHoraFin() {
     final ahora = DateTime.now();
     final horaFormateada = DateFormat('HH:mm:ss').format(ahora);
     setState(() {
       widget.model.horaFin = horaFormateada;
     });
-  }
-
-  Future<void> _guardarDatos() async {
-    setState(() {
-      _isSaving = true;
-    });
-    await widget.controller.saveData(context);
-    setState(() {
-      _isSaving = false;
-      _isSaved = true; // Habilitar 'Siguiente' / 'Finalizar'
-    });
-  }
-
-  void _irAFinServicio() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FinServicioDiagnosticoScreen(
-          nReca: widget.model.nReca,
-          secaValue: widget.model.secaValue,
-          sessionId: widget.model.sessionId,
-          codMetrica: widget.model.codMetrica,
-          userName: widget.model.userName,
-          clienteId: widget.model.clienteId,
-          plantaCodigo: widget.model.plantaCodigo,
-          tableName: 'diagnostico',
-        ),
-      ),
-    );
   }
 
   @override
@@ -67,11 +34,8 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'COMENTARIOS Y CIERRE',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          const SizedBox(height: 20),
+          _buildHeader(context),
+          const SizedBox(height: 24),
 
           // Lista de Comentarios
           ...List.generate(10, (index) {
@@ -117,8 +81,9 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
                               .where((c) => c != null)
                               .toList();
                           widget.model.comentarios = List.filled(10, null);
-                          for (int i = 0; i < notNulls.length; i++)
+                          for (int i = 0; i < notNulls.length; i++) {
                             widget.model.comentarios[i] = notNulls[i];
+                          }
                         });
                       },
                     )),
@@ -143,38 +108,56 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
             ),
             controller: TextEditingController(text: widget.model.horaFin),
           ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 30),
+  Widget _buildHeader(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-          // Botones
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF195375),
-                      padding: const EdgeInsets.symmetric(vertical: 16)),
-                  onPressed: _isSaving ? null : _guardarDatos,
-                  child: _isSaving
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('GUARDAR DATOS',
-                          style: TextStyle(color: Colors.white)),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Colors.green.withOpacity(0.1)
+            : Colors.green.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.green.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.assignment_turned_in_outlined,
+            color: Colors.green,
+            size: 32,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'COMENTARIOS Y CIERRE',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isSaved ? const Color(0xFF167D1D) : Colors.grey,
-                      padding: const EdgeInsets.symmetric(vertical: 16)),
-                  onPressed: _isSaved ? _irAFinServicio : null,
-                  child: const Text('FINALIZAR',
-                      style: TextStyle(color: Colors.white)),
+                const SizedBox(height: 4),
+                Text(
+                  'Conclusión del servicio de diagnóstico',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  ),
                 ),
-              ),
-            ],
-          )
+              ],
+            ),
+          ),
         ],
       ),
     );

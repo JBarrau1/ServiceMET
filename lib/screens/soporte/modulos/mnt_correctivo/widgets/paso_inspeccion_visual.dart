@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/mnt_correctivo_model.dart';
 import '../controllers/mnt_correctivo_controller.dart';
-import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stil/utils/constants.dart';
+import 'campo_inspeccion_widget.dart';
 
 class PasoInspeccionVisual extends StatefulWidget {
   final MntCorrectivoModel model;
@@ -18,91 +18,140 @@ class PasoInspeccionVisual extends StatefulWidget {
 }
 
 class _PasoInspeccionVisualState extends State<PasoInspeccionVisual> {
+  bool _isAllGood = false;
+
   @override
   Widget build(BuildContext context) {
+    final campos = widget.model.inspeccionItems.keys.toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'INSPECCIÓN VISUAL Y ENTORNO',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          ...widget.model.inspeccionItems.entries.map((entry) {
-            return _buildInspeccionItem(entry.key, entry.value);
-          }).toList(),
+          _buildHeader(context),
+          _buildAllGoodCheckbox(campos),
+          const SizedBox(height: 24),
+          ...campos.map((campo) {
+            return CampoInspeccionWidget(
+              label: campo,
+              campo: widget.model.inspeccionItems[campo]!,
+              controller: widget.controller,
+              onChanged: () => setState(() {}),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildInspeccionItem(String label, InspeccionItem item) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ExpansionTile(
-        title: Text(
-          label,
+  Widget _buildAllGoodCheckbox(List<String> campos) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _isAllGood
+            ? Colors.green.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _isAllGood
+              ? Colors.green.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: CheckboxListTile(
+        title: const Text(
+          'Marcar todo como "Buen Estado"',
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: _getColorForState(item.estado),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        subtitle: Text('Estado: ${item.estado}'),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                DropdownButtonFormField<String>(
-                  value: item.estado,
-                  decoration: const InputDecoration(labelText: 'Estado'),
-                  items: ['Bueno', 'Malo', 'Regular', 'No aplica']
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      item.estado = val!;
-                    });
-                  },
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  initialValue: item.solucion,
-                  decoration: const InputDecoration(labelText: 'Solución'),
-                  onChanged: (val) => item.solucion = val,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  initialValue: item.comentario,
-                  decoration: const InputDecoration(labelText: 'Comentario'),
-                  maxLines: 2,
-                  onChanged: (val) => item.comentario = val,
-                ),
-                const SizedBox(height: 10),
-                // Aquí irían los botones de foto similar a Mnt Regular
-                // Por brevedad y complejidad, omito la implementación visual completa de fotos aquí,
-                // pero el modelo la soporta.
-              ],
-            ),
-          )
-        ],
+        subtitle: Text(
+          _isAllGood
+              ? 'Todos los campos están en "1 Bueno" con comentario "En buen estado"'
+              : 'Active esta opción para aplicar "Buen Estado" a todos los campos',
+          style: TextStyle(
+            fontSize: 12,
+            color: _isAllGood ? Colors.green[700] : Colors.grey[600],
+          ),
+        ),
+        value: _isAllGood,
+        onChanged: (bool? value) {
+          _toggleAllGood(value ?? false, campos);
+        },
+        activeColor: Colors.green,
+        controlAffinity: ListTileControlAffinity.leading,
       ),
     );
   }
 
-  Color _getColorForState(String estado) {
-    switch (estado) {
-      case 'Bueno':
-        return Colors.green;
-      case 'Malo':
-        return Colors.red;
-      case 'Regular':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
+  void _toggleAllGood(bool isGood, List<String> campos) {
+    setState(() {
+      _isAllGood = isGood;
+
+      if (isGood) {
+        for (final fieldName in campos) {
+          final campo = widget.model.inspeccionItems[fieldName];
+          if (campo != null) {
+            campo.estado = '1 Bueno';
+            campo.comentario = 'En buen estado';
+            campo.solucion = 'No aplica';
+          }
+        }
+      }
+    });
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Colors.purple.withOpacity(0.1)
+            : Colors.purple.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.purple.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.remove_red_eye_outlined,
+            color: Colors.purple,
+            size: 32,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'INSPECCIÓN VISUAL',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Inspeccione el estado físico y operacional de los componentes',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

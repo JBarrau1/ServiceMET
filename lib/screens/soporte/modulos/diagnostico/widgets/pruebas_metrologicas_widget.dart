@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../mnt_prv_regular/mnt_prv_regular_stil/models/mnt_prv_regular_stil_model.dart';
 import 'excentricidad_widget.dart';
 import 'repetibilidad_widget.dart';
+import 'linealidad_widget.dart';
 import '../controllers/diagnostico_controller.dart'; // Importar controller para fotos
 
 class PruebasMetrologicasWidget extends StatefulWidget {
@@ -152,7 +153,31 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
             onChanged: widget.onChanged,
           ),
 
-        // Linealidad removida para Diagnóstico
+        const SizedBox(height: 20.0),
+
+        // Linealidad
+        SwitchListTile(
+          title: Text(
+              'PRUEBAS DE LINEALIDAD ${widget.tipoPrueba.toUpperCase()}',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          value: widget.pruebas.linealidad?.activo ?? false,
+          onChanged: (bool value) {
+            setState(() {
+              if (value) {
+                widget.pruebas.linealidad = Linealidad(activo: true);
+              } else {
+                widget.pruebas.linealidad = null;
+              }
+              widget.onChanged();
+            });
+          },
+        ),
+        if (widget.pruebas.linealidad != null)
+          LinealidadWidget(
+            linealidad: widget.pruebas.linealidad!,
+            onChanged: widget.onChanged,
+            getD1FromDatabase: widget.getD1FromDatabase,
+          ),
       ],
     );
   }

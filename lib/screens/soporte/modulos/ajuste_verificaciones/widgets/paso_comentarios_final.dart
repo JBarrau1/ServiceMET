@@ -77,8 +77,9 @@ class PasoComentariosFinal extends StatelessWidget {
                                   .where((c) => c != null)
                                   .toList();
                               model.comentarios = List.filled(10, null);
-                              for (int i = 0; i < notNulls.length; i++)
+                              for (int i = 0; i < notNulls.length; i++) {
                                 model.comentarios[i] = notNulls[i];
+                              }
                               onChanged();
                             },
                           )),

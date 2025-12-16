@@ -78,41 +78,95 @@ class MntCorrectivoController {
 
         if (fields.isNotEmpty && fields.length > 1) {
           final headers = fields[0].map((e) => e.toString()).toList();
-          final data = fields.last;
 
-          final Map<String, dynamic> csvMap = {};
-          for (int i = 0; i < headers.length; i++) {
-            if (i < data.length) {
-              csvMap[headers[i]] = data[i];
+          // Buscar índice de la columna cod_metrica
+          final codMetricaIndex = headers.indexOf('cod_metrica');
+
+          if (codMetricaIndex == -1) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'El archivo CSV no contiene la columna "cod_metrica"'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            return;
+          }
+
+          // Buscar la fila que coincida con el cod_metrica actual
+          Map<String, dynamic>? matchingRow;
+
+          for (int rowIndex = 1; rowIndex < fields.length; rowIndex++) {
+            final row = fields[rowIndex];
+
+            if (codMetricaIndex < row.length) {
+              final csvCodMetrica =
+                  row[codMetricaIndex]?.toString().trim() ?? '';
+              final modelCodMetrica = model.codMetrica.trim();
+
+              if (csvCodMetrica == modelCodMetrica) {
+                // Encontramos una coincidencia, crear el mapa
+                matchingRow = {};
+                for (int i = 0; i < headers.length; i++) {
+                  if (i < row.length) {
+                    matchingRow[headers[i]] = row[i];
+                  }
+                }
+                break; // Tomar la primera coincidencia
+              }
             }
           }
 
-          _populateModelFromCsv(csvMap);
-          onUpdate(); // Actualizar UI
+          if (matchingRow != null) {
+            _populateModelFromCsv(matchingRow);
+            onUpdate(); // Actualizar UI
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Datos importados correctamente'),
-                backgroundColor: Colors.green),
-          );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      'Datos importados correctamente para balanza: ${model.codMetrica}'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            // No se encontró coincidencia
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      'La balanza seleccionada (${model.codMetrica}) no coincide con ninguna del CSV importado'),
+                  backgroundColor: Colors.orange,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          }
         }
       }
     } catch (e) {
       debugPrint('Error importing CSV: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Error al importar: $e'),
-            backgroundColor: Colors.red),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error al importar: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
   void _populateModelFromCsv(Map<String, dynamic> data) {
     // 1. General
-    if (data.containsKey('reporte'))
+    if (data.containsKey('reporte')) {
       model.reporteFalla = data['reporte'].toString();
-    if (data.containsKey('evaluacion'))
+    }
+    if (data.containsKey('evaluacion')) {
       model.evaluacion = data['evaluacion'].toString();
+    }
 
     // 2. Pruebas Iniciales
     // Retorno Cero
@@ -271,8 +325,9 @@ class MntCorrectivoController {
 
     // Comentarios
     for (int i = 0; i < model.comentarios.length; i++) {
-      if (model.comentarios[i] != null)
+      if (model.comentarios[i] != null) {
         data['comentario_${i + 1}'] = model.comentarios[i];
+      }
     }
 
     // Pruebas

@@ -99,7 +99,11 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<String>(
-          initialValue: widget.excentricidad.tipoPlataforma,
+          initialValue: widget.excentricidad.tipoPlataforma != null &&
+                  AppConstants.platformOptions.keys
+                      .contains(widget.excentricidad.tipoPlataforma)
+              ? widget.excentricidad.tipoPlataforma
+              : null,
           decoration: _buildInputDecoration('Tipo de Plataforma'),
           items: AppConstants.platformOptions.keys.map((String value) {
             return DropdownMenuItem<String>(
@@ -117,23 +121,41 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
           },
         ),
         const SizedBox(height: 20),
-        if (widget.excentricidad.tipoPlataforma != null)
+        if (widget.excentricidad.tipoPlataforma != null &&
+            AppConstants.platformOptions
+                .containsKey(widget.excentricidad.tipoPlataforma))
           DropdownButtonFormField<String>(
-            initialValue: widget.excentricidad.puntosIndicador,
+            initialValue: () {
+              final tipoPlataforma = widget.excentricidad.tipoPlataforma;
+              final puntosIndicador = widget.excentricidad.puntosIndicador;
+
+              if (tipoPlataforma == null || puntosIndicador == null) {
+                return null;
+              }
+
+              final options = AppConstants.platformOptions[tipoPlataforma];
+              if (options == null || !options.contains(puntosIndicador)) {
+                return null;
+              }
+
+              return puntosIndicador;
+            }(),
             decoration: _buildInputDecoration('Puntos e Indicador'),
             items: AppConstants
-                .platformOptions[widget.excentricidad.tipoPlataforma]!
-                .map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
+                    .platformOptions[widget.excentricidad.tipoPlataforma]
+                    ?.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList() ??
+                [],
             onChanged: (String? newValue) {
               setState(() {
                 widget.excentricidad.puntosIndicador = newValue;
-                widget.excentricidad.imagenPath =
-                    AppConstants.optionImages[newValue!];
+                widget.excentricidad.imagenPath = newValue != null
+                    ? AppConstants.optionImages[newValue]
+                    : null;
                 _updatePositions();
               });
             },
