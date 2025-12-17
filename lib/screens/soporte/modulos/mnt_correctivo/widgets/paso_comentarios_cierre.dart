@@ -31,6 +31,21 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
   }
 
   @override
+  void didUpdateWidget(covariant PasoComentariosCierre oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Verificar cambios en el modelo y actualizar controllers si es necesario
+    for (int i = 0; i < 10; i++) {
+      if (i < widget.model.comentarios.length &&
+          i < _comentarioControllers.length) {
+        String newVal = widget.model.comentarios[i] ?? '';
+        if (_comentarioControllers[i].text != newVal) {
+          _comentarioControllers[i].text = newVal;
+        }
+      }
+    }
+  }
+
+  @override
   void dispose() {
     for (var controller in _comentarioControllers) {
       controller.dispose();

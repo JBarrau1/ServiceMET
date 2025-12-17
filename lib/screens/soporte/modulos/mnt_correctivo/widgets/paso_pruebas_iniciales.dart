@@ -25,20 +25,6 @@ class _PasoPruebasInicialesState extends State<PasoPruebasIniciales> {
       child: Column(
         children: [
           _buildHeader(context),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(8.0),
-            color: Colors.blue.shade100,
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue),
-                SizedBox(width: 8),
-                Expanded(
-                    child: Text(
-                        'Estas pruebas se realizan ANTES de cualquier ajuste o reparación.')),
-              ],
-            ),
-          ),
           const SizedBox(height: 20),
           PruebasMetrologicasWidget(
             pruebas: widget.model.pruebasIniciales,

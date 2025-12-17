@@ -483,8 +483,6 @@ class DatabaseHelperMntCorrectivo {
         limpieza_profunda_comentario TEXT DEFAULT '',
         limpieza_profunda_foto TEXT DEFAULT '',
         
-        
-        
         -- Retorno a Cero
         retorno_cero_inicial_valoracion TEXT DEFAULT '',
         retorno_cero_inicial_carga TEXT DEFAULT '',
@@ -524,6 +522,7 @@ class DatabaseHelperMntCorrectivo {
         excentricidad_inicial_pos6_retorno TEXT DEFAULT '',
         excentricidad_inicial_pos6_error TEXT DEFAULT '',
         
+        -- Excentricidad Final
         excentricidad_final_tipo_plataforma TEXT DEFAULT '',
         excentricidad_final_opcion_prueba TEXT DEFAULT '',
         excentricidad_final_carga TEXT DEFAULT '',
@@ -553,109 +552,10 @@ class DatabaseHelperMntCorrectivo {
         excentricidad_final_pos6_indicacion TEXT DEFAULT '',
         excentricidad_final_pos6_retorno TEXT DEFAULT '',
         excentricidad_final_pos6_error TEXT DEFAULT '',
-        
+
+        -- Repetibilidad Inicial
         repetibilidad_inicial_cantidad_cargas TEXT DEFAULT '',
         repetibilidad_inicial_cantidad_pruebas TEXT DEFAULT '',
-
-        -- IDA
-        excentricidad_inicial_punto1_ida_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto1_ida_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto1_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto2_ida_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto2_ida_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto2_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto3_ida_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto3_ida_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto3_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto4_ida_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto4_ida_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto4_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto5_ida_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto5_ida_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto5_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto6_ida_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto6_ida_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto6_ida_retorno TEXT DEFAULT '',
-
-        -- VUELTA
-        excentricidad_inicial_punto7_vuelta_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto7_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto7_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto8_vuelta_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto8_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto8_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto9_vuelta_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto9_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto9_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto10_vuelta_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto10_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto10_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto11_vuelta_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto11_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto11_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_inicial_punto12_vuelta_numero TEXT DEFAULT '',
-        excentricidad_inicial_punto12_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_inicial_punto12_vuelta_retorno TEXT DEFAULT '',
-
-        -- IDA
-        excentricidad_final_punto1_ida_numero TEXT DEFAULT '',
-        excentricidad_final_punto1_ida_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto1_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto2_ida_numero TEXT DEFAULT '',
-        excentricidad_final_punto2_ida_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto2_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto3_ida_numero TEXT DEFAULT '',
-        excentricidad_final_punto3_ida_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto3_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto4_ida_numero TEXT DEFAULT '',
-        excentricidad_final_punto4_ida_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto4_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto5_ida_numero TEXT DEFAULT '',
-        excentricidad_final_punto5_ida_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto5_ida_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto6_ida_numero TEXT DEFAULT '',
-        excentricidad_final_punto6_ida_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto6_ida_retorno TEXT DEFAULT '',
-
-        -- VUELTA
-        excentricidad_final_punto7_vuelta_numero TEXT DEFAULT '',
-        excentricidad_final_punto7_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto7_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto8_vuelta_numero TEXT DEFAULT '',
-        excentricidad_final_punto8_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto8_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto9_vuelta_numero TEXT DEFAULT '',
-        excentricidad_final_punto9_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto9_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto10_vuelta_numero TEXT DEFAULT '',
-        excentricidad_final_punto10_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto10_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto11_vuelta_numero TEXT DEFAULT '',
-        excentricidad_final_punto11_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto11_vuelta_retorno TEXT DEFAULT '',
-
-        excentricidad_final_punto12_vuelta_numero TEXT DEFAULT '',
-        excentricidad_final_punto12_vuelta_indicacion TEXT DEFAULT '',
-        excentricidad_final_punto12_vuelta_retorno TEXT DEFAULT '',
         
         -- Carga 1
         repetibilidad_inicial_carga1_valor TEXT DEFAULT '',

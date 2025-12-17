@@ -170,7 +170,8 @@ class MntCorrectivoController {
 
     // 2. Pruebas Iniciales
     // Retorno Cero
-    if (data.containsKey('retorno_cero_inicial_valoracion')) {
+    if (data.containsKey('retorno_cero_inicial_valoracion') &&
+        data['retorno_cero_inicial_valoracion'].toString().isNotEmpty) {
       model.pruebasIniciales.retornoCero.estado =
           data['retorno_cero_inicial_valoracion'].toString();
       model.pruebasIniciales.retornoCero.valor =
@@ -183,15 +184,16 @@ class MntCorrectivoController {
     }
 
     // Excentricidad Inicial
-    if (data.containsKey('excentricidad_inicial_cantidad_posiciones')) {
+    if (data.containsKey('excentricidad_inicial_cantidad_posiciones') &&
+        data['excentricidad_inicial_cantidad_posiciones']
+            .toString()
+            .isNotEmpty &&
+        data['excentricidad_inicial_cantidad_posiciones'].toString() != '0') {
       model.pruebasIniciales.excentricidad = Excentricidad(activo: true);
       var exc = model.pruebasIniciales.excentricidad!;
       exc.tipoPlataforma = data['excentricidad_inicial_tipo_plataforma'];
       exc.puntosIndicador = data['excentricidad_inicial_opcion_prueba'];
       exc.carga = data['excentricidad_inicial_carga'].toString();
-      // Imagen path no servirá de mucho si es local del otro dispositivo, pero lo intentamos
-      exc.imagenPath = data['excentricidad_inicial_ruta_imagen'];
-
       int count = int.tryParse(
               data['excentricidad_inicial_cantidad_posiciones'].toString()) ??
           0;
@@ -207,7 +209,9 @@ class MntCorrectivoController {
     }
 
     // Repetibilidad Inicial
-    if (data.containsKey('repetibilidad_inicial_cantidad_cargas')) {
+    if (data.containsKey('repetibilidad_inicial_cantidad_cargas') &&
+        data['repetibilidad_inicial_cantidad_cargas'].toString().isNotEmpty &&
+        data['repetibilidad_inicial_cantidad_cargas'].toString() != '0') {
       model.pruebasIniciales.repetibilidad = Repetibilidad(activo: true);
       var rep = model.pruebasIniciales.repetibilidad!;
       rep.cantidadCargas = int.tryParse(
@@ -234,57 +238,15 @@ class MntCorrectivoController {
       }
     }
 
-    // 3. Inspección Visual
-    // Mapear claves de BD a Labels
-    final Map<String, String> dbKeyToLabel = {
-      'vibracion': 'Vibración',
-      'polvo': 'Polvo',
-      'temperatura': 'Temperatura',
-      'humedad': 'Humedad',
-      'mesada': 'Mesada',
-      'iluminacion': 'Iluminación',
-      'limpieza_fosa': 'Limpieza de Fosa',
-      'estado_drenaje': 'Estado de Drenaje',
-      'carcasa': 'Carcasa',
-      'teclado_fisico': 'Teclado Fisico',
-      'display_fisico': 'Display Fisico',
-      'fuente_poder': 'Fuente de poder',
-      'bateria_operacional': 'Bateria operacional',
-      'bracket': 'Bracket',
-      'teclado_operativo': 'Teclado Operativo',
-      'display_operativo': 'Display Operativo',
-      'conector_celda': 'Contector de celda',
-      'bateria_memoria': 'Bateria de memoria',
-      'limpieza_general': 'Limpieza general',
-      'golpes_terminal': 'Golpes al terminal',
-      'nivelacion': 'Nivelacion',
-      'limpieza_receptor': 'Limpieza receptor',
-      'golpes_receptor': 'Golpes al receptor de carga',
-      'encendido': 'Encendido',
-      'limitador_movimiento': 'Limitador de movimiento',
-      'suspension': 'Suspensión',
-      'limitador_carga': 'Limitador de carga',
-      'celda_carga': 'Celda de carga',
-      'tapa_caja': 'Tapa de caja sumadora',
-      'humedad_interna': 'Humedad Interna',
-      'estado_prensacables': 'Estado de prensacables',
-      'estado_borneas': 'Estado de borneas'
-    };
-
-    dbKeyToLabel.forEach((dbKey, label) {
-      if (model.inspeccionItems.containsKey(label)) {
-        if (data.containsKey('${dbKey}_estado')) {
-          model.inspeccionItems[label]!.estado =
-              data['${dbKey}_estado'].toString();
+    // 4. Comentarios
+    for (int i = 1; i <= 10; i++) {
+      if (data.containsKey('comentario_$i')) {
+        // Asegurar que el array tenga tamaño suficiente (ya está init con 10 nulos)
+        if (i - 1 < model.comentarios.length) {
+          model.comentarios[i - 1] = data['comentario_$i'].toString();
         }
-        if (data.containsKey('${dbKey}_comentario')) {
-          model.inspeccionItems[label]!.comentario =
-              data['${dbKey}_comentario'].toString();
-        }
-        // Solución generalmente no se importa del diagnóstico (es lo que se hace ahora en el correctivo), pero si se quisiera:
-        // if (data.containsKey('${dbKey}_solucion')) ...
       }
-    });
+    }
   }
 
   // --- SAVE ---
@@ -396,6 +358,7 @@ class MntCorrectivoController {
       data['excentricidad_${tipo}_tipo_plataforma'] = exc.tipoPlataforma ?? '';
       data['excentricidad_${tipo}_opcion_prueba'] = exc.puntosIndicador ?? '';
       data['excentricidad_${tipo}_carga'] = exc.carga;
+      data['excentricidad_${tipo}_ruta_imagen'] = exc.imagenPath ?? '';
       data['excentricidad_${tipo}_cantidad_posiciones'] =
           exc.posiciones.length.toString();
       for (int i = 0; i < exc.posiciones.length; i++) {

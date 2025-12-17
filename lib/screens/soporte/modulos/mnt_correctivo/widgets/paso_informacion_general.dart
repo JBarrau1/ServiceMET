@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/mnt_correctivo_model.dart';
 import '../controllers/mnt_correctivo_controller.dart';
 
-class PasoInformacionGeneral extends StatelessWidget {
+class PasoInformacionGeneral extends StatefulWidget {
   final MntCorrectivoModel model;
   final MntCorrectivoController controller;
-  final VoidCallback onUpdate; // Para refrescar UI tras importar
+  final VoidCallback onUpdate;
 
   const PasoInformacionGeneral({
     super.key,
@@ -13,6 +13,40 @@ class PasoInformacionGeneral extends StatelessWidget {
     required this.controller,
     required this.onUpdate,
   });
+
+  @override
+  State<PasoInformacionGeneral> createState() => _PasoInformacionGeneralState();
+}
+
+class _PasoInformacionGeneralState extends State<PasoInformacionGeneral> {
+  late TextEditingController _reporteController;
+  late TextEditingController _evaluacionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _reporteController = TextEditingController(text: widget.model.reporteFalla);
+    _evaluacionController =
+        TextEditingController(text: widget.model.evaluacion);
+  }
+
+  @override
+  void didUpdateWidget(covariant PasoInformacionGeneral oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.model.reporteFalla != widget.model.reporteFalla) {
+      _reporteController.text = widget.model.reporteFalla;
+    }
+    if (oldWidget.model.evaluacion != widget.model.evaluacion) {
+      _evaluacionController.text = widget.model.evaluacion;
+    }
+  }
+
+  @override
+  void dispose() {
+    _reporteController.dispose();
+    _evaluacionController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +63,8 @@ class PasoInformacionGeneral extends StatelessWidget {
                 backgroundColor: Colors.blueAccent,
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed: () =>
-                  controller.importDiagnosticoCsv(context, onUpdate),
+              onPressed: () => widget.controller
+                  .importDiagnosticoCsv(context, widget.onUpdate),
               icon: const Icon(Icons.download, color: Colors.white),
               label: const Text('IMPORTAR DIAGNÓSTICO (CSV)',
                   style: TextStyle(color: Colors.white)),
@@ -41,7 +75,7 @@ class PasoInformacionGeneral extends StatelessWidget {
           _buildHeader(context),
           const SizedBox(height: 24),
           TextFormField(
-            initialValue: model.reporteFalla,
+            controller: _reporteController,
             decoration: InputDecoration(
               labelText: 'Reporte de falla:',
               border: OutlineInputBorder(
@@ -52,11 +86,11 @@ class PasoInformacionGeneral extends StatelessWidget {
             maxLength: 800,
             maxLines: 8,
             minLines: 4,
-            onChanged: (value) => model.reporteFalla = value,
+            onChanged: (value) => widget.model.reporteFalla = value,
           ),
           const SizedBox(height: 20),
           TextFormField(
-            initialValue: model.evaluacion,
+            controller: _evaluacionController,
             decoration: InputDecoration(
               labelText: 'Evaluación y análisis técnico de fallas:',
               border: OutlineInputBorder(
@@ -67,7 +101,7 @@ class PasoInformacionGeneral extends StatelessWidget {
             maxLength: 800,
             maxLines: 8,
             minLines: 4,
-            onChanged: (value) => model.evaluacion = value,
+            onChanged: (value) => widget.model.evaluacion = value,
           ),
         ],
       ),

@@ -7,9 +7,6 @@ import '../models/diagnostico_model.dart';
 import '../../mnt_prv_regular/mnt_prv_regular_stil/models/mnt_prv_regular_stil_model.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import 'package:path/path.dart';
-import 'dart:ui';
-import 'dart:convert';
 import 'dart:typed_data';
 
 class DiagnosticoController {
