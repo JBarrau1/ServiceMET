@@ -10,9 +10,8 @@ import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/stac_mnt_prv_regular.dart'
     hide StepData;
 import '../../../database/soporte_tecnico/database_helper_ajustes.dart';
-import '../../../database/soporte_tecnico/database_helper_diagnostico.dart';
+import '../../../database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
 import '../../../database/soporte_tecnico/database_helper_instalacion.dart';
-import '../../../database/soporte_tecnico/database_helper_mnt_correctivo.dart';
 import '../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
 import '../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
 import '../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
@@ -145,7 +144,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
           dbHelper = DatabaseHelperAjustes();
           break;
         case 'diagnostico':
-          dbHelper = DatabaseHelperDiagnostico();
+          dbHelper = DatabaseHelperDiagnosticoCorrectivo();
           break;
         case 'mnt_prv_regular_stac':
           dbHelper = DatabaseHelperMntPrvRegularStac();
@@ -160,7 +159,7 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
           dbHelper = DatabaseHelperMntPrvAvanzadoStil();
           break;
         case 'mnt_correctivo':
-          dbHelper = DatabaseHelperMntCorrectivo();
+          dbHelper = DatabaseHelperDiagnosticoCorrectivo();
           break;
         case 'instalacion':
           dbHelper = DatabaseHelperInstalacion();

@@ -1,10 +1,8 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import '../../../../../database/soporte_tecnico/database_helper_ajustes.dart';
-import '../../../../../database/soporte_tecnico/database_helper_diagnostico.dart';
+import '../../../../../database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
 import '../models/diagnostico_model.dart';
-import '../../mnt_prv_regular/mnt_prv_regular_stil/models/mnt_prv_regular_stil_model.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'dart:typed_data';
@@ -162,7 +160,8 @@ class DiagnosticoController {
       await _savePhotos(context);
 
       // 2. Guardar Datos BD
-      final dbHelper = DatabaseHelperDiagnostico();
+      final DatabaseHelperDiagnosticoCorrectivo dbHelper =
+          DatabaseHelperDiagnosticoCorrectivo();
       final data = _prepareDataForSave();
 
       await dbHelper.upsertRegistroRelevamiento(data);
@@ -214,8 +213,8 @@ class DiagnosticoController {
       Map<String, dynamic> data, PruebasMetrologicas pruebas, String tipo) {
     // Retorno a Cero
     data['retorno_cero_${tipo}_valoracion'] = pruebas.retornoCero.estado;
-    data['retorno_cero_${tipo}_carga'] = pruebas.retornoCero.estabilidad ??
-        pruebas.retornoCero.valor; // Priorizar estabilidad
+    data['retorno_cero_${tipo}_carga'] =
+        pruebas.retornoCero.estabilidad; // Priorizar estabilidad
     data['retorno_cero_${tipo}_unidad'] = pruebas.retornoCero.unidad;
 
     // Excentricidad
@@ -266,6 +265,29 @@ class DiagnosticoController {
           data['repetibilidad_${tipo}_carga${cNum}_prueba${pNum}_retorno'] =
               prueba.retorno;
         }
+      }
+    }
+
+    // Linealidad
+    if (pruebas.linealidad != null && pruebas.linealidad!.activo) {
+      final lin = pruebas.linealidad!;
+      data['linealidad_${tipo}_cantidad_puntos'] = lin.puntos.length.toString();
+
+      for (int i = 0; i < lin.puntos.length; i++) {
+        final pNum = i + 1;
+        // Db espera puntos 1..12
+        if (pNum > 12) break;
+
+        final punto = lin.puntos[i];
+        data['linealidad_${tipo}_punto${pNum}_lt'] = punto.lt;
+        data['linealidad_${tipo}_punto${pNum}_indicacion'] = punto.indicacion;
+        data['linealidad_${tipo}_punto${pNum}_retorno'] = punto.retorno;
+
+        // Error
+        double l = double.tryParse(punto.lt) ?? 0;
+        double ind = double.tryParse(punto.indicacion) ?? 0;
+        data['linealidad_${tipo}_punto${pNum}_error'] =
+            (ind - l).toStringAsFixed(2);
       }
     }
   }

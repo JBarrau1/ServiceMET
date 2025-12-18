@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../mnt_prv_regular/mnt_prv_regular_stil/models/mnt_prv_regular_stil_model.dart';
+import '../models/mnt_correctivo_model.dart';
 import 'excentricidad_widget.dart';
 import 'repetibilidad_widget.dart';
 import 'linealidad_widget.dart';

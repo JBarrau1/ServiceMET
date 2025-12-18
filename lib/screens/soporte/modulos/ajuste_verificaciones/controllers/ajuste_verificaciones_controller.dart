@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:service_met/database/soporte_tecnico/database_helper_ajustes.dart';
-import '../../mnt_prv_regular/mnt_prv_regular_stil/models/mnt_prv_regular_stil_model.dart';
+
 import '../models/ajuste_verificaciones_model.dart';
 
 class AjusteVerificacionesController {

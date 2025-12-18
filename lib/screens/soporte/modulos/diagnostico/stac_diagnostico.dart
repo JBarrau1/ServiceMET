@@ -413,7 +413,7 @@ class _StacDiagnosticoScreenState extends State<StacDiagnosticoScreen> {
                                   userName: _model.userName,
                                   clienteId: _model.clienteId,
                                   plantaCodigo: _model.plantaCodigo,
-                                  tableName: 'diagnostico',
+                                  tableName: 'diagnostico_correctivo',
                                 ),
                               ),
                             );

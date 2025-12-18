@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:service_met/database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/providers/calibration_provider.dart';
 import 'package:service_met/repositories/calibration_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database/app_database.dart';
 import 'database/soporte_tecnico/database_helper_ajustes.dart';
-import 'database/soporte_tecnico/database_helper_diagnostico.dart';
 import 'database/soporte_tecnico/database_helper_instalacion.dart';
-import 'database/soporte_tecnico/database_helper_mnt_correctivo.dart';
 import 'database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
 import 'database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
 import 'database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
@@ -28,15 +27,14 @@ void main() async {
   // Inicializa la base de datos local
   await AppDatabase().database;
   await DatabaseHelperAjustes().database;
-  await DatabaseHelperDiagnostico().database;
   await DatabaseHelperInstalacion().database;
-  await DatabaseHelperMntCorrectivo().database;
   await DatabaseHelperMntPrvAvanzadoStac().database;
   await DatabaseHelperMntPrvAvanzadoStil().database;
   await DatabaseHelperMntPrvRegularStac().database;
   await DatabaseHelperMntPrvRegularStil().database;
   await DatabaseHelperRelevamiento().database;
   await DatabaseHelperVerificaciones().database;
+  await DatabaseHelperDiagnosticoCorrectivo().database;
 
   // NUEVO: Verificar si se completó el setup inicial
   final prefs = await SharedPreferences.getInstance();

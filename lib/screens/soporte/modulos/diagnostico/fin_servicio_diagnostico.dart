@@ -9,7 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:service_met/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 
-import '../../../../database/soporte_tecnico/database_helper_diagnostico.dart';
+import '../../../../database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
 
 class FinServicioDiagnosticoScreen extends StatefulWidget {
   final String sessionId;
@@ -77,12 +77,12 @@ class _FinServicioDiagnosticoScreenState
   // ✅ NUEVO: Función principal de confirmación y exportación
   Future<void> _confirmarYExportar(BuildContext context) async {
     try {
-      final dbHelper = DatabaseHelperDiagnostico();
+      final dbHelper = DatabaseHelperDiagnosticoCorrectivo();
       final db = await dbHelper.database;
 
       // ✅ CAMBIO: Usar otst y estado_balanza = 'Balanza Realizada'
       final rows = await db.query(
-        widget.tableName ?? 'diagnostico',
+        widget.tableName ?? 'diagnostico_correctivo',
         where: 'otst = ? AND estado_servicio = ?',
         whereArgs: [widget.secaValue, 'Completo'],
       );
@@ -98,7 +98,7 @@ class _FinServicioDiagnosticoScreenState
 
       // 3. Obtener rows actualizados
       final updatedRows = await db.query(
-        widget.tableName ?? 'diagnostico',
+        widget.tableName ?? 'diagnostico_correctivo',
         where: 'otst = ? AND estado_servicio = ?',
         whereArgs: [widget.secaValue, 'Completo'],
       );
@@ -271,11 +271,11 @@ class _FinServicioDiagnosticoScreenState
     if (confirmado != true) return;
 
     try {
-      final dbHelper = DatabaseHelperDiagnostico();
+      final dbHelper = DatabaseHelperDiagnosticoCorrectivo();
       final db = await dbHelper.database;
 
       final List<Map<String, dynamic>> rows = await db.query(
-        widget.tableName ?? 'diagnostico',
+        widget.tableName ?? 'diagnostico_correctivo',
         where: 'otst = ?',
         whereArgs: [widget.secaValue],
         orderBy: 'session_id DESC',

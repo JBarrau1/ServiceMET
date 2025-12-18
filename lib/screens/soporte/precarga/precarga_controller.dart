@@ -7,9 +7,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:archive/archive_io.dart';
 import '../../../database/soporte_tecnico/database_helper_ajustes.dart';
-import '../../../database/soporte_tecnico/database_helper_diagnostico.dart';
+import '../../../database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
 import '../../../database/soporte_tecnico/database_helper_instalacion.dart';
-import '../../../database/soporte_tecnico/database_helper_mnt_correctivo.dart';
 import '../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stac.dart';
 import '../../../database/soporte_tecnico/database_helper_mnt_prv_avanzado_stil.dart';
 import '../../../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
@@ -337,7 +336,7 @@ class PrecargaControllerSop extends ChangeNotifier {
       case 'ajustes_metrologicos':
         return DatabaseHelperAjustes();
       case 'diagnostico':
-        return DatabaseHelperDiagnostico();
+        return DatabaseHelperDiagnosticoCorrectivo();
       case 'mnt_prv_regular_stac':
         return DatabaseHelperMntPrvRegularStac();
       case 'mnt_prv_regular_stil':
@@ -347,7 +346,7 @@ class PrecargaControllerSop extends ChangeNotifier {
       case 'mnt_prv_avanzado_stil':
         return DatabaseHelperMntPrvAvanzadoStil();
       case 'mnt_correctivo':
-        return DatabaseHelperMntCorrectivo();
+        return DatabaseHelperDiagnosticoCorrectivo();
       case 'instalacion':
         return DatabaseHelperInstalacion();
       case 'verificaciones_internas':

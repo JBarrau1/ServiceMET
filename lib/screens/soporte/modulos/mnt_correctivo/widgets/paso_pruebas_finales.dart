@@ -67,13 +67,8 @@ class _PasoPruebasFinalesState extends State<PasoPruebasFinales> {
     // Lógica simplificada de copia
     setState(() {
       // Copia profunda idealmente, pero por ahora asignación manual de valores clave
-      widget.model.pruebasFinales.retornoCero.estado =
-          widget.model.pruebasIniciales.retornoCero.estado;
-      widget.model.pruebasFinales.retornoCero.valor =
-          widget.model.pruebasIniciales.retornoCero.valor;
-      widget.model.pruebasFinales.retornoCero.estabilidad =
-          widget.model.pruebasIniciales.retornoCero.estabilidad;
-      // Excentricidad y Repetibilidad requieren copias más estructuradas si se desea clonar todo
+      widget.model.pruebasFinales =
+          PruebasMetrologicas.fromOther(widget.model.pruebasIniciales);
     });
   }
 

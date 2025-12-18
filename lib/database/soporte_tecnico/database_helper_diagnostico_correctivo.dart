@@ -5,16 +5,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-class DatabaseHelperMntCorrectivo {
-  static final DatabaseHelperMntCorrectivo _instance =
-      DatabaseHelperMntCorrectivo._internal();
-  factory DatabaseHelperMntCorrectivo() => _instance;
+class DatabaseHelperDiagnosticoCorrectivo {
+  static final DatabaseHelperDiagnosticoCorrectivo _instance =
+      DatabaseHelperDiagnosticoCorrectivo._internal();
+  factory DatabaseHelperDiagnosticoCorrectivo() => _instance;
   static Database? _database;
-  static bool _isInitializing =
-      false; // ← AGREGADO: Flag para evitar inicializaciones múltiples
-  String get tableName => 'mnt_correctivo';
+  static bool _isInitializing = false;
+  String get tableName => 'diagnostico_correctivo';
 
-  DatabaseHelperMntCorrectivo._internal();
+  DatabaseHelperDiagnosticoCorrectivo._internal();
 
   Future<bool> metricaExists(String otst) async {
     return await secaExists(otst);
@@ -34,7 +33,7 @@ class DatabaseHelperMntCorrectivo {
       final db = await database;
 
       final List<Map<String, dynamic>> result = await db.query(
-        'mnt_correctivo',
+        tableName,
         where: 'cod_metrica = ?',
         whereArgs: [codMetrica],
         orderBy: 'id DESC',
@@ -52,7 +51,7 @@ class DatabaseHelperMntCorrectivo {
     try {
       final db = await database;
       final result = await db.query(
-        'mnt_correctivo',
+        tableName,
         where: 'otst = ?',
         whereArgs: [otst],
         orderBy: 'id DESC',
@@ -65,7 +64,6 @@ class DatabaseHelperMntCorrectivo {
     }
   }
 
-  // REEMPLAZAR ESTE MÉTODO COMPLETO
   Future<String> generateSessionId(String otst) async {
     try {
       final db = await database;
@@ -73,7 +71,7 @@ class DatabaseHelperMntCorrectivo {
       // Buscar el último session_id para este SECA
       final result = await db.rawQuery('''
       SELECT session_id 
-      FROM mnt_correctivo 
+      FROM $tableName 
       WHERE otst = ? 
       ORDER BY session_id DESC 
       LIMIT 1
@@ -103,7 +101,7 @@ class DatabaseHelperMntCorrectivo {
   Future<List<Map<String, dynamic>>> getAllRegistrosRelevamiento() async {
     try {
       final db = await database;
-      return await db.query('mnt_correctivo', orderBy: 'fecha_servicio DESC');
+      return await db.query(tableName, orderBy: 'fecha_servicio DESC');
     } catch (e) {
       debugPrint('Error al obtener todos los registros: $e');
       return [];
@@ -114,7 +112,7 @@ class DatabaseHelperMntCorrectivo {
     try {
       final db = await database;
       final result = await db.query(
-        'mnt_correctivo',
+        tableName,
         where: 'otst = ?',
         whereArgs: [seca],
         limit: 1,
@@ -144,7 +142,7 @@ class DatabaseHelperMntCorrectivo {
     try {
       final db = await database;
       final result = await db.query(
-        'mnt_correctivo',
+        tableName,
         where: 'otst = ? AND session_id = ?',
         whereArgs: [otst, sessionId],
         limit: 1,
@@ -161,14 +159,14 @@ class DatabaseHelperMntCorrectivo {
       final db = await database;
 
       final existing = await db.query(
-        'mnt_correctivo',
+        tableName,
         where: 'otst = ? AND session_id = ?',
         whereArgs: [registro['otst'], registro['session_id']],
       );
 
       if (existing.isNotEmpty) {
         await db.update(
-          'mnt_correctivo',
+          tableName,
           registro,
           where: 'otst = ? AND session_id = ?',
           whereArgs: [registro['otst'], registro['session_id']],
@@ -176,25 +174,22 @@ class DatabaseHelperMntCorrectivo {
         debugPrint(
             'Registro ACTUALIZADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       } else {
-        await db.insert('mnt_correctivo', registro);
+        await db.insert(tableName, registro);
         debugPrint(
             'NUEVO registro INSERTADO - OTST: ${registro['otst']}, Session: ${registro['session_id']}');
       }
     } catch (e) {
       debugPrint('Error en upsertRegistroCalibracion: $e');
-      rethrow; // Re-lanzar el error para que lo maneje quien llama
+      rethrow;
     }
   }
 
-  // ← MÉTODO CORREGIDO: Getter de database más robusto
   Future<Database> get database async {
     if (_database != null && _database!.isOpen) {
       return _database!;
     }
 
-    // Evitar múltiples inicializaciones concurrentes
     if (_isInitializing) {
-      // Esperar hasta que la inicialización termine
       while (_isInitializing) {
         await Future.delayed(const Duration(milliseconds: 50));
       }
@@ -207,7 +202,6 @@ class DatabaseHelperMntCorrectivo {
     return _database!;
   }
 
-  // ← MÉTODO CORREGIDO: Inicialización más simple y robusta
   Future<Database> _initDatabase() async {
     if (_isInitializing) {
       throw Exception('Database already initializing');
@@ -216,15 +210,13 @@ class DatabaseHelperMntCorrectivo {
     _isInitializing = true;
 
     try {
-      String path = join(await getDatabasesPath(), 'mnt_correctivo.db');
+      String path = join(await getDatabasesPath(), 'diagnostico_correctivo.db');
 
-      // Crear directorio si no existe
       final directory = Directory(dirname(path));
       if (!await directory.exists()) {
         await directory.create(recursive: true);
       }
 
-      // Abrir/crear la base de datos
       final database = await openDatabase(
         path,
         version: 1,
@@ -245,10 +237,10 @@ class DatabaseHelperMntCorrectivo {
 
   Future<void> _onCreate(Database db, int version) async {
     try {
-      debugPrint('Creando tabla mnt_correctivo...');
+      debugPrint('Creando tabla diagnostico_correctivo...');
 
       await db.execute('''
-      CREATE TABLE mnt_correctivo (
+      CREATE TABLE diagnostico_correctivo (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         --INF CLIENTE Y PERSONAL
         tipo_servicio TEXT DEFAULT '',   
@@ -295,6 +287,7 @@ class DatabaseHelperMntCorrectivo {
         -- Inspección Visual
         reporte TEXT DEFAULT '',
         evaluacion TEXT DEFAULT '',
+        estado_servicio TEXT DEFAULT '',
         
         --Comentarios
         comentario_1 TEXT DEFAULT '',
@@ -521,6 +514,44 @@ class DatabaseHelperMntCorrectivo {
         excentricidad_inicial_pos6_indicacion TEXT DEFAULT '',
         excentricidad_inicial_pos6_retorno TEXT DEFAULT '',
         excentricidad_inicial_pos6_error TEXT DEFAULT '',
+
+        -- Excentricidad Inicial (IDA/VUELTA - Específico de Diagnóstico)
+        excentricidad_inicial_punto1_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto1_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto1_ida_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto2_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto2_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto2_ida_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto3_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto3_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto3_ida_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto4_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto4_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto4_ida_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto5_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto5_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto5_ida_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto6_ida_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto6_ida_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto6_ida_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto7_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto7_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto7_vuelta_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto8_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto8_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto8_vuelta_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto9_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto9_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto9_vuelta_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto10_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto10_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto10_vuelta_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto11_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto11_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto11_vuelta_retorno TEXT DEFAULT '',
+        excentricidad_inicial_punto12_vuelta_numero TEXT DEFAULT '',
+        excentricidad_inicial_punto12_vuelta_indicacion TEXT DEFAULT '',
+        excentricidad_inicial_punto12_vuelta_retorno TEXT DEFAULT '',
         
         -- Excentricidad Final
         excentricidad_final_tipo_plataforma TEXT DEFAULT '',
@@ -800,12 +831,11 @@ class DatabaseHelperMntCorrectivo {
         linealidad_final_punto12_lt REAL DEFAULT '',
         linealidad_final_punto12_indicacion REAL DEFAULT '',
         linealidad_final_punto12_retorno REAL DEFAULT '',
-        linealidad_final_punto12_error REAL DEFAULT '',
-        estado_servicio TEXT DEFAULT ''
+        linealidad_final_punto12_error REAL DEFAULT ''
       )
       ''');
 
-      debugPrint('Tabla mnt_correctivo creada exitosamente');
+      debugPrint('Tabla diagnostico_correctivo creada exitosamente');
     } catch (e) {
       debugPrint('Error creando tabla: $e');
       rethrow;
@@ -815,7 +845,7 @@ class DatabaseHelperMntCorrectivo {
   Future<int> insertRegistroRelevamiento(Map<String, dynamic> registro) async {
     try {
       final db = await database;
-      return await db.insert('mnt_correctivo', registro);
+      return await db.insert(tableName, registro);
     } catch (e) {
       debugPrint('Error insertando registro: $e');
       rethrow;
@@ -825,8 +855,7 @@ class DatabaseHelperMntCorrectivo {
   Future<void> exportDataToCSV() async {
     try {
       final db = await database;
-      final List<Map<String, dynamic>> registros =
-          await db.query('mnt_correctivo');
+      final List<Map<String, dynamic>> registros = await db.query(tableName);
 
       if (registros.isEmpty) {
         debugPrint('No hay datos para exportar');
@@ -844,7 +873,8 @@ class DatabaseHelperMntCorrectivo {
 
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Guardar archivo CSV',
-        fileName: 'mnt_correctivo${DateTime.now().toIso8601String()}.csv',
+        fileName:
+            'diagnostico_correctivo_\${DateTime.now().toIso8601String()}.csv',
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
@@ -859,7 +889,6 @@ class DatabaseHelperMntCorrectivo {
     }
   }
 
-  // ← MÉTODO AGREGADO: Para cerrar la base de datos correctamente
   Future<void> close() async {
     if (_database != null) {
       await _database!.close();

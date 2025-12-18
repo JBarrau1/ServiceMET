@@ -1,9 +1,8 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../mnt_prv_regular/mnt_prv_regular_stil/models/mnt_prv_regular_stil_model.dart';
 import '../models/mnt_correctivo_model.dart';
-import '../../../../../database/soporte_tecnico/database_helper_mnt_correctivo.dart';
+import '../../../../../database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
 import '../../../../../database/soporte_tecnico/database_helper_ajustes.dart'; // Para d1
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
@@ -77,7 +76,7 @@ class MntCorrectivoController {
             .toList();
 
         if (fields.isNotEmpty && fields.length > 1) {
-          final headers = fields[0].map((e) => e.toString()).toList();
+          final headers = fields[0].map((e) => e.toString().trim()).toList();
 
           // Buscar índice de la columna cod_metrica
           final codMetricaIndex = headers.indexOf('cod_metrica');
@@ -159,91 +158,211 @@ class MntCorrectivoController {
     }
   }
 
+  // Mapa estático de etiquetas a claves de BD (compartido para import/export)
+  static const Map<String, String> labelToDbKey = {
+    'Vibración': 'vibracion',
+    'Polvo': 'polvo',
+    'Temperatura': 'temperatura',
+    'Humedad': 'humedad',
+    'Mesada': 'mesada',
+    'Iluminación': 'iluminacion',
+    'Limpieza de Fosa': 'limpieza_fosa',
+    'Estado de Drenaje': 'estado_drenaje',
+    'Carcasa': 'carcasa',
+    'Teclado Fisico': 'teclado_fisico',
+    'Display Fisico': 'display_fisico',
+    'Fuente de poder': 'fuente_poder',
+    'Bateria operacional': 'bateria_operacional',
+    'Bracket': 'bracket',
+    'Teclado Operativo': 'teclado_operativo',
+    'Display Operativo': 'display_operativo',
+    'Contector de celda': 'conector_celda',
+    'Bateria de memoria': 'bateria_memoria',
+    'Limpieza general': 'limpieza_general',
+    'Golpes al terminal': 'golpes_terminal',
+    'Nivelacion': 'nivelacion',
+    'Limpieza receptor': 'limpieza_receptor',
+    'Golpes al receptor de carga': 'golpes_receptor',
+    'Encendido': 'encendido',
+    'Limitador de movimiento': 'limitador_movimiento',
+    'Suspensión': 'suspension',
+    'Limitador de carga': 'limitador_carga',
+    'Celda de carga': 'celda_carga',
+    'Tapa de caja sumadora': 'tapa_caja',
+    'Humedad Interna': 'humedad_interna',
+    'Estado de prensacables': 'estado_prensacables',
+    'Estado de borneas': 'estado_borneas'
+  };
+
   void _populateModelFromCsv(Map<String, dynamic> data) {
+    debugPrint("--- IMPORTING CSV DATA ---");
+    // Helper para obtener string seguro y trim
+    String getVal(String key) => data[key]?.toString().trim() ?? '';
+
     // 1. General
     if (data.containsKey('reporte')) {
-      model.reporteFalla = data['reporte'].toString();
+      model.reporteFalla = getVal('reporte');
     }
     if (data.containsKey('evaluacion')) {
-      model.evaluacion = data['evaluacion'].toString();
+      model.evaluacion = getVal('evaluacion');
     }
 
-    // 2. Pruebas Iniciales
+    // 2. Inspección Visual
+    model.inspeccionItems.forEach((label, item) {
+      final key = labelToDbKey[label];
+      if (key != null) {
+        // Estado
+        if (data.containsKey('${key}_estado')) {
+          // Solo sobreescribir si el valor no está vacío en el CSV, o si queremos forzar lo del CSV
+          // Asumimos que queremos lo del CSV
+          final val = getVal('${key}_estado');
+          if (val.isNotEmpty) item.estado = val;
+        }
+        // Solución
+        if (data.containsKey('${key}_solucion')) {
+          final val = getVal('${key}_solucion');
+          if (val.isNotEmpty) item.solucion = val;
+        }
+        // Comentario
+        if (data.containsKey('${key}_comentario')) {
+          final val = getVal('${key}_comentario');
+          if (val.isNotEmpty) item.comentario = val;
+        }
+      }
+    });
+
+    // 3. Pruebas Iniciales
     // Retorno Cero
     if (data.containsKey('retorno_cero_inicial_valoracion') &&
-        data['retorno_cero_inicial_valoracion'].toString().isNotEmpty) {
+        getVal('retorno_cero_inicial_valoracion').isNotEmpty) {
       model.pruebasIniciales.retornoCero.estado =
-          data['retorno_cero_inicial_valoracion'].toString();
+          getVal('retorno_cero_inicial_valoracion');
       model.pruebasIniciales.retornoCero.valor =
-          data['retorno_cero_inicial_carga'].toString();
+          getVal('retorno_cero_inicial_carga');
       // Si el CSV de diagnóstico exporta 'carga' como estabilidad, lo ponemos en estabilidad también
       model.pruebasIniciales.retornoCero.estabilidad =
-          data['retorno_cero_inicial_carga'].toString();
+          getVal('retorno_cero_inicial_carga');
       model.pruebasIniciales.retornoCero.unidad =
-          data['retorno_cero_inicial_unidad'].toString();
+          getVal('retorno_cero_inicial_unidad');
     }
 
     // Excentricidad Inicial
-    if (data.containsKey('excentricidad_inicial_cantidad_posiciones') &&
-        data['excentricidad_inicial_cantidad_posiciones']
-            .toString()
-            .isNotEmpty &&
-        data['excentricidad_inicial_cantidad_posiciones'].toString() != '0') {
+    // Lógica para detectar si es estándar (posiciones definidas) o rieles (ida/vuelta)
+    bool hasExcentricidadStandard =
+        data.containsKey('excentricidad_inicial_cantidad_posiciones') &&
+            getVal('excentricidad_inicial_cantidad_posiciones') != '0' &&
+            getVal('excentricidad_inicial_cantidad_posiciones').isNotEmpty;
+
+    bool hasExcentricidadRieles =
+        data.containsKey('excentricidad_inicial_punto1_ida_indicacion');
+
+    if (hasExcentricidadStandard || hasExcentricidadRieles) {
       model.pruebasIniciales.excentricidad = Excentricidad(activo: true);
       var exc = model.pruebasIniciales.excentricidad!;
-      exc.tipoPlataforma = data['excentricidad_inicial_tipo_plataforma'];
-      exc.puntosIndicador = data['excentricidad_inicial_opcion_prueba'];
-      exc.carga = data['excentricidad_inicial_carga'].toString();
-      int count = int.tryParse(
-              data['excentricidad_inicial_cantidad_posiciones'].toString()) ??
-          0;
+      exc.tipoPlataforma = getVal('excentricidad_inicial_tipo_plataforma');
+      exc.puntosIndicador = getVal('excentricidad_inicial_opcion_prueba');
+      exc.carga = getVal('excentricidad_inicial_carga'); // Corrección carga
+
       exc.posiciones.clear();
-      for (int i = 1; i <= count; i++) {
-        exc.posiciones.add(PosicionExcentricidad(
-          posicion: data['excentricidad_inicial_pos${i}_numero'].toString(),
-          indicacion:
-              data['excentricidad_inicial_pos${i}_indicacion'].toString(),
-          retorno: data['excentricidad_inicial_pos${i}_retorno'].toString(),
-        ));
+
+      if (hasExcentricidadStandard) {
+        // Lógica Estándar
+        int count =
+            int.tryParse(getVal('excentricidad_inicial_cantidad_posiciones')) ??
+                0;
+        for (int i = 1; i <= count; i++) {
+          exc.posiciones.add(PosicionExcentricidad(
+            posicion: getVal('excentricidad_inicial_pos${i}_numero'),
+            indicacion: getVal('excentricidad_inicial_pos${i}_indicacion'),
+            retorno: getVal('excentricidad_inicial_pos${i}_retorno'),
+          ));
+        }
+      } else if (hasExcentricidadRieles) {
+        // Lógica Rieles (Ida/Vuelta) -> Mapear a posiciones lineales 1-12
+        // Ida (Puntos 1-6)
+        for (int i = 1; i <= 6; i++) {
+          if (data.containsKey('excentricidad_inicial_punto${i}_ida_numero')) {
+            exc.posiciones.add(PosicionExcentricidad(
+              posicion: getVal('excentricidad_inicial_punto${i}_ida_numero'),
+              indicacion:
+                  getVal('excentricidad_inicial_punto${i}_ida_indicacion'),
+              retorno: getVal('excentricidad_inicial_punto${i}_ida_retorno'),
+            ));
+          }
+        }
+        // Vuelta (Puntos 7-12)
+        for (int i = 7; i <= 12; i++) {
+          if (data
+              .containsKey('excentricidad_inicial_punto${i}_vuelta_numero')) {
+            exc.posiciones.add(PosicionExcentricidad(
+              posicion: getVal('excentricidad_inicial_punto${i}_vuelta_numero'),
+              indicacion:
+                  getVal('excentricidad_inicial_punto${i}_vuelta_indicacion'),
+              retorno: getVal('excentricidad_inicial_punto${i}_vuelta_retorno'),
+            ));
+          }
+        }
       }
     }
 
     // Repetibilidad Inicial
-    if (data.containsKey('repetibilidad_inicial_cantidad_cargas') &&
-        data['repetibilidad_inicial_cantidad_cargas'].toString().isNotEmpty &&
-        data['repetibilidad_inicial_cantidad_cargas'].toString() != '0') {
+    String repCantCargas = getVal('repetibilidad_inicial_cantidad_cargas');
+    if (repCantCargas.isNotEmpty && repCantCargas != '0') {
       model.pruebasIniciales.repetibilidad = Repetibilidad(activo: true);
       var rep = model.pruebasIniciales.repetibilidad!;
-      rep.cantidadCargas = int.tryParse(
-              data['repetibilidad_inicial_cantidad_cargas'].toString()) ??
-          1;
-      rep.cantidadPruebas = int.tryParse(
-              data['repetibilidad_inicial_cantidad_pruebas'].toString()) ??
-          3;
+      rep.cantidadCargas = int.tryParse(repCantCargas) ?? 1;
+      rep.cantidadPruebas =
+          int.tryParse(getVal('repetibilidad_inicial_cantidad_pruebas')) ?? 3;
 
       rep.cargas.clear();
       for (int i = 1; i <= rep.cantidadCargas; i++) {
         var carga = CargaRepetibilidad();
-        carga.valor = data['repetibilidad_inicial_carga${i}_valor'].toString();
+        carga.valor = getVal('repetibilidad_inicial_carga${i}_valor');
         for (int j = 1; j <= rep.cantidadPruebas; j++) {
           carga.pruebas.add(PruebaRepetibilidad(
-              indicacion:
-                  data['repetibilidad_inicial_carga${i}_prueba${j}_indicacion']
-                      .toString(),
-              retorno:
-                  data['repetibilidad_inicial_carga${i}_prueba${j}_retorno']
-                      .toString()));
+              indicacion: getVal(
+                  'repetibilidad_inicial_carga${i}_prueba${j}_indicacion'),
+              retorno: getVal(
+                  'repetibilidad_inicial_carga${i}_prueba${j}_retorno')));
         }
         rep.cargas.add(carga);
       }
+    } else {
+      debugPrint("Repetibilidad: No se encontró cantidad de cargas o es 0.");
+    }
+
+    // Linealidad Inicial
+    String linCantPuntos = getVal('linealidad_inicial_cantidad_puntos');
+    if (linCantPuntos.isNotEmpty && linCantPuntos != '0') {
+      model.pruebasIniciales.linealidad = Linealidad(activo: true);
+      var lin = model.pruebasIniciales.linealidad!;
+      int cantidadPuntos = int.tryParse(linCantPuntos) ?? 0;
+      lin.puntos.clear();
+
+      for (int i = 1; i <= cantidadPuntos; i++) {
+        // Obtenemos los valores
+        String lt = getVal('linealidad_inicial_punto${i}_lt');
+        String ind = getVal('linealidad_inicial_punto${i}_indicacion');
+        String ret = getVal('linealidad_inicial_punto${i}_retorno');
+
+        // Solo agregamos si hay al menos un LT definidio o indicación, para evitar puntos vacíos fantasma
+        if (lt.isNotEmpty || ind.isNotEmpty) {
+          lin.puntos.add(PuntoLinealidad(
+            lt: lt,
+            indicacion: ind,
+            retorno: ret,
+          ));
+        }
+      }
+    } else {
+      debugPrint("Linealidad: No se encontró cantidad de puntos o es 0.");
     }
 
     // 4. Comentarios
     for (int i = 1; i <= 10; i++) {
       if (data.containsKey('comentario_$i')) {
-        // Asegurar que el array tenga tamaño suficiente (ya está init con 10 nulos)
         if (i - 1 < model.comentarios.length) {
-          model.comentarios[i - 1] = data['comentario_$i'].toString();
+          model.comentarios[i - 1] = getVal('comentario_$i');
         }
       }
     }
@@ -252,9 +371,10 @@ class MntCorrectivoController {
   // --- SAVE ---
   Future<void> saveData(BuildContext context) async {
     try {
-      final dbHelper = DatabaseHelperMntCorrectivo();
+      final DatabaseHelperDiagnosticoCorrectivo _dbHelper =
+          DatabaseHelperDiagnosticoCorrectivo();
       final data = _prepareDataForSave();
-      await dbHelper
+      await _dbHelper
           .upsertRegistroRelevamiento(data); // Método existente en el helper
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -297,41 +417,6 @@ class MntCorrectivoController {
     _addPruebasData(data, model.pruebasFinales, 'final');
 
     // Inspección
-    final Map<String, String> labelToDbKey = {
-      'Vibración': 'vibracion',
-      'Polvo': 'polvo',
-      'Temperatura': 'temperatura',
-      'Humedad': 'humedad',
-      'Mesada': 'mesada',
-      'Iluminación': 'iluminacion',
-      'Limpieza de Fosa': 'limpieza_fosa',
-      'Estado de Drenaje': 'estado_drenaje',
-      'Carcasa': 'carcasa',
-      'Teclado Fisico': 'teclado_fisico',
-      'Display Fisico': 'display_fisico',
-      'Fuente de poder': 'fuente_poder',
-      'Bateria operacional': 'bateria_operacional',
-      'Bracket': 'bracket',
-      'Teclado Operativo': 'teclado_operativo',
-      'Display Operativo': 'display_operativo',
-      'Contector de celda': 'conector_celda',
-      'Bateria de memoria': 'bateria_memoria',
-      'Limpieza general': 'limpieza_general',
-      'Golpes al terminal': 'golpes_terminal',
-      'Nivelacion': 'nivelacion',
-      'Limpieza receptor': 'limpieza_receptor',
-      'Golpes al receptor de carga': 'golpes_receptor',
-      'Encendido': 'encendido',
-      'Limitador de movimiento': 'limitador_movimiento',
-      'Suspensión': 'suspension',
-      'Limitador de carga': 'limitador_carga',
-      'Celda de carga': 'celda_carga',
-      'Tapa de caja sumadora': 'tapa_caja',
-      'Humedad Interna': 'humedad_interna',
-      'Estado de prensacables': 'estado_prensacables',
-      'Estado de borneas': 'estado_borneas'
-    };
-
     model.inspeccionItems.forEach((label, item) {
       final key = labelToDbKey[label];
       if (key != null) {
@@ -349,8 +434,7 @@ class MntCorrectivoController {
       Map<String, dynamic> data, PruebasMetrologicas pruebas, String tipo) {
     data['retorno_cero_${tipo}_valoracion'] = pruebas.retornoCero.estado;
     // Guardar carga (estabilidad)
-    data['retorno_cero_${tipo}_carga'] =
-        pruebas.retornoCero.estabilidad ?? pruebas.retornoCero.valor;
+    data['retorno_cero_${tipo}_carga'] = pruebas.retornoCero.estabilidad;
     data['retorno_cero_${tipo}_unidad'] = pruebas.retornoCero.unidad;
 
     if (pruebas.excentricidad?.activo == true) {

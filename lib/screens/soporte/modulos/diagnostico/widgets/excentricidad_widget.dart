@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../mnt_prv_regular/mnt_prv_regular_stil/models/mnt_prv_regular_stil_model.dart';
-import '../../mnt_prv_regular/mnt_prv_regular_stil/utils/constants.dart';
+import '../models/diagnostico_model.dart';
+import '../utils/constants.dart';
 
 class ExcentricidadWidget extends StatefulWidget {
   final Excentricidad excentricidad;

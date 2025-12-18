@@ -118,7 +118,7 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
                             userName: widget.model.userName,
                             clienteId: widget.model.clienteId,
                             plantaCodigo: widget.model.plantaCodigo,
-                            tableName: 'mnt_correctivo',
+                            tableName: 'diagnostico_correctivo',
                           ),
                         ),
                       );
