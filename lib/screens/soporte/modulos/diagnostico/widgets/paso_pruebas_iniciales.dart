@@ -35,7 +35,7 @@ class PasoPruebasIniciales extends StatelessWidget {
               double carga = double.tryParse(cargaStr) ?? 0;
               // Obtenemos d1 asumiendo que ya está cacheado o lo pedimos
               double d = await controller.getD1FromDatabase();
-              // El método del controlador es sincrono, lo envolvemos en Future
+              if (d == 0) d = 0.1;
               return controller.getIndicationSuggestions(carga, d);
             },
             getD1FromDatabase:

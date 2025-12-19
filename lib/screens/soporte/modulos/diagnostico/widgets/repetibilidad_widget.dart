@@ -209,6 +209,7 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
                             .copyWith(
                           suffixIcon: PopupMenuButton<String>(
                             icon: const Icon(Icons.arrow_drop_down),
+                            color: Colors.white,
                             onSelected: (String newValue) {
                               setState(() {
                                 _indicacionControllers[cargaIndex][pruebaIndex]
@@ -222,7 +223,9 @@ class _RepetibilidadWidgetState extends State<RepetibilidadWidget> {
                               return suggestions.map((String value) {
                                 return PopupMenuItem<String>(
                                   value: value,
-                                  child: Text(value),
+                                  child: Text(value,
+                                      style:
+                                          const TextStyle(color: Colors.black)),
                                 );
                               }).toList();
                             },

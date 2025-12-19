@@ -246,10 +246,13 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                         child: Icon(Icons.error_outline, color: Colors.red),
                       );
                     }
-                    final d1 = snapshot.data ?? 0.1;
+                    final d1Val = snapshot.data ?? 0.0;
+                    final d1 = d1Val == 0 ? 0.1 : d1Val;
 
                     return PopupMenuButton<String>(
                       icon: const Icon(Icons.arrow_drop_down),
+                      // Ensure menu is visible
+                      color: Colors.white,
                       onSelected: (String newValue) {
                         setState(() {
                           _indicacionControllers[index].text = newValue;
@@ -288,7 +291,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                           final txt = value.toStringAsFixed(decimals);
                           return PopupMenuItem<String>(
                             value: txt,
-                            child: Text(txt),
+                            child: Text(txt,
+                                style: const TextStyle(color: Colors.black)),
                           );
                         });
                       },

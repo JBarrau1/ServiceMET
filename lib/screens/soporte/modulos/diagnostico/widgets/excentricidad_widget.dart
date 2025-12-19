@@ -198,6 +198,7 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
                         final suggestions = snapshot.data ?? [];
                         return PopupMenuButton<String>(
                           icon: const Icon(Icons.arrow_drop_down),
+                          color: Colors.white,
                           onSelected: (String newValue) {
                             setState(() {
                               _indicationControllers[index].text = newValue;
@@ -210,7 +211,9 @@ class _ExcentricidadWidgetState extends State<ExcentricidadWidget> {
                             return suggestions.map((String value) {
                               return PopupMenuItem<String>(
                                 value: value,
-                                child: Text(value),
+                                child: Text(value,
+                                    style:
+                                        const TextStyle(color: Colors.black)),
                               );
                             }).toList();
                           },

@@ -34,6 +34,7 @@ class _PasoPruebasInicialesState extends State<PasoPruebasIniciales> {
                 (String cargaStr, String currentIndication) async {
               double carga = double.tryParse(cargaStr) ?? 0;
               double d = await widget.controller.getD1FromDatabase();
+              if (d == 0) d = 0.1;
               return widget.controller.getIndicationSuggestions(carga, d);
             },
             getD1FromDatabase: widget.controller.getD1FromDatabase,

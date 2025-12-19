@@ -67,26 +67,41 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
               padding: const EdgeInsets.only(bottom: 12.0),
               child: TextFormField(
                 initialValue: widget.model.comentarios[index],
+                maxLines: 3,
+                maxLength: 500,
+                buildCounter: (context,
+                    {required currentLength, required isFocused, maxLength}) {
+                  return Text(
+                    '$currentLength / $maxLength',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          currentLength == maxLength ? Colors.red : Colors.grey,
+                    ),
+                  );
+                },
                 decoration: InputDecoration(
-                    labelText: 'Comentario ${index + 1}',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          widget.model.comentarios[index] = null;
-                          // Reordenar
-                          final notNulls = widget.model.comentarios
-                              .where((c) => c != null)
-                              .toList();
-                          widget.model.comentarios = List.filled(10, null);
-                          for (int i = 0; i < notNulls.length; i++) {
-                            widget.model.comentarios[i] = notNulls[i];
-                          }
-                        });
-                      },
-                    )),
+                  labelText: 'Comentario ${index + 1}',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      setState(() {
+                        widget.model.comentarios[index] = null;
+                        // Reordenar
+                        final notNulls = widget.model.comentarios
+                            .where((c) => c != null)
+                            .toList();
+                        widget.model.comentarios = List.filled(10, null);
+                        for (int i = 0; i < notNulls.length; i++) {
+                          widget.model.comentarios[i] = notNulls[i];
+                        }
+                      });
+                    },
+                  ),
+                ),
                 onChanged: (val) => widget.model.comentarios[index] = val,
               ),
             );

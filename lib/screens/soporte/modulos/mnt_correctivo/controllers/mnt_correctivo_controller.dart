@@ -371,10 +371,10 @@ class MntCorrectivoController {
   // --- SAVE ---
   Future<void> saveData(BuildContext context) async {
     try {
-      final DatabaseHelperDiagnosticoCorrectivo _dbHelper =
+      final DatabaseHelperDiagnosticoCorrectivo dbHelper =
           DatabaseHelperDiagnosticoCorrectivo();
       final data = _prepareDataForSave();
-      await _dbHelper
+      await dbHelper
           .upsertRegistroRelevamiento(data); // Método existente en el helper
 
       ScaffoldMessenger.of(context).showSnackBar(

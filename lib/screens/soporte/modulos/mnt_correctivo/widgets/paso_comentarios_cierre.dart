@@ -19,40 +19,6 @@ class PasoComentariosCierre extends StatefulWidget {
 }
 
 class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
-  final List<TextEditingController> _comentarioControllers = [];
-
-  @override
-  void initState() {
-    super.initState();
-    for (int i = 0; i < 10; i++) {
-      _comentarioControllers
-          .add(TextEditingController(text: widget.model.comentarios[i]));
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant PasoComentariosCierre oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Verificar cambios en el modelo y actualizar controllers si es necesario
-    for (int i = 0; i < 10; i++) {
-      if (i < widget.model.comentarios.length &&
-          i < _comentarioControllers.length) {
-        String newVal = widget.model.comentarios[i] ?? '';
-        if (_comentarioControllers[i].text != newVal) {
-          _comentarioControllers[i].text = newVal;
-        }
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    for (var controller in _comentarioControllers) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     widget.model.horaFin = DateFormat('HH:mm').format(DateTime.now());
@@ -60,18 +26,74 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(context),
           const SizedBox(height: 24),
-          ...List.generate(3, (index) => _buildComentarioField(index)),
-          // Solo mostramos 3 por defecto para no saturar, podemos poner boton "Agregar mas"
-          // O mostrar todos si tienen texto.
 
-          ExpansionTile(
-            title: const Text('Más comentarios'),
-            children:
-                List.generate(7, (index) => _buildComentarioField(index + 3)),
-          ),
+          // Lista de Comentarios Dinámica (Similar a Diagnostico)
+          ...List.generate(10, (index) {
+            // Caso: Campo actual es null
+            if (widget.model.comentarios[index] == null) {
+              // Solo mostrar botón si es el primero (0) o si el anterior NO es null
+              if (index == 0 || widget.model.comentarios[index - 1] != null) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        widget.model.comentarios[index] = "";
+                      });
+                    },
+                    icon: const Icon(Icons.add),
+                    label: Text('Agregar Comentario ${index + 1}'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                    ),
+                  ),
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            }
+
+            // Caso: Campo tiene valor (String vacía o texto) -> Mostrar TextField
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: TextFormField(
+                initialValue: widget.model.comentarios[index],
+                maxLines: 3, // Campo más grande
+                maxLength: 500, // Máximo 500 caracteres
+                buildCounter: (context,
+                    {required currentLength, required isFocused, maxLength}) {
+                  return Text(
+                    '$currentLength / $maxLength',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          currentLength == maxLength ? Colors.red : Colors.grey,
+                    ),
+                  );
+                },
+                decoration: InputDecoration(
+                  labelText: 'Comentario ${index + 1}',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      setState(() {
+                        _eliminarComentario(index);
+                      });
+                    },
+                  ),
+                ),
+                onChanged: (val) => widget.model.comentarios[index] = val,
+              ),
+            );
+          }),
 
           const SizedBox(height: 20),
 
@@ -105,7 +127,6 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
                       ElevatedButton.styleFrom(backgroundColor: Colors.green),
                   onPressed: () async {
                     await widget.controller.saveData(context);
-                    // Navegar a Fin de Servicio
                     if (mounted) {
                       Navigator.pushReplacement(
                         context,
@@ -135,20 +156,15 @@ class _PasoComentariosCierreState extends State<PasoComentariosCierre> {
     );
   }
 
-  Widget _buildComentarioField(int index) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: TextFormField(
-        controller: _comentarioControllers[index],
-        decoration: InputDecoration(
-          labelText: 'Comentario ${index + 1}',
-          border: const OutlineInputBorder(),
-        ),
-        onChanged: (val) {
-          widget.model.comentarios[index] = val;
-        },
-      ),
-    );
+  void _eliminarComentario(int index) {
+    widget.model.comentarios[index] = null;
+    final notNulls = widget.model.comentarios.where((c) => c != null).toList();
+    for (int i = 0; i < 10; i++) {
+      widget.model.comentarios[i] = null;
+    }
+    for (int i = 0; i < notNulls.length; i++) {
+      widget.model.comentarios[i] = notNulls[i];
+    }
   }
 
   Widget _buildHeader(BuildContext context) {
