@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:service_met/database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
-import 'package:service_met/home_screen.dart';
+import 'package:service_met/home/home_screen.dart';
 import 'package:service_met/providers/calibration_provider.dart';
 import 'package:service_met/repositories/calibration_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +17,7 @@ import 'database/soporte_tecnico/database_helper_relevamiento.dart';
 import 'database/soporte_tecnico/database_helper_verificaciones.dart';
 import 'package:service_met/provider/balanza_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:service_met/providers/settings_provider.dart';
 import 'login/screens/initial_setup_screen.dart';
 import 'login/screens/login_screen.dart';
 
@@ -47,6 +48,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => CalibrationProvider(CalibrationRepository()),
         ),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: MyApp(setupCompleted: setupCompleted),
     ),
@@ -60,24 +62,31 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => BalanzaProvider()),
-      ],
-      child: MaterialApp(
-        title: 'ServiceMET',
-        debugShowCheckedModeBanner: false,
-        theme: _buildLightTheme(context),
-        darkTheme: _buildDarkTheme(context),
-        themeMode: ThemeMode.system,
-        // MODIFICADO: Decidir ruta inicial basado en setup
-        initialRoute: setupCompleted ? '/login' : '/setup',
-        routes: {
-          '/setup': (context) => const InitialSetupScreen(), // NUEVO
-          '/login': (context) => const LoginScreen(),
-          '/home': (context) => const HomeScreen(),
-        },
-      ),
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return MaterialApp(
+          title: 'ServiceMET',
+          debugShowCheckedModeBanner: false,
+          theme: _buildLightTheme(context),
+          darkTheme: _buildDarkTheme(context),
+          themeMode: settings.themeMode,
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(settings.textScaleFactor),
+              ),
+              child: child!,
+            );
+          },
+          // MODIFICADO: Decidir ruta inicial basado en setup
+          initialRoute: setupCompleted ? '/login' : '/setup',
+          routes: {
+            '/setup': (context) => const InitialSetupScreen(), // NUEVO
+            '/login': (context) => const LoginScreen(),
+            '/home': (context) => const HomeScreen(),
+          },
+        );
+      },
     );
   }
 

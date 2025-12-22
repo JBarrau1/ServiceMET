@@ -11,7 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:service_met/database/app_database.dart';
 import 'package:service_met/screens/calibracion/precarga/precarga_screen.dart';
-import 'package:service_met/home_screen.dart';
+import 'package:service_met/home/home_screen.dart';
 
 class FinServiciosController extends ChangeNotifier {
   final String secaValue;

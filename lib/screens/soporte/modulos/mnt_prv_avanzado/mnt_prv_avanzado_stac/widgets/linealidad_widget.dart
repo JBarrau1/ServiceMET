@@ -224,15 +224,26 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     }
   }
 
-  // DIÁLOGO PARA SUMAR CARGAS (Calculadora Flexible)
+  // DIÁLOGO PARA SUMAR/RESTAR CARGAS (Compositor de Carga Avanzado)
   Future<void> _showSummationDialog(int currentIndex) async {
-    // 1. Obtener cargas anteriores válidas
+    // 1. Obtener cargas anteriores válidas (LT e Indicación)
+    // Estructura: {index, lt, ind, operation: 0 (none), 1 (add), -1 (sub)}
     final previousLoads = <Map<String, dynamic>>[];
+
     for (int i = 0; i < currentIndex; i++) {
-      final val =
+      final ltVal =
           double.tryParse(_ltControllers[i].text.replaceAll(',', '.')) ?? 0.0;
-      if (val > 0) {
-        previousLoads.add({'index': i, 'value': val, 'selected': false});
+      final indVal = double.tryParse(
+              _indicacionControllers[i].text.replaceAll(',', '.')) ??
+          0.0;
+
+      if (ltVal > 0) {
+        previousLoads.add({
+          'index': i,
+          'lt': ltVal,
+          'ind': indVal,
+          'operation': 0, // 0: Ignorar, 1: Sumar, -1: Restar
+        });
       }
     }
 
@@ -242,16 +253,28 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
 
     await showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            double sumPrevious = previousLoads
-                .where((item) => item['selected'] == true)
-                .fold(0.0, (sum, item) => sum + (item['value'] as double));
+            // Calcular Totales
+            double totalLt = 0.0;
+            double totalInd = 0.0;
 
+            // Sumar/Restar Cargas Anteriores
+            for (var item in previousLoads) {
+              int op = item['operation'] as int;
+              if (op != 0) {
+                totalLt += (item['lt'] as double) * op;
+                totalInd += (item['ind'] as double) * op;
+              }
+            }
+
+            // Sumar Manuales (Asumimos que manual afecta igual a LT e Indicación, idealmente)
+            // Si el usuario ingresa negativo, resta.
             double sumManual = manualValues.fold(0.0, (sum, val) => sum + val);
-
-            double totalSum = sumPrevious + sumManual;
+            totalLt += sumManual;
+            totalInd += sumManual;
 
             return AlertDialog(
               title: const Text('Compositor de Carga'),
@@ -266,21 +289,78 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                       if (previousLoads.isNotEmpty) ...[
                         const Text('Cargas Anteriores:',
                             style: TextStyle(fontWeight: FontWeight.bold)),
-                        ListView.builder(
+                        const SizedBox(height: 8),
+                        ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: previousLoads.length,
+                          separatorBuilder: (c, i) => const Divider(height: 1),
                           itemBuilder: (context, i) {
-                            return CheckboxListTile(
-                              dense: true,
-                              title: Text(
-                                  'Carga ${previousLoads[i]['index'] + 1}: ${previousLoads[i]['value']}'),
-                              value: previousLoads[i]['selected'],
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  previousLoads[i]['selected'] = value!;
-                                });
-                              },
+                            final item = previousLoads[i];
+                            final int operation = item['operation'];
+                            final double val = item['lt'];
+
+                            // Color para diferenciar el estado
+                            Color? cardColor;
+                            if (operation == 1)
+                              cardColor = Colors.green.withOpacity(0.1);
+                            if (operation == -1)
+                              cardColor = Colors.red.withOpacity(0.1);
+
+                            return Container(
+                              color: cardColor,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 4, horizontal: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Carga ${item['index'] + 1}',
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold)),
+                                        Text('LT: $val | Ind: ${item['ind']}'),
+                                      ],
+                                    ),
+                                  ),
+                                  // Botones de Operación
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Botón Restar
+                                      IconButton(
+                                        icon: Icon(Icons.remove_circle,
+                                            color: operation == -1
+                                                ? Colors.red
+                                                : Colors.grey),
+                                        onPressed: () {
+                                          setState(() {
+                                            // Toggle: si ya estaba restando, deseleccionar
+                                            item['operation'] =
+                                                (operation == -1) ? 0 : -1;
+                                          });
+                                        },
+                                      ),
+                                      // Botón Sumar
+                                      IconButton(
+                                        icon: Icon(Icons.add_circle,
+                                            color: operation == 1
+                                                ? Colors.green
+                                                : Colors.grey),
+                                        onPressed: () {
+                                          setState(() {
+                                            // Toggle: si ya estaba sumando, deseleccionar
+                                            item['operation'] =
+                                                (operation == 1) ? 0 : 1;
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
                             );
                           },
                         ),
@@ -288,7 +368,8 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                       ],
 
                       // SECCIÓN 2: Agregar Manual
-                      const Text('Agregar Carga Manual:',
+                      const SizedBox(height: 10),
+                      const Text('Agregar Valor Manual:',
                           style: TextStyle(fontWeight: FontWeight.bold)),
                       Row(
                         children: [
@@ -297,20 +378,26 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                               controller: manualInputController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              decoration:
-                                  const InputDecoration(hintText: 'Ej. 20000'),
+                                      decimal: true, signed: true),
+                              decoration: const InputDecoration(
+                                hintText: 'Ej. 500 o -200',
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 8),
+                                border: OutlineInputBorder(),
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.add_circle,
-                                color: Colors.green),
+                            icon: const Icon(Icons.add_box,
+                                color: Colors.blue, size: 30),
                             onPressed: () {
                               final val = double.tryParse(manualInputController
                                       .text
                                       .replaceAll(',', '.')) ??
                                   0.0;
-                              if (val > 0) {
+                              if (val != 0) {
                                 setState(() {
                                   manualValues.add(val);
                                   manualInputController.clear();
@@ -324,13 +411,23 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                       // SECCIÓN 3: Lista de Manuales
                       if (manualValues.isNotEmpty) ...[
                         const SizedBox(height: 10),
-                        const Text('Manuales Agregados:',
-                            style: TextStyle(fontStyle: FontStyle.italic)),
                         Wrap(
                           spacing: 8.0,
                           children: manualValues.asMap().entries.map((entry) {
+                            final val = entry.value;
                             return Chip(
-                              label: Text('${entry.value}'),
+                              backgroundColor:
+                                  val > 0 ? Colors.green[50] : Colors.red[50],
+                              avatar: Icon(
+                                val > 0 ? Icons.add : Icons.remove,
+                                size: 16,
+                                color: val > 0 ? Colors.green : Colors.red,
+                              ),
+                              label: Text('${val.abs()}',
+                                  style: TextStyle(
+                                      color: val > 0
+                                          ? Colors.green[800]
+                                          : Colors.red[800])),
                               onDeleted: () {
                                 setState(() {
                                   manualValues.removeAt(entry.key);
@@ -345,24 +442,60 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                 ),
               ),
               actions: [
-                Text('Total: ${totalSum.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue)),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
+                // Resumen de Totales
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('Total Carga (LT): ${totalLt.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('Indicación Est.: ${totalInd.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                              fontSize: 16)),
+                    ],
+                  ),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    _ltControllers[currentIndex].text =
-                        totalSum.toStringAsFixed(2);
-                    _calcularDiferencia(currentIndex);
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Aplicar'),
-                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white),
+                      onPressed: () {
+                        // Aplicar valores a los controladores
+                        _ltControllers[currentIndex].text =
+                            totalLt.toStringAsFixed(2);
+                        _indicacionControllers[currentIndex].text =
+                            totalInd.toStringAsFixed(2);
+
+                        // Actualizar modelo
+                        widget.linealidad.puntos[currentIndex].lt =
+                            totalLt.toStringAsFixed(2);
+                        widget.linealidad.puntos[currentIndex].indicacion =
+                            totalInd.toStringAsFixed(2);
+
+                        _actualizarUltimaCarga();
+                        _calcularDiferencia(currentIndex);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Aplicar'),
+                    ),
+                  ],
+                )
               ],
             );
           },

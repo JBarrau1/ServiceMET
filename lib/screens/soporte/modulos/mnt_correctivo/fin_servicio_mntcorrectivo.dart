@@ -7,7 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../../database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
-import 'package:service_met/home_screen.dart';
+import 'package:service_met/home/home_screen.dart';
 import 'package:service_met/screens/soporte/precarga/precarga_screen.dart';
 
 class FinServicioMntcorrectivoScreen extends StatefulWidget {
@@ -82,8 +82,8 @@ class _FinServicioMntcorrectivoScreenState
       // ✅ CAMBIO: Usar otst y estado_balanza = 'Balanza Realizada'
       final rows = await db.query(
         widget.tableName ?? 'diagnostico_correctivo',
-        where: 'otst = ? AND estado_servicio = ?',
-        whereArgs: [widget.secaValue, 'Completo'],
+        where: 'otst = ? AND estado_servicio = ? AND tipo_servicio = ?',
+        whereArgs: [widget.secaValue, 'Completo', 'Mantenimiento Correctivo'],
       );
 
       final cantidad = rows.length;
@@ -98,8 +98,8 @@ class _FinServicioMntcorrectivoScreenState
       // 3. Obtener rows actualizados
       final updatedRows = await db.query(
         widget.tableName ?? 'diagnostico_correctivo',
-        where: 'otst = ? AND estado_servicio = ?',
-        whereArgs: [widget.secaValue, 'Completo'],
+        where: 'otst = ? AND estado_servicio = ? AND tipo_servicio = ?',
+        whereArgs: [widget.secaValue, 'Completo', 'Mantenimiento Correctivo'],
       );
 
       // 4. Mostrar pantalla de resumen
@@ -275,8 +275,8 @@ class _FinServicioMntcorrectivoScreenState
 
       final List<Map<String, dynamic>> rows = await db.query(
         widget.tableName ?? 'diagnostico_correctivo',
-        where: 'otst = ?',
-        whereArgs: [widget.secaValue],
+        where: 'otst = ? AND tipo_servicio = ?',
+        whereArgs: [widget.secaValue, 'Mantenimiento Correctivo'],
         orderBy: 'session_id DESC',
         limit: 1,
       );

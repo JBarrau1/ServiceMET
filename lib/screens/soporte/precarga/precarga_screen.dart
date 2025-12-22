@@ -6,7 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:service_met/home_screen.dart';
+import 'package:service_met/home/home_screen.dart';
 import 'package:service_met/screens/soporte/modulos/mnt_prv_regular/mnt_prv_regular_stac/stac_mnt_prv_regular.dart'
     hide StepData;
 import '../../../database/soporte_tecnico/database_helper_ajustes.dart';

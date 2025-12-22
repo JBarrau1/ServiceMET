@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:service_met/providers/settings_provider.dart';
 import 'package:service_met/screens/respaldo/respaldo.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
@@ -12,14 +13,12 @@ class ConfiguracionScreen extends StatefulWidget {
 }
 
 class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
-  bool isDarkMode = false;
-  String appVersion = '11.5.121225';
+  String appVersion = 'Cargando...';
   String appName = 'METRICA LTDA';
 
   @override
   void initState() {
     super.initState();
-    _loadThemePreference();
     _loadAppInfo();
   }
 
@@ -31,27 +30,11 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     });
   }
 
-  Future<void> _loadThemePreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isDarkMode = prefs.getBool('dark_mode') ?? false;
-    });
-  }
-
-  Future<void> _toggleTheme(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('dark_mode', value);
-    setState(() {
-      isDarkMode = value;
-    });
-
-    // Notificar a toda la aplicación sobre el cambio de tema
-    // Necesitarías implementar un Provider o otro método de gestión de estado
-    // para que esto afecte a toda la aplicación
-  }
-
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 70,
@@ -62,11 +45,9 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
             fontWeight: FontWeight.w900,
           ),
         ),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.transparent
-            : Colors.white,
+        backgroundColor: isDark ? Colors.transparent : Colors.white,
         elevation: 0,
-        flexibleSpace: Theme.of(context).brightness == Brightness.dark
+        flexibleSpace: isDark
             ? ClipRect(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
@@ -80,9 +61,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
         titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white
-              : Colors.black,
+          color: isDark ? Colors.white : Colors.black,
         ),
         centerTitle: true,
         actions: [],
@@ -98,10 +77,56 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                   child: SwitchListTile(
                     title: const Text('Modo Oscuro'),
                     subtitle: const Text('Activar tema oscuro'),
-                    value:
-                        isDarkMode, // Usamos el estado guardado, no el del contexto
-                    onChanged: _toggleTheme,
+                    value: settings.themeMode == ThemeMode.dark ||
+                        (settings.themeMode == ThemeMode.system && isDark),
+                    onChanged: (value) {
+                      settings.toggleTheme(value);
+                    },
                     secondary: const Icon(Icons.dark_mode),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Tamaño de texto
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.text_fields),
+                            const SizedBox(width: 16),
+                            Text(
+                              'Tamaño de Texto',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Text('A', style: TextStyle(fontSize: 12)),
+                            Expanded(
+                              child: Slider(
+                                value: settings.textScaleFactor,
+                                min: 0.8,
+                                max: 1.4,
+                                divisions: 6,
+                                label:
+                                    settings.textScaleFactor.toStringAsFixed(1),
+                                onChanged: (value) {
+                                  settings.setTextScale(value);
+                                },
+                              ),
+                            ),
+                            const Text('A', style: TextStyle(fontSize: 24)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -136,9 +161,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                   '© 2025 $appName. Todos los derechos reservados.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : Colors.black54,
+                    color: isDark ? Colors.white70 : Colors.black54,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -147,9 +170,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                   'Versión $appVersion',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : Colors.black54,
+                    color: isDark ? Colors.white70 : Colors.black54,
                   ),
                 ),
               ],
