@@ -28,6 +28,7 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
   final TextEditingController _lsubnController = TextEditingController();
   final TextEditingController _ioController = TextEditingController();
   final TextEditingController _ltnController = TextEditingController();
+  double _d1 = 0.1; // Initialize with default
 
   @override
   void initState() {
@@ -37,6 +38,16 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     _lsubnController.text = widget.linealidad.lsubn;
     _ioController.text = widget.linealidad.io;
     _ltnController.text = widget.linealidad.ltn;
+    _loadD1();
+  }
+
+  Future<void> _loadD1() async {
+    final val = await widget.getD1FromDatabase();
+    if (mounted) {
+      setState(() {
+        _d1 = val;
+      });
+    }
   }
 
   void _initializeControllers() {
@@ -276,7 +287,13 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
             totalInd += sumManual;
 
             return AlertDialog(
-              title: const Text('Compositor de Carga'),
+              title: const Text(
+                'REGISTRO DE CARGAS',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               content: SizedBox(
                 width: double.maxFinite,
                 child: SingleChildScrollView(
@@ -288,7 +305,7 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                       if (previousLoads.isNotEmpty) ...[
                         const Text('Cargas Anteriores:',
                             style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -320,6 +337,7 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                                         Text('Carga ${item['index'] + 1}',
                                             style: const TextStyle(
                                                 fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 10),
                                         Text('LT: $val | Ind: ${item['ind']}'),
                                       ],
                                     ),
@@ -368,8 +386,9 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
 
                       // SECCIÓN 2: Agregar Manual
                       const SizedBox(height: 10),
-                      const Text('Agregar Valor Manual:',
+                      const Text('Agregar Carga Manual:',
                           style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
@@ -379,7 +398,6 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                                   const TextInputType.numberWithOptions(
                                       decimal: true, signed: true),
                               decoration: const InputDecoration(
-                                hintText: 'Ej. 500 o -200',
                                 isDense: true,
                                 contentPadding: EdgeInsets.symmetric(
                                     vertical: 8, horizontal: 8),
@@ -443,10 +461,10 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
               actions: [
                 // Resumen de Totales
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.black38,
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey[300]!)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -563,67 +581,48 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                   controller: _indicacionControllers[index],
                   decoration: _buildInputDecoration(
                     'Indicación ${index + 1}',
-                    suffixIcon: FutureBuilder<double>(
-                      future: widget.getD1FromDatabase(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        }
-                        final d1 = snapshot.data ?? 0.1;
+                    suffixIcon: PopupMenuButton<String>(
+                      icon: const Icon(Icons.arrow_drop_down),
+                      onSelected: (String newValue) {
+                        setState(() {
+                          _indicacionControllers[index].text = newValue;
+                          widget.linealidad.puntos[index].indicacion = newValue;
+                          _calcularDiferencia(index);
+                          widget.onChanged();
+                        });
+                      },
+                      itemBuilder: (BuildContext context) {
+                        final currentText =
+                            _indicacionControllers[index].text.trim();
+                        final baseValue = double.tryParse(
+                              (currentText.isEmpty
+                                      ? widget.linealidad.puntos[index].lt
+                                      : currentText)
+                                  .replaceAll(',', '.'),
+                            ) ??
+                            0.0;
 
-                        return PopupMenuButton<String>(
-                          icon: const Icon(Icons.arrow_drop_down),
-                          onSelected: (String newValue) {
-                            setState(() {
-                              _indicacionControllers[index].text = newValue;
-                              widget.linealidad.puntos[index].indicacion =
-                                  newValue;
-                              _calcularDiferencia(index);
-                              widget.onChanged();
-                            });
-                          },
-                          itemBuilder: (BuildContext context) {
-                            final currentText =
-                                _indicacionControllers[index].text.trim();
-                            final baseValue = double.tryParse(
-                                  (currentText.isEmpty
-                                          ? widget.linealidad.puntos[index].lt
-                                          : currentText)
-                                      .replaceAll(',', '.'),
-                                ) ??
-                                0.0;
-
-                            int decimals = 1;
-                            if (d1 > 0) {
-                              if (d1 % 1 == 0) {
-                                decimals = 0;
-                              } else {
-                                final d1Str = d1.toString();
-                                if (d1Str.contains('.')) {
-                                  decimals = d1Str.split('.')[1].length;
-                                }
-                              }
+                        int decimals = 1;
+                        if (_d1 > 0) {
+                          if (_d1 % 1 == 0) {
+                            decimals = 0;
+                          } else {
+                            final d1Str = _d1.toString();
+                            if (d1Str.contains('.')) {
+                              decimals = d1Str.split('.')[1].length;
                             }
-                            if (decimals > 4) decimals = 4;
+                          }
+                        }
+                        if (decimals > 4) decimals = 4;
 
-                            return List.generate(11, (i) {
-                              final value = baseValue + ((i - 5) * d1);
-                              final txt = value.toStringAsFixed(decimals);
-                              return PopupMenuItem<String>(
-                                value: txt,
-                                child: Text(txt),
-                              );
-                            });
-                          },
-                        );
+                        return List.generate(11, (i) {
+                          final value = baseValue + ((i - 5) * _d1);
+                          final txt = value.toStringAsFixed(decimals);
+                          return PopupMenuItem<String>(
+                            value: txt,
+                            child: Text(txt),
+                          );
+                        });
                       },
                     ),
                   ),
@@ -651,7 +650,7 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
               ),
             ],
           ),
-          const SizedBox(width: 10),
+          const SizedBox(height: 12),
           const Divider(),
         ],
       ),

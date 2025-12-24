@@ -29,6 +29,7 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
   final TextEditingController _lsubnController = TextEditingController();
   final TextEditingController _ioController = TextEditingController();
   final TextEditingController _ltnController = TextEditingController();
+  double _d1 = 0.1; // Initialize with default
 
   @override
   void initState() {
@@ -38,6 +39,16 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
     _lsubnController.text = widget.linealidad.lsubn;
     _ioController.text = widget.linealidad.io;
     _ltnController.text = widget.linealidad.ltn;
+    _loadD1();
+  }
+
+  Future<void> _loadD1() async {
+    final val = await widget.getD1FromDatabase();
+    if (mounted) {
+      setState(() {
+        _d1 = val;
+      });
+    }
   }
 
   void _initializeControllers() {
@@ -277,7 +288,13 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
             totalInd += sumManual;
 
             return AlertDialog(
-              title: const Text('Compositor de Carga'),
+              title: const Text(
+                'Compositor de Carga',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
+              ),
               content: SizedBox(
                 width: double.maxFinite,
                 child: SingleChildScrollView(
@@ -564,67 +581,48 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
                   controller: _indicacionControllers[index],
                   decoration: _buildInputDecoration(
                     'Indicación ${index + 1}',
-                    suffixIcon: FutureBuilder<double>(
-                      future: widget.getD1FromDatabase(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        }
-                        final d1 = snapshot.data ?? 0.1;
+                    suffixIcon: PopupMenuButton<String>(
+                      icon: const Icon(Icons.arrow_drop_down),
+                      onSelected: (String newValue) {
+                        setState(() {
+                          _indicacionControllers[index].text = newValue;
+                          widget.linealidad.puntos[index].indicacion = newValue;
+                          _calcularDiferencia(index);
+                          widget.onChanged();
+                        });
+                      },
+                      itemBuilder: (BuildContext context) {
+                        final currentText =
+                            _indicacionControllers[index].text.trim();
+                        final baseValue = double.tryParse(
+                              (currentText.isEmpty
+                                      ? widget.linealidad.puntos[index].lt
+                                      : currentText)
+                                  .replaceAll(',', '.'),
+                            ) ??
+                            0.0;
 
-                        return PopupMenuButton<String>(
-                          icon: const Icon(Icons.arrow_drop_down),
-                          onSelected: (String newValue) {
-                            setState(() {
-                              _indicacionControllers[index].text = newValue;
-                              widget.linealidad.puntos[index].indicacion =
-                                  newValue;
-                              _calcularDiferencia(index);
-                              widget.onChanged();
-                            });
-                          },
-                          itemBuilder: (BuildContext context) {
-                            final currentText =
-                                _indicacionControllers[index].text.trim();
-                            final baseValue = double.tryParse(
-                                  (currentText.isEmpty
-                                          ? widget.linealidad.puntos[index].lt
-                                          : currentText)
-                                      .replaceAll(',', '.'),
-                                ) ??
-                                0.0;
-
-                            int decimals = 1;
-                            if (d1 > 0) {
-                              if (d1 % 1 == 0) {
-                                decimals = 0;
-                              } else {
-                                final d1Str = d1.toString();
-                                if (d1Str.contains('.')) {
-                                  decimals = d1Str.split('.')[1].length;
-                                }
-                              }
+                        int decimals = 1;
+                        if (_d1 > 0) {
+                          if (_d1 % 1 == 0) {
+                            decimals = 0;
+                          } else {
+                            final d1Str = _d1.toString();
+                            if (d1Str.contains('.')) {
+                              decimals = d1Str.split('.')[1].length;
                             }
-                            if (decimals > 4) decimals = 4;
+                          }
+                        }
+                        if (decimals > 4) decimals = 4;
 
-                            return List.generate(11, (i) {
-                              final value = baseValue + ((i - 5) * d1);
-                              final txt = value.toStringAsFixed(decimals);
-                              return PopupMenuItem<String>(
-                                value: txt,
-                                child: Text(txt),
-                              );
-                            });
-                          },
-                        );
+                        return List.generate(11, (i) {
+                          final value = baseValue + ((i - 5) * _d1);
+                          final txt = value.toStringAsFixed(decimals);
+                          return PopupMenuItem<String>(
+                            value: txt,
+                            child: Text(txt),
+                          );
+                        });
                       },
                     ),
                   ),
