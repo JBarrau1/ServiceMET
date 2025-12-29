@@ -1,4 +1,6 @@
 // precarga_controller.dart
+// ignore_for_file: unused_field
+
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -752,17 +754,53 @@ class PrecargaControllerSop extends ChangeNotifier {
 
         final estadoCalibacion = await _verificarEstadoCalibacion(codMetrica);
 
+        // 1. Datos base desde BALANZAS (Metrología - Prioridad EXPLICITA)
         Map<String, dynamic> balanzaCompleta = {
-          ...balanza,
+          // Datos de control y estado
           'estado_calibracion': estadoCalibacion['estado'],
           'tiene_registro': estadoCalibacion['tiene_registro'],
+
+          // Datos base de tabla BALANZAS
+          'cod_metrica': balanza['cod_metrica'],
+          'categoria': balanza['categoria'],
+          'unidad': balanza['unidad'],
+          'n_celdas': balanza['n_celdas'],
+
+          // Rango 1
+          'cap_max1': balanza['cap_max1'],
+          'd1': balanza['d1'],
+          'e1': balanza['e1'],
+          'dec1': balanza['dec1'],
+
+          // Rango 2
+          'cap_max2': balanza['cap_max2'],
+          'd2': balanza['d2'],
+          'e2': balanza['e2'],
+          'dec2': balanza['dec2'],
+
+          // Rango 3
+          'cap_max3': balanza['cap_max3'],
+          'd3': balanza['d3'],
+          'e3': balanza['e3'],
+          'dec3': balanza['dec3'],
         };
 
         if (infDetails.isNotEmpty) {
-          balanzaCompleta = {
-            ...balanzaCompleta,
-            ...infDetails.first,
-          };
+          final infData = infDetails.first;
+
+          // 2. Datos desde INF (Identificación - Mapeo Explícito)
+          balanzaCompleta['cod_interno'] = infData['cod_interno'];
+          balanzaCompleta['marca'] = infData['marca'];
+          balanzaCompleta['modelo'] = infData['modelo'];
+          balanzaCompleta['serie'] = infData['serie'];
+          balanzaCompleta['ubicacion'] = infData['ubicacion'];
+          balanzaCompleta['estado'] = infData['estado'];
+          balanzaCompleta['instrumento'] = infData['instrumento'];
+
+          // TRADUCCIÓN IMPORTANTE: De 'tipo_instrumento' (BD) a 'tipo' (App)
+          // Se usa 'tipo_instrumento' preferentemente, o 'tipo' si existiera en INF
+          balanzaCompleta['tipo'] =
+              infData['tipo_instrumento'] ?? infData['tipo'];
         }
 
         processedBalanzas.add(balanzaCompleta);

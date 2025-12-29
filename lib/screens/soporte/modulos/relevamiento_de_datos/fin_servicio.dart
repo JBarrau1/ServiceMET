@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api, unused_field, use_build_context_synchronously, deprecated_member_use
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
@@ -41,7 +43,6 @@ class _FinServicioScreenState extends State<FinServicioScreen> {
   String? errorMessage;
   bool _isExporting = false;
 
-  // ✅ NUEVOS CONTROLADORES PARA DATOS ADICIONALES
   String? _selectedEmp23001;
   final TextEditingController _indicarController = TextEditingController();
   final TextEditingController _factorSeguridadController =

@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field, use_build_context_synchronously, unused_local_variable, deprecated_member_use
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';

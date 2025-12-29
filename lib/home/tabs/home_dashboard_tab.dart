@@ -48,7 +48,6 @@ class _HomeDashboardTabState extends State<HomeDashboardTab> {
 
   Future<void> _getTotalServiciosSop() async {
     try {
-      int total = 0;
       final Map<String, String> databasesMap = {
         'ajustes.db': 'ajustes_metrologicos',
         'diagnostico.db': 'diagnostico',
@@ -62,25 +61,33 @@ class _HomeDashboardTabState extends State<HomeDashboardTab> {
         'verificaciones.db': 'verificaciones_internas',
       };
 
-      for (var entry in databasesMap.entries) {
-        String dbName = entry.key;
-        String tableName = entry.value;
-        String dbPath = p.join(await getDatabasesPath(), dbName);
+      final databasesPath = await getDatabasesPath();
 
-        if (await databaseExists(dbPath)) {
-          try {
-            final db = await openDatabase(dbPath);
-            final result =
-                await db.rawQuery('SELECT COUNT(*) as total FROM $tableName');
-            await db.close();
-            int count = result.isNotEmpty ? result.first['total'] as int : 0;
-            total += count;
-          } catch (e) {
-            debugPrint('Error contando en $dbName: $e');
-            continue;
+      // Ejecutar todas las consultas en paralelo
+      final results = await Future.wait(
+        databasesMap.entries.map((entry) async {
+          String dbName = entry.key;
+          String tableName = entry.value;
+          String dbPath = p.join(databasesPath, dbName);
+
+          if (await databaseExists(dbPath)) {
+            try {
+              // Abrir modo solo lectura si es posible (no soportado explícitamente por openDatabase simple, pero es rápido)
+              final db = await openDatabase(dbPath, readOnly: true);
+              final result =
+                  await db.rawQuery('SELECT COUNT(*) as total FROM $tableName');
+              await db.close();
+              return result.isNotEmpty ? (result.first['total'] as int) : 0;
+            } catch (e) {
+              debugPrint('Error contando en $dbName: $e');
+              return 0;
+            }
           }
-        }
-      }
+          return 0;
+        }),
+      );
+
+      final total = results.fold(0, (sum, count) => sum + count);
 
       if (mounted) {
         setState(() {
@@ -243,33 +250,48 @@ class _HomeDashboardTabState extends State<HomeDashboardTab> {
 
       final Map<String, List<Map<String, dynamic>>> agrupados = {};
 
-      for (var entry in databasesMap.entries) {
-        String dbName = entry.key;
-        String tableName = entry.value;
-        String dbPath = p.join(await getDatabasesPath(), dbName);
+      final databasesPath = await getDatabasesPath();
 
-        if (await databaseExists(dbPath)) {
-          try {
-            final db = await openDatabase(dbPath);
-            final List<Map<String, dynamic>> registros =
-                await db.query(tableName);
-            await db.close();
+      // Consultas paralelas a todas las bases de datos de soporte
+      final results = await Future.wait(
+        databasesMap.entries.map((entry) async {
+          String dbName = entry.key;
+          String tableName = entry.value;
+          String dbPath = p.join(databasesPath, dbName);
 
-            for (var registro in registros) {
-              final String otst = registro['otst']?.toString() ?? 'Sin OTST';
-              if (!agrupados.containsKey(otst)) {
-                agrupados[otst] = [];
+          if (await databaseExists(dbPath)) {
+            try {
+              final db = await openDatabase(dbPath, readOnly: true);
+              final List<Map<String, dynamic>> registros =
+                  await db.query(tableName);
+              await db.close();
+
+              // Procesar registros in-memory para esta DB
+              final List<Map<String, dynamic>> processed = [];
+              for (var registro in registros) {
+                final Map<String, dynamic> registroMod =
+                    Map<String, dynamic>.from(registro);
+                registroMod['tipo_servicio'] = _obtenerTipoServicio(dbName);
+                processed.add(registroMod);
               }
-              // Agregar información del tipo de servicio.
-              // IMPORTANTE: Creamos un nuevo mapa modificable porque el de sqflite es de solo lectura a veces.
-              final Map<String, dynamic> registroMod =
-                  Map<String, dynamic>.from(registro);
-              registroMod['tipo_servicio'] = _obtenerTipoServicio(dbName);
-              agrupados[otst]!.add(registroMod);
+              return processed;
+            } catch (e) {
+              debugPrint('Error leyendo $dbName: $e');
+              return <Map<String, dynamic>>[];
             }
-          } catch (e) {
-            continue;
           }
+          return <Map<String, dynamic>>[];
+        }),
+      );
+
+      // Agrupar resultados
+      for (var dbRegistros in results) {
+        for (var registro in dbRegistros) {
+          final String otst = registro['otst']?.toString() ?? 'Sin OTST';
+          if (!agrupados.containsKey(otst)) {
+            agrupados[otst] = [];
+          }
+          agrupados[otst]!.add(registro);
         }
       }
 

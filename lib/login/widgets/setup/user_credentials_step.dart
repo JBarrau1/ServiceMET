@@ -1,5 +1,7 @@
 // lib/login/widgets/setup/user_credentials_step.dart
 
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -197,7 +199,7 @@ class _UserCredentialsStepState extends State<UserCredentialsStep> {
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor:
-                  widget.isDark ? Colors.white70 : Colors.black54,
+                      widget.isDark ? Colors.white70 : Colors.black54,
                   side: BorderSide(
                     color: widget.isDark ? Colors.white24 : Colors.black12,
                   ),

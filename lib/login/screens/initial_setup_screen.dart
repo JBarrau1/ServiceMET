@@ -1,5 +1,7 @@
 // lib/login/screens/initial_setup_screen.dart
 
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/setup_service.dart';
@@ -22,7 +24,8 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
 
   // Controladores de campos - Conexión BD
   final TextEditingController _ipController = TextEditingController();
-  final TextEditingController _portController = TextEditingController(text: '1433');
+  final TextEditingController _portController =
+      TextEditingController(text: '1433');
   final TextEditingController _dbController = TextEditingController();
   final TextEditingController _dbUserController = TextEditingController();
   final TextEditingController _dbPassController = TextEditingController();
@@ -100,7 +103,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
 
         // 2. Guardar usuario autenticado en SQLite
         final saveResult =
-        await _setupService.saveAuthenticatedUser(userResult.userData!);
+            await _setupService.saveAuthenticatedUser(userResult.userData!);
 
         if (!saveResult.success) {
           _showError(context, saveResult.message);
@@ -110,7 +113,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
 
         // 3. Descargar datos de precarga
         final downloadResult = await _setupService.downloadPrecargaData(
-              (message, progress) {
+          (message, progress) {
             setState(() {
               _statusMessage = message;
               _progressValue = progress;
@@ -183,10 +186,10 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         child: SafeArea(
           child: _loading
               ? SetupLoading(
-            isDark: isDark,
-            statusMessage: _statusMessage,
-            progressValue: _progressValue,
-          )
+                  isDark: isDark,
+                  statusMessage: _statusMessage,
+                  progressValue: _progressValue,
+                )
               : _buildSetupForm(context, isDark),
         ),
       ),
@@ -245,23 +248,23 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
               key: _formKey,
               child: _currentStep == 0
                   ? ConnectionStep(
-                isDark: isDark,
-                loading: _loading,
-                ipController: _ipController,
-                portController: _portController,
-                dbController: _dbController,
-                dbUserController: _dbUserController,
-                dbPassController: _dbPassController,
-                onContinue: () => _executeSetup(context),
-              )
+                      isDark: isDark,
+                      loading: _loading,
+                      ipController: _ipController,
+                      portController: _portController,
+                      dbController: _dbController,
+                      dbUserController: _dbUserController,
+                      dbPassController: _dbPassController,
+                      onContinue: () => _executeSetup(context),
+                    )
                   : UserCredentialsStep(
-                isDark: isDark,
-                loading: _loading,
-                appUserController: _appUserController,
-                appPassController: _appPassController,
-                onBack: () => setState(() => _currentStep = 0),
-                onFinish: () => _executeSetup(context),
-              ),
+                      isDark: isDark,
+                      loading: _loading,
+                      appUserController: _appUserController,
+                      appPassController: _appPassController,
+                      onBack: () => setState(() => _currentStep = 0),
+                      onFinish: () => _executeSetup(context),
+                    ),
             ),
           ),
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import 'package:service_met/database/soporte_tecnico/database_helper_diagnostico_correctivo.dart';
 import 'package:service_met/home/home_screen.dart';
 import 'package:service_met/providers/calibration_provider.dart';
@@ -20,22 +20,37 @@ import 'package:provider/provider.dart';
 import 'package:service_met/providers/settings_provider.dart';
 import 'login/screens/initial_setup_screen.dart';
 import 'login/screens/login_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
 
-  // Inicializa la base de datos local
-  await AppDatabase().database;
-  await DatabaseHelperAjustes().database;
-  await DatabaseHelperInstalacion().database;
-  await DatabaseHelperMntPrvAvanzadoStac().database;
-  await DatabaseHelperMntPrvAvanzadoStil().database;
-  await DatabaseHelperMntPrvRegularStac().database;
-  await DatabaseHelperMntPrvRegularStil().database;
-  await DatabaseHelperRelevamiento().database;
-  await DatabaseHelperVerificaciones().database;
-  await DatabaseHelperDiagnosticoCorrectivo().database;
+  // Bloquear orientación si se desea (opcional, buena práctica)
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
+  try {
+    // Inicialización paralela para mejorar velocidad de arranque
+    await Future.wait([
+      Firebase.initializeApp(),
+      // Bases de datos críticas (opcionalmente podrían no ser críticas para arranque)
+      AppDatabase().database,
+      DatabaseHelperAjustes().database,
+      DatabaseHelperInstalacion().database,
+      DatabaseHelperMntPrvAvanzadoStac().database,
+      DatabaseHelperMntPrvAvanzadoStil().database,
+      DatabaseHelperMntPrvRegularStac().database,
+      DatabaseHelperMntPrvRegularStil().database,
+      DatabaseHelperRelevamiento().database,
+      DatabaseHelperVerificaciones().database,
+      DatabaseHelperDiagnosticoCorrectivo().database,
+    ]);
+  } catch (e, stack) {
+    debugPrint('Error crítico durante la inicialización: $e');
+    debugPrint(stack.toString());
+    // Aquí se podría reportar a Crashlytics si estuviera configurado
+  }
 
   // NUEVO: Verificar si se completó el setup inicial
   final prefs = await SharedPreferences.getInstance();
@@ -67,8 +82,8 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'ServiceMET',
           debugShowCheckedModeBanner: false,
-          theme: _buildLightTheme(context),
-          darkTheme: _buildDarkTheme(context),
+          theme: AppTheme.buildLightTheme(context),
+          darkTheme: AppTheme.buildDarkTheme(context),
           themeMode: settings.themeMode,
           builder: (context, child) {
             return MediaQuery(
@@ -81,256 +96,12 @@ class MyApp extends StatelessWidget {
           // MODIFICADO: Decidir ruta inicial basado en setup
           initialRoute: setupCompleted ? '/login' : '/setup',
           routes: {
-            '/setup': (context) => const InitialSetupScreen(), // NUEVO
+            '/setup': (context) => const InitialSetupScreen(),
             '/login': (context) => const LoginScreen(),
             '/home': (context) => const HomeScreen(),
           },
         );
       },
-    );
-  }
-
-  ThemeData _buildLightTheme(BuildContext context) {
-    const primaryColor = Color(0xFFd99700);
-    const secondaryColor = Color(0xFFd99700);
-    const textColor = Colors.black;
-    const scaffoldBackgroundColor = Colors.white;
-
-    final baseTheme = ThemeData.light();
-
-    return baseTheme.copyWith(
-      scaffoldBackgroundColor: scaffoldBackgroundColor,
-      primaryColor: primaryColor,
-      canvasColor: scaffoldBackgroundColor,
-      cardColor: scaffoldBackgroundColor,
-      disabledColor: Colors.grey[400],
-      colorScheme: baseTheme.colorScheme.copyWith(
-        primary: primaryColor,
-        secondary: secondaryColor,
-        surface: scaffoldBackgroundColor,
-        onSurface: textColor,
-        brightness: Brightness.light,
-      ),
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).copyWith(
-        displayLarge: const TextStyle(color: textColor),
-        displayMedium: const TextStyle(color: textColor),
-        displaySmall: const TextStyle(color: textColor),
-        headlineMedium: const TextStyle(color: textColor),
-        headlineSmall: const TextStyle(color: textColor),
-        titleLarge: const TextStyle(color: textColor),
-        titleMedium: const TextStyle(color: textColor),
-        titleSmall: const TextStyle(color: textColor),
-        bodyLarge: const TextStyle(color: textColor),
-        bodyMedium: const TextStyle(color: textColor),
-        bodySmall: TextStyle(color: Colors.grey[800]),
-        labelLarge: const TextStyle(color: Colors.white),
-        labelSmall: TextStyle(color: Colors.grey[800]),
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: primaryColor,
-        titleTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
-        iconTheme: IconThemeData(color: Colors.black),
-        elevation: 1,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.grey[100],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.all(16),
-        labelStyle: TextStyle(color: Colors.grey[800]),
-        hintStyle: TextStyle(color: Colors.grey[600]),
-        prefixIconColor: Colors.grey[800],
-        suffixIconColor: Colors.grey[800],
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: primaryColor,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
-        ),
-      ),
-      iconTheme: const IconThemeData(color: textColor),
-      iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          foregroundColor: primaryColor,
-        ),
-      ),
-      dividerTheme: const DividerThemeData(
-        thickness: 1,
-        space: 1,
-      ).copyWith(color: Colors.grey[300]),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: Colors.grey[800],
-        contentTextStyle: const TextStyle(color: Colors.white),
-      ),
-      popupMenuTheme: PopupMenuThemeData(
-        textStyle: const TextStyle(color: textColor),
-      ),
-      bottomSheetTheme: const BottomSheetThemeData(),
-      chipTheme: ChipThemeData(
-        backgroundColor: Colors.grey[200]!,
-        labelStyle: const TextStyle(color: textColor),
-        secondaryLabelStyle: const TextStyle(color: Colors.white),
-      ),
-      dialogTheme: DialogThemeData(backgroundColor: scaffoldBackgroundColor),
-      switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith<Color?>(
-          (states) {
-            if (states.contains(WidgetState.selected)) {
-              return Colors.white;
-            }
-            return Colors.grey;
-          },
-        ),
-        trackColor: WidgetStateProperty.resolveWith<Color?>(
-          (states) {
-            if (states.contains(WidgetState.selected)) {
-              return const Color(0xFF457D41);
-            }
-            return Colors.black12;
-          },
-        ),
-      ),
-    );
-  }
-
-  ThemeData _buildDarkTheme(BuildContext context) {
-    const primaryColor = Color(0xFFFFFFFF);
-    const secondaryColor = Color(0xFFFFFFFF);
-    const textColor = Colors.white;
-    const scaffoldBackgroundColor = Color(0xFF121212);
-
-    final baseTheme = ThemeData.dark();
-
-    return baseTheme.copyWith(
-      scaffoldBackgroundColor: scaffoldBackgroundColor,
-      primaryColor: primaryColor,
-      canvasColor: const Color(0xFF1E1E1E),
-      cardColor: const Color(0xFF1E1E1E),
-      disabledColor: Colors.grey[600],
-      colorScheme: baseTheme.colorScheme.copyWith(
-        primary: primaryColor,
-        secondary: secondaryColor,
-        surface: const Color(0xFF1E1E1E),
-        onSurface: textColor,
-        brightness: Brightness.dark,
-      ),
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme).copyWith(
-        displayLarge: const TextStyle(color: textColor),
-        displayMedium: const TextStyle(color: textColor),
-        displaySmall: const TextStyle(color: textColor),
-        headlineMedium: const TextStyle(color: textColor),
-        headlineSmall: const TextStyle(color: textColor),
-        titleLarge: const TextStyle(color: textColor),
-        titleMedium: const TextStyle(color: textColor),
-        titleSmall: const TextStyle(color: textColor),
-        bodyLarge: const TextStyle(color: textColor),
-        bodyMedium: const TextStyle(color: textColor),
-        bodySmall: const TextStyle(color: Colors.white70),
-        labelLarge: const TextStyle(color: Colors.black),
-        labelSmall: const TextStyle(color: Colors.white70),
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF1E1E1E),
-        titleTextStyle: TextStyle(
-          color: textColor,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
-        iconTheme: IconThemeData(color: textColor),
-        elevation: 1,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.grey[800],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: EdgeInsets.all(16),
-        labelStyle: TextStyle(color: Colors.white70),
-        hintStyle: TextStyle(color: Colors.white54),
-        prefixIconColor: Colors.white70,
-        suffixIconColor: Colors.white70,
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: primaryColor,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
-        ),
-      ),
-      iconTheme: const IconThemeData(color: textColor),
-      iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          foregroundColor: primaryColor,
-        ),
-      ),
-      dividerTheme: const DividerThemeData(
-        thickness: 1,
-        space: 1,
-      ).copyWith(color: Colors.grey[700]),
-      snackBarTheme: const SnackBarThemeData(
-        contentTextStyle: TextStyle(color: textColor),
-      ).copyWith(backgroundColor: const Color(0xFF1E1E1E)),
-      popupMenuTheme: const PopupMenuThemeData(
-        textStyle: TextStyle(color: textColor),
-      ).copyWith(color: const Color(0xFF1E1E1E)),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(0xFF1E1E1E),
-      ),
-      chipTheme: const ChipThemeData(
-        labelStyle: TextStyle(color: textColor),
-        secondaryLabelStyle: TextStyle(color: Colors.black),
-      ).copyWith(backgroundColor: Colors.grey[700]!),
-      dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1E1E1E)),
-      switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith<Color?>(
-          (states) {
-            if (states.contains(WidgetState.selected)) {
-              return Colors.white;
-            }
-            return Colors.grey;
-          },
-        ),
-        trackColor: WidgetStateProperty.resolveWith<Color?>(
-          (states) {
-            if (states.contains(WidgetState.selected)) {
-              return const Color(0xFF457D41);
-            }
-            return Colors.black12;
-          },
-        ),
-      ),
     );
   }
 }

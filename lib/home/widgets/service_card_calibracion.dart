@@ -1,9 +1,10 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../screens/detalles_seca_screen.dart';
 import '../models/servicio_model.dart';
-import '../utils/export_helper.dart';
 
 class ServiceCardCalibracion extends StatelessWidget {
   final ServicioSeca servicio;
@@ -129,24 +130,6 @@ class ServiceCardCalibracion extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () =>
-                              ExportHelper.exportarSecaDirectamente(
-                                  context, servicio),
-                          icon: const Icon(FontAwesomeIcons.download, size: 16),
-                          label: const Text('Exportar'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF667EEA),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            side: const BorderSide(color: Color(0xFF667EEA)),
                           ),
                         ),
                       ),

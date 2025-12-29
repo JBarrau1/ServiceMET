@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use
+
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
@@ -43,10 +45,10 @@ class BackupService {
       return backupDir
           .listSync()
           .where((file) =>
-      file is File &&
-          (file.path.endsWith('.db') ||
-              file.path.endsWith('.bak') ||
-              file.path.endsWith('.sqlite')))
+              file is File &&
+              (file.path.endsWith('.db') ||
+                  file.path.endsWith('.bak') ||
+                  file.path.endsWith('.sqlite')))
           .toList();
     } catch (e) {
       debugPrint('Error al obtener backups: $e');
@@ -97,7 +99,8 @@ class DateTimeAuthService {
     final previousMinute = DateTime.now().subtract(const Duration(minutes: 1));
     final previousPassword = _generatePasswordForDateTime(previousMinute);
 
-    return enteredPassword == currentPassword || enteredPassword == previousPassword;
+    return enteredPassword == currentPassword ||
+        enteredPassword == previousPassword;
   }
 
   static String _generatePasswordForDateTime(DateTime dateTime) {
@@ -122,7 +125,6 @@ class RespaldoScreen extends StatefulWidget {
 class _RespaldoScreenState extends State<RespaldoScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
-
 
   bool _isAuthenticated = false;
   bool _isLoading = false;
@@ -169,10 +171,8 @@ class _RespaldoScreenState extends State<RespaldoScreen> {
       setState(() => _isAuthenticated = true);
       _loadFiles();
     } else {
-      _showErrorDialog(
-          'Error de autenticación',
-          'Ingreso incorrecto. Por favor, verifica la contraseña ingresada.'
-      );
+      _showErrorDialog('Error de autenticación',
+          'Ingreso incorrecto. Por favor, verifica la contraseña ingresada.');
     }
   }
 
@@ -182,7 +182,7 @@ class _RespaldoScreenState extends State<RespaldoScreen> {
       if (selectedDirectory == null) return;
 
       final success =
-      await BackupService.copyFileToDirectory(file.path, selectedDirectory);
+          await BackupService.copyFileToDirectory(file.path, selectedDirectory);
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -301,7 +301,7 @@ class _RespaldoScreenState extends State<RespaldoScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Eliminar archivo'),
         content:
-        Text('¿Estás seguro de eliminar ${file.uri.pathSegments.last}?'),
+            Text('¿Estás seguro de eliminar ${file.uri.pathSegments.last}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -398,9 +398,9 @@ class _RespaldoScreenState extends State<RespaldoScreen> {
     return ListTile(
       leading: _isSelectionMode
           ? Checkbox(
-        value: isSelected,
-        onChanged: (_) => _toggleFileSelection(file),
-      )
+              value: isSelected,
+              onChanged: (_) => _toggleFileSelection(file),
+            )
           : Icon(_getFileIcon(file)),
       title: Text(
         file.uri.pathSegments.last,
@@ -415,9 +415,9 @@ class _RespaldoScreenState extends State<RespaldoScreen> {
       trailing: _isSelectionMode
           ? null
           : IconButton(
-        icon: const Icon(Icons.download),
-        onPressed: () => _downloadFile(file),
-      ),
+              icon: const Icon(Icons.download),
+              onPressed: () => _downloadFile(file),
+            ),
       onTap: () => _isSelectionMode
           ? _toggleFileSelection(file)
           : _showFileOptions(file),
@@ -461,26 +461,26 @@ class _RespaldoScreenState extends State<RespaldoScreen> {
       title: _isSelectionMode
           ? Text('${_selectedFiles.length} seleccionados')
           : Text(
-        'RESPALDO DE DATOS',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white
-              : Colors.black,
-        ),
-      ),
+              'RESPALDO DE DATOS',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
+            ),
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? Colors.transparent
           : Colors.white,
       elevation: 0,
       flexibleSpace: Theme.of(context).brightness == Brightness.dark
           ? ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-          child: Container(color: Colors.black.withOpacity(0.1)),
-        ),
-      )
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+                child: Container(color: Colors.black.withOpacity(0.1)),
+              ),
+            )
           : null,
       iconTheme: IconThemeData(color: Theme.of(context).iconTheme.color),
       titleTextStyle: TextStyle(
@@ -493,22 +493,22 @@ class _RespaldoScreenState extends State<RespaldoScreen> {
       centerTitle: true,
       actions: _isSelectionMode
           ? [
-        IconButton(
-          icon: const Icon(Icons.delete),
-          onPressed: _confirmDeleteSelected,
-        ),
-        IconButton(
-          icon: const Icon(Icons.download),
-          onPressed: _downloadSelectedFiles,
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => setState(() {
-            _selectedFiles.clear();
-            _isSelectionMode = false;
-          }),
-        ),
-      ]
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: _confirmDeleteSelected,
+              ),
+              IconButton(
+                icon: const Icon(Icons.download),
+                onPressed: _downloadSelectedFiles,
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() {
+                  _selectedFiles.clear();
+                  _isSelectionMode = false;
+                }),
+              ),
+            ]
           : null,
     );
   }
@@ -572,37 +572,42 @@ class _RespaldoScreenState extends State<RespaldoScreen> {
   Widget _buildBackupScreen() {
     final filteredDbs = _filterFiles(_databases, _searchController.text);
     final filteredCsvs = _filterFiles(_csvFiles, _searchController.text);
-    final filteredBackups = _filterFiles(_precargaBackups, _searchController.text);
-    final filteredSoporteTec = _filterFiles(_soporteTecDbs, _searchController.text);
+    final filteredBackups =
+        _filterFiles(_precargaBackups, _searchController.text);
+    final filteredSoporteTec =
+        _filterFiles(_soporteTecDbs, _searchController.text);
 
     return Scaffold(
       appBar: _buildAppBar(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          _buildSearchField(),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFileList('RESPALDOS DE CALIBRACIÓN', filteredBackups),
-                    const SizedBox(height: 20),
-                    _buildFileList('BASES DE DATOS PRINCIPALES', filteredDbs),
-                    const SizedBox(height: 20),
-                    _buildFileList('RESPALDOS DE SOPORTE TÉCNICO', filteredSoporteTec),
-                    const SizedBox(height: 20),
-                    _buildFileList('ARCHIVOS CSV', filteredCsvs),
-                  ],
+              children: [
+                _buildSearchField(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFileList(
+                              'RESPALDOS DE CALIBRACIÓN', filteredBackups),
+                          const SizedBox(height: 20),
+                          _buildFileList(
+                              'BASES DE DATOS PRINCIPALES', filteredDbs),
+                          const SizedBox(height: 20),
+                          _buildFileList('RESPALDOS DE SOPORTE TÉCNICO',
+                              filteredSoporteTec),
+                          const SizedBox(height: 20),
+                          _buildFileList('ARCHIVOS CSV', filteredCsvs),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

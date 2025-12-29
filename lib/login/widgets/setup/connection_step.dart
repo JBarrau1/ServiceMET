@@ -1,5 +1,7 @@
 // lib/login/widgets/setup/connection_step.dart
 
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'config_field.dart';
@@ -88,7 +90,6 @@ class ConnectionStep extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 32),
-
         ConfigField(
           label: 'IP del Servidor',
           controller: ipController,
@@ -106,7 +107,6 @@ class ConnectionStep extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-
         ConfigField(
           label: 'Puerto',
           controller: portController,
@@ -124,7 +124,6 @@ class ConnectionStep extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-
         ConfigField(
           label: 'Base de Datos',
           controller: dbController,
@@ -138,7 +137,6 @@ class ConnectionStep extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-
         ConfigField(
           label: 'Usuario BD',
           controller: dbUserController,
@@ -152,7 +150,6 @@ class ConnectionStep extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-
         ConfigField(
           label: 'Contraseña BD',
           controller: dbPassController,
@@ -166,9 +163,7 @@ class ConnectionStep extends StatelessWidget {
             return null;
           },
         ),
-
         const SizedBox(height: 32),
-
         SizedBox(
           width: double.infinity,
           height: 54,

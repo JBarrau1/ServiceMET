@@ -1,5 +1,7 @@
 // lib/login/services/setup_service.dart - VERSIÓN CORREGIDA
 
+// ignore_for_file: unused_local_variable, avoid_print
+
 import 'dart:convert';
 import 'package:mssql_connection/mssql_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';

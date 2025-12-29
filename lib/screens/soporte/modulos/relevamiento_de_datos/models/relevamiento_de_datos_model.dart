@@ -95,12 +95,16 @@ class PruebasMetrologicas {
   Excentricidad? excentricidad;
   Repetibilidad? repetibilidad;
   Linealidad? linealidad;
+  String pMaxBruto;
+  String pMinNeto;
 
   PruebasMetrologicas({
     RetornoCero? retornoCero,
     this.excentricidad,
     this.repetibilidad,
     this.linealidad,
+    this.pMaxBruto = '',
+    this.pMinNeto = '',
   }) : retornoCero = retornoCero ?? RetornoCero();
 
   // Constructor de copia
@@ -114,7 +118,9 @@ class PruebasMetrologicas {
             : null,
         linealidad = other.linealidad != null
             ? Linealidad.fromOther(other.linealidad!)
-            : null;
+            : null,
+        pMaxBruto = other.pMaxBruto,
+        pMinNeto = other.pMinNeto;
 }
 
 class RetornoCero {

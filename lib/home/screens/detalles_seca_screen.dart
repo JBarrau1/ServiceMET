@@ -1,9 +1,12 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 import 'dart:ui';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -74,21 +77,31 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
         csvData.add(balanza.values.toList());
       }
 
-      String csv = const ListToCsvConverter().convert(csvData);
-      final directory = await getDownloadsDirectory();
-      final path = directory?.path;
+      // Generar CSV
+      final csv =
+          const ListToCsvConverter(fieldDelimiter: ';').convert(csvData);
 
-      if (path == null) {
-        throw Exception('No se pudo acceder al directorio de descargas');
-      }
+      // Codificar a bytes UTF-8 para evitar problemas de caracteres
+      final List<int> csvBytes = utf8.encode(csv);
 
       final fileName =
           'SECA_${widget.servicioSeca.seca}_${DateTime.now().millisecondsSinceEpoch}.csv';
-      final filePath = '$path/$fileName';
-      final File file = File(filePath);
-      await file.writeAsString(csv);
 
-      OpenFilex.open(filePath);
+      // Seleccionar directorio de destino
+      final String? directoryPath = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Seleccione carpeta para guardar el respaldo',
+      );
+
+      if (directoryPath == null) {
+        // Usuario canceló
+        return;
+      }
+
+      final File file = File('$directoryPath/$fileName');
+      await file.writeAsBytes(csvBytes);
+
+      // Abrir el archivo generado
+      OpenFilex.open(file.path);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -98,7 +111,7 @@ class _DetallesSecaScreenState extends State<DetallesSecaScreen> {
                 const Icon(FontAwesomeIcons.circleCheck,
                     color: Colors.white, size: 20),
                 const SizedBox(width: 12),
-                Expanded(child: Text('Archivo exportado: $fileName')),
+                Expanded(child: Text('Archivo guardado en: ${file.path}')),
               ],
             ),
             backgroundColor: Colors.green,

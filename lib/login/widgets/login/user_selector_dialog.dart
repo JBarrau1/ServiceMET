@@ -1,5 +1,7 @@
 // lib/login/widgets/login/user_selector_dialog.dart
 
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/user_model.dart';
@@ -78,40 +80,40 @@ class UserSelectorDialog extends StatelessWidget {
             Flexible(
               child: users.isEmpty
                   ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.person_off_outlined,
-                      size: 64,
-                      color: isDark ? Colors.white24 : Colors.black12,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No hay usuarios guardados',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: isDark ? Colors.white38 : Colors.black38,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.person_off_outlined,
+                            size: 64,
+                            color: isDark ? Colors.white24 : Colors.black12,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No hay usuarios guardados',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: isDark ? Colors.white38 : Colors.black38,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              )
+                    )
                   : ListView.separated(
-                shrinkWrap: true,
-                itemCount: users.length,
-                separatorBuilder: (context, index) =>
-                const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final user = users[index];
-                  return _UserTile(
-                    user: user,
-                    isDark: isDark,
-                    onSelect: () => Navigator.pop(context, user),
-                    onDelete: () => _confirmDelete(context, user),
-                  );
-                },
-              ),
+                      shrinkWrap: true,
+                      itemCount: users.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final user = users[index];
+                        return _UserTile(
+                          user: user,
+                          isDark: isDark,
+                          onSelect: () => Navigator.pop(context, user),
+                          onDelete: () => _confirmDelete(context, user),
+                        );
+                      },
+                    ),
             ),
 
             const SizedBox(height: 20),
@@ -192,9 +194,7 @@ class _UserTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1a1a1a)
-            : const Color(0xFFF5F7FA),
+        color: isDark ? const Color(0xFF1a1a1a) : const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? Colors.white12 : Colors.black12,

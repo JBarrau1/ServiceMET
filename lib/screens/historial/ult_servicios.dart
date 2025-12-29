@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element, library_private_types_in_public_api, deprecated_member_use
+
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';

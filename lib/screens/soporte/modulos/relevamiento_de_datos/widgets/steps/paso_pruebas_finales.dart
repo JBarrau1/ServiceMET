@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../../models/relevamiento_de_datos_model.dart';
 import '../../controllers/relevamiento_de_datos_controller.dart';

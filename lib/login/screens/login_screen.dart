@@ -1,5 +1,7 @@
 // lib/login/screens/login_screen.dart - VERSIÓN SIMPLIFICADA
 
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +10,7 @@ import '../models/user_model.dart';
 import '../widgets/login/auto_login_loading.dart';
 import '../widgets/login/login_form.dart';
 import '../widgets/login/user_selector_dialog.dart';
+import '../../services/database_maintenance_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,13 +27,10 @@ class _LoginScreenState extends State<LoginScreen>
   final AuthService _authService = AuthService();
 
   bool _loading = false;
-  bool _showingAutoLogin = false;
   String? _savedUser;
   String? _savedUserFullName;
   bool _autoLoginEnabled = false;
   bool _isFirstLogin = true;
-
-  // ✅ ÚNICO ESTADO: ¿Está ingresando nuevo usuario?
   bool _isAddingNewUser = false;
 
   late AnimationController _animationController;
@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen>
   void initState() {
     super.initState();
     _initAnimation();
-    _loadPrefsAndCheckAutoLogin(context);
+    _loadPrefsAndCheckAutoLogin();
   }
 
   void _initAnimation() {
@@ -62,9 +62,10 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  // ✅ MEJORADO: Recargar usuarios guardados
-  Future<void> _loadPrefsAndCheckAutoLogin(BuildContext context) async {
+  Future<void> _loadPrefsAndCheckAutoLogin() async {
     final prefs = await _authService.loadPreferences();
+
+    if (!mounted) return;
 
     setState(() {
       _savedUser = prefs['savedUser'];
@@ -73,12 +74,11 @@ class _LoginScreenState extends State<LoginScreen>
       _isFirstLogin = prefs['isFirstLogin'];
     });
 
-    // ✅ Validar que el usuario guardado realmente exista en la BD
     if (_savedUser != null) {
       final exists = await _authService.userExists(_savedUser!);
       if (!exists) {
-        // Usuario fue eliminado, limpiar preferencias
         await _clearSavedUser();
+        if (!mounted) return;
         setState(() {
           _savedUser = null;
           _savedUserFullName = null;
@@ -88,19 +88,17 @@ class _LoginScreenState extends State<LoginScreen>
       }
     }
 
-    // Auto-login solo si hay usuario válido
     if (_autoLoginEnabled && _isFirstLogin && _savedUser != null) {
       await Future.delayed(const Duration(milliseconds: 800));
       if (mounted) {
-        await _performAutoLogin(context);
+        await _performAutoLogin();
       }
     }
   }
 
-  Future<void> _performAutoLogin(BuildContext context) async {
+  Future<void> _performAutoLogin() async {
     setState(() {
       _loading = true;
-      _showingAutoLogin = true;
     });
 
     await Future.delayed(const Duration(milliseconds: 1500));
@@ -109,12 +107,12 @@ class _LoginScreenState extends State<LoginScreen>
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_first_login', false);
 
+      if (!mounted) return;
       _showSnackBar(context, 'Bienvenido de vuelta', Colors.green);
       Navigator.pushReplacementNamed(context, '/home');
     }
   }
 
-  // ✅ SIMPLIFICADO: Un solo método de login
   Future<void> _login(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -136,7 +134,6 @@ class _LoginScreenState extends State<LoginScreen>
         isChangingUser: false,
       );
     } else {
-      // No debería llegar aquí
       result = LoginResult(
         success: false,
         message: 'No hay usuario seleccionado',
@@ -152,13 +149,15 @@ class _LoginScreenState extends State<LoginScreen>
 
       // Recargar preferencias después de agregar usuario
       if (_isAddingNewUser) {
-        await _loadPrefsAndCheckAutoLogin(context);
+        await _loadPrefsAndCheckAutoLogin();
+        if (!mounted) return;
         setState(() => _isAddingNewUser = false);
       }
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_first_login', false);
 
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       _showSnackBar(context, result.message, Colors.red);
@@ -211,7 +210,8 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[700]),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: Colors.orange[700]),
             child: const Text('Reconfigurar'),
           ),
         ],
@@ -249,23 +249,41 @@ class _LoginScreenState extends State<LoginScreen>
           final success = await _authService.deleteUser(user.usuario);
 
           if (success) {
-            Navigator.pop(dialogContext);
+            // Check usage of dialogContext - unsafe across gaps but we are popping it immediately usually.
+            // However, after await, we should be careful.
+            // Since dialogContext belongs to the Dialog which is probably still mounted if we are here...
+            // But strict linting says no.
+            if (dialogContext.mounted) {
+              Navigator.pop(dialogContext);
+            }
+
+            // Wait, we need to handle the logic in the parent context if possible, or assume dialog is mounted.
+            // Actually, Navigator.pop simply does nothing if not mounted effectively? No, it might throw.
+            // But we are inside the callback.
+
+            // To be safe with the logic flow:
+            if (!mounted) return;
 
             // ✅ Si eliminó el usuario actual, limpiar
             if (user.usuario == _savedUser) {
               await _clearSavedUser();
-              setState(() {
-                _savedUser = null;
-                _savedUserFullName = null;
-              });
+              if (mounted) {
+                setState(() {
+                  _savedUser = null;
+                  _savedUserFullName = null;
+                });
+              }
             }
 
-            _showSnackBar(context, 'Usuario eliminado', Colors.green);
-
-            // ✅ Recargar para verificar si quedan usuarios
-            await _loadPrefsAndCheckAutoLogin(context);
+            if (mounted) {
+              _showSnackBar(context, 'Usuario eliminado', Colors.green);
+              // ✅ Recargar para verificar si quedan usuarios
+              await _loadPrefsAndCheckAutoLogin();
+            }
           } else {
-            _showSnackBar(context, 'Error al eliminar usuario', Colors.red);
+            if (mounted) {
+              _showSnackBar(context, 'Error al eliminar usuario', Colors.red);
+            }
           }
         },
       ),
@@ -313,6 +331,64 @@ class _LoginScreenState extends State<LoginScreen>
     await prefs.setBool('auto_login_enabled', false);
   }
 
+  Future<void> _showUpdateDatabaseDialog(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.system_update_alt, color: Colors.blue[700]),
+            const SizedBox(width: 12),
+            const Text('Actualizar Bases de Datos'),
+          ],
+        ),
+        content: const Text(
+          'Esta operación actualizará la estructura de las bases de datos preservando su información.\n\n'
+          '⚠️ Se realizará una copia de seguridad temporal, se recrearán las tablas y se restaurarán los datos.\n'
+          '¿Desea continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[700]),
+            child: const Text('Actualizar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      if (!mounted) return;
+
+      setState(() => _loading = true);
+      _showSnackBar(context, 'Iniciando actualización...', Colors.blue);
+
+      // Pequeño delay para que la UI se actualice antes de bloquear el hilo
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      try {
+        await DatabaseMaintenanceService.migrateAllDatabases();
+        if (mounted) {
+          _showSnackBar(context, '✅ Bases de datos actualizadas correctamente',
+              Colors.green);
+        }
+      } catch (e) {
+        if (mounted) {
+          _showSnackBar(context, '❌ Error al actualizar: $e', Colors.red);
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _loading = false);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -334,29 +410,30 @@ class _LoginScreenState extends State<LoginScreen>
         child: SafeArea(
           child: _loading && _autoLoginEnabled
               ? AutoLoginLoading(
-            isDark: isDark,
-            savedUserFullName: _savedUserFullName,
-            savedUser: _savedUser,
-          )
+                  isDark: isDark,
+                  savedUserFullName: _savedUserFullName,
+                  savedUser: _savedUser,
+                )
               : FadeTransition(
-            opacity: _fadeAnimation,
-            child: LoginForm(
-              formKey: _formKey,
-              passController: _passController,
-              userController: _userController,
-              isDark: isDark,
-              loading: _loading,
-              savedUser: _savedUser,
-              savedUserFullName: _savedUserFullName,
-              isAddingNewUser: _isAddingNewUser,
-              onLogin: () => _login(context),
-              onLoginDemo: () => _loginDemo(context),
-              onReconfigure: () => _showReconfigureDialog(context),
-              onShowUserSelector: () => _showUserSelector(context),
-              onStartAddingUser: _startAddingNewUser,
-              onCancelAddingUser: _cancelAddingUser,
-            ),
-          ),
+                  opacity: _fadeAnimation,
+                  child: LoginForm(
+                    formKey: _formKey,
+                    passController: _passController,
+                    userController: _userController,
+                    isDark: isDark,
+                    loading: _loading,
+                    savedUser: _savedUser,
+                    savedUserFullName: _savedUserFullName,
+                    isAddingNewUser: _isAddingNewUser,
+                    onLogin: () => _login(context),
+                    onLoginDemo: () => _loginDemo(context),
+                    onReconfigure: () => _showReconfigureDialog(context),
+                    onShowUserSelector: () => _showUserSelector(context),
+                    onStartAddingUser: _startAddingNewUser,
+                    onCancelAddingUser: _cancelAddingUser,
+                    onUpdateDatabases: () => _showUpdateDatabaseDialog(context),
+                  ),
+                ),
         ),
       ),
     );

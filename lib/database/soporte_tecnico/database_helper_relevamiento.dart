@@ -290,11 +290,14 @@ class DatabaseHelperRelevamiento {
         
         --DATOS SERVICIO ENTORNO
         fecha_servicio TEXT DEFAULT '',
+        fecha_prox_servicio TEXT DEFAULT '',
         hora_inicio TEXT DEFAULT '',
         hora_fin TEXT DEFAULT '',
         comentario_general TEXT DEFAULT '',
         recomendaciones TEXT DEFAULT '',
-        
+        p_max_bruto TEXT DEFAULT '',
+        p_min_neto TEXT DEFAULT '',
+
         carcasa TEXT DEFAULT '',
         carcasa_comentario TEXT DEFAULT '',
         carcasa_foto TEXT DEFAULT '',

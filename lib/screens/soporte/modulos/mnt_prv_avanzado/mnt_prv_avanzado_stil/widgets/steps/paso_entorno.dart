@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../../../mnt_prv_avanzado_stil/widgets/campo_inspeccion_widget.dart';
 import '../../controllers/mnt_prv_avanzado_stil_controller.dart';

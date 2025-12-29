@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../../models/mnt_prv_regular_stil_model.dart';
 import '../../controllers/mnt_prv_regular_stil_controller.dart';

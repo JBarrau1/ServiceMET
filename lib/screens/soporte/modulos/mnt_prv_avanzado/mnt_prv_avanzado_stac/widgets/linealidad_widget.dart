@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
+
 import 'package:flutter/material.dart';
 
 import '../models/mnt_prv_avanzado_stac_model.dart';
@@ -319,10 +321,12 @@ class _LinealidadWidgetState extends State<LinealidadWidget> {
 
                             // Color para diferenciar el estado
                             Color? cardColor;
-                            if (operation == 1)
+                            if (operation == 1) {
                               cardColor = Colors.green.withOpacity(0.1);
-                            if (operation == -1)
+                            }
+                            if (operation == -1) {
                               cardColor = Colors.red.withOpacity(0.1);
+                            }
 
                             return Container(
                               color: cardColor,

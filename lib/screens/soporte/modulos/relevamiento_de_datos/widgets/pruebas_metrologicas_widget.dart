@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import '../models/relevamiento_de_datos_model.dart';
 import 'excentricidad_widget.dart';
@@ -81,6 +83,36 @@ class _PruebasMetrologicasWidgetState extends State<PruebasMetrologicasWidget> {
               widget.onChanged();
             }
           },
+        ),
+        const SizedBox(height: 20.0),
+
+        // P Max Bruto y P Min Neto
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                initialValue: widget.pruebas.pMaxBruto,
+                decoration: _buildInputDecoration('P Max Bruto'),
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  widget.pruebas.pMaxBruto = value;
+                  widget.onChanged();
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextFormField(
+                initialValue: widget.pruebas.pMinNeto,
+                decoration: _buildInputDecoration('P Min Neto'),
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  widget.pruebas.pMinNeto = value;
+                  widget.onChanged();
+                },
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 20.0),
 

@@ -1,4 +1,6 @@
 // widgets/balanza_step.dart
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -193,7 +195,6 @@ class _BalanzaStepState extends State<BalanzaStep> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),

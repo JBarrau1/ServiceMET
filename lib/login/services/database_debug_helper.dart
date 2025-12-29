@@ -1,10 +1,11 @@
 // lib/login/services/database_debug_helper.dart
 
+// ignore_for_file: avoid_print
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseDebugHelper {
-
   /// Verifica el estado de la base de datos precarga
   static Future<Map<String, int>> verifyPrecargaDatabase() async {
     final dbPath = await getDatabasesPath();
@@ -21,7 +22,14 @@ class DatabaseDebugHelper {
 
     final db = await openDatabase(precargaDbPath);
 
-    final tables = ['clientes', 'plantas', 'balanzas', 'inf', 'equipamientos', 'servicios'];
+    final tables = [
+      'clientes',
+      'plantas',
+      'balanzas',
+      'inf',
+      'equipamientos',
+      'servicios'
+    ];
     final counts = <String, int>{};
 
     print('\n📊 CONTEO DE REGISTROS:');
@@ -30,8 +38,8 @@ class DatabaseDebugHelper {
     for (var table in tables) {
       try {
         final count = Sqflite.firstIntValue(
-            await db.rawQuery('SELECT COUNT(*) FROM $table')
-        ) ?? 0;
+                await db.rawQuery('SELECT COUNT(*) FROM $table')) ??
+            0;
 
         counts[table] = count;
 
@@ -77,8 +85,8 @@ class DatabaseDebugHelper {
 
       // Contar registros
       final count = Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM $tableName')
-      ) ?? 0;
+              await db.rawQuery('SELECT COUNT(*) FROM $tableName')) ??
+          0;
       print('Total de registros: $count');
 
       if (count == 0) {
@@ -109,7 +117,6 @@ class DatabaseDebugHelper {
       }
 
       print('═' * 60 + '\n');
-
     } catch (e) {
       print('❌ Error inspeccionando tabla: $e');
     }

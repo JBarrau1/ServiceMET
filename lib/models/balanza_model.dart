@@ -1,4 +1,6 @@
 // lib/models/balanza_model.dart
+// ignore_for_file: non_constant_identifier_names
+
 class Balanza {
   final String cod_metrica;
   final String n_celdas;

@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'package:flutter/material.dart';
 import 'linealidad_controller.dart';
 import 'linearity_row.dart';

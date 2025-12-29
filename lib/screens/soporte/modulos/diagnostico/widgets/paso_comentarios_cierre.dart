@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../models/diagnostico_model.dart';
 import '../controllers/diagnostico_controller.dart';

@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable, library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import '../models/diagnostico_model.dart';
 import 'excentricidad_widget.dart';

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -243,6 +245,8 @@ class RelevamientoDeDatosController {
     // Retorno a Cero y Estabilidad - SOLO FINAL (sin sufijo "_final" en BD)
     data['retorno_cero'] = model.pruebasFinales.retornoCero.estado;
     data['carga_retorno_cero'] = model.pruebasFinales.retornoCero.estabilidad;
+    data['p_max_bruto'] = model.pruebasFinales.pMaxBruto;
+    data['p_min_neto'] = model.pruebasFinales.pMinNeto;
 
     // Excentricidad final (NO usa sufijo en BD, solo números)
     _addExcentricidadData(data, model.pruebasFinales.excentricidad);

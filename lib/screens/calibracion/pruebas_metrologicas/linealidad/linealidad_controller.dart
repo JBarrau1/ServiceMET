@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:service_met/providers/calibration_provider.dart';
 import '../../../../database/app_database.dart';
@@ -20,7 +22,11 @@ class LinealidadController {
     'Ascenso evaluando ceros',
     'Ascenso continúo por pasos'
   ];
-  final List<String> metodocargaOptions = ['Sin método de carga', 'Método 1', 'Método 2'];
+  final List<String> metodocargaOptions = [
+    'Sin método de carga',
+    'Método 1',
+    'Método 2'
+  ];
   String? selectedMetodoCarga = 'Sin método de carga'; // Valor por defecto
 
   String? selectedMetodo = 'Ascenso evaluando ceros';
@@ -62,9 +68,12 @@ class LinealidadController {
         final d3 = double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1;
 
         // Obtener capacidades máximas
-        final capMax1 = double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0;
-        final capMax2 = double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0;
-        final capMax3 = double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0;
+        final capMax1 =
+            double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0;
+        final capMax2 =
+            double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0;
+        final capMax3 =
+            double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0;
 
         // Lógica de selección según la carga
         if (carga <= capMax1 && capMax1 > 0) return d1;
@@ -72,10 +81,10 @@ class LinealidadController {
         if (carga <= capMax3 && capMax3 > 0) return d3;
         return d1; // fallback al primer rango
       } else {
-        debugPrint('No se encontraron datos de balanza, usando valor por defecto d=0.1');
+        debugPrint(
+            'No se encontraron datos de balanza, usando valor por defecto d=0.1');
         return 0.1;
       }
-
     } catch (e) {
       debugPrint('Error al obtener D desde la base de datos: $e');
       return 0.1; // Valor por defecto en caso de error
@@ -98,18 +107,35 @@ class LinealidadController {
           'd1': double.tryParse(balanzaData['d1']?.toString() ?? '') ?? 0.1,
           'd2': double.tryParse(balanzaData['d2']?.toString() ?? '') ?? 0.1,
           'd3': double.tryParse(balanzaData['d3']?.toString() ?? '') ?? 0.1,
-          'pmax1': double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0,
-          'pmax2': double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0,
-          'pmax3': double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0,
+          'pmax1':
+              double.tryParse(balanzaData['cap_max1']?.toString() ?? '') ?? 0.0,
+          'pmax2':
+              double.tryParse(balanzaData['cap_max2']?.toString() ?? '') ?? 0.0,
+          'pmax3':
+              double.tryParse(balanzaData['cap_max3']?.toString() ?? '') ?? 0.0,
         };
       } else {
-        debugPrint('No se encontraron datos de balanza, usando valores por defecto');
-        return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1, 'pmax1': 0.0, 'pmax2': 0.0, 'pmax3': 0.0};
+        debugPrint(
+            'No se encontraron datos de balanza, usando valores por defecto');
+        return {
+          'd1': 0.1,
+          'd2': 0.1,
+          'd3': 0.1,
+          'pmax1': 0.0,
+          'pmax2': 0.0,
+          'pmax3': 0.0
+        };
       }
-
     } catch (e) {
       debugPrint('Error al obtener valores D desde la BD: $e');
-      return {'d1': 0.1, 'd2': 0.1, 'd3': 0.1, 'pmax1': 0.0, 'pmax2': 0.0, 'pmax3': 0.0};
+      return {
+        'd1': 0.1,
+        'd2': 0.1,
+        'd3': 0.1,
+        'pmax1': 0.0,
+        'pmax2': 0.0,
+        'pmax3': 0.0
+      };
     }
   }
 
@@ -132,7 +158,8 @@ class LinealidadController {
 
   void initControllers(int rowCount) {
     cargaControllers = List.generate(rowCount, (_) => TextEditingController());
-    indicacionControllers = List.generate(rowCount, (_) => TextEditingController());
+    indicacionControllers =
+        List.generate(rowCount, (_) => TextEditingController());
   }
 
   Future<String> _getDatabasePath() async {
@@ -168,7 +195,6 @@ class LinealidadController {
       _showNoDataMessage();
       _createDefaultEmptyRows();
       await _persistTempDataAndUpdate();
-
     } catch (e) {
       debugPrint('Error en búsqueda cascada: $e');
       _handleLoadError(e);
@@ -194,14 +220,11 @@ class LinealidadController {
       await db.close();
 
       return result.isNotEmpty ? result.first : {};
-
     } catch (e) {
       debugPrint('Error cargando desde precarga_database.db: $e');
       return {};
     }
   }
-
-
 
   // Método para cargar desde AppDatabase
   Future<Map<String, dynamic>> _loadFromAppDatabase() async {
@@ -212,7 +235,6 @@ class LinealidadController {
       final result = await dbHelper.getRegistroByCodMetrica(codMetrica);
 
       return result ?? {};
-
     } catch (e) {
       debugPrint('Error cargando desde AppDatabase: $e');
       return {};
@@ -240,7 +262,8 @@ class LinealidadController {
 
         if (v != null && v.toString().trim().isNotEmpty) {
           rows[i - 1]['lt']?.text = v.toString();
-          rows[i - 1]['indicacion']?.text = v.toString(); // ← LLENAR TAMBIÉN INDICACIÓN
+          rows[i - 1]['indicacion']?.text =
+              v.toString(); // ← LLENAR TAMBIÉN INDICACIÓN
           valoresCargados++;
         }
       }
@@ -270,7 +293,6 @@ class LinealidadController {
 
       if ((lt != null && lt.toString().isNotEmpty) ||
           (ind != null && ind.toString().isNotEmpty)) {
-
         if (rows.length < i) addRow();
 
         rows[i - 1]['lt']?.text = lt?.toString() ?? '';
@@ -294,7 +316,8 @@ class LinealidadController {
 
   // Crear filas vacías por defecto
   void _createDefaultEmptyRows() {
-    for (int i = 0; i < 12; i++) { // Cambiado de 6 a 12
+    for (int i = 0; i < 12; i++) {
+      // Cambiado de 6 a 12
       addRow();
     }
   }
@@ -373,7 +396,8 @@ class LinealidadController {
           // Suponiendo que la estructura es: par (carga, indicacion)
           if (i < cargaControllers.length) {
             cargaControllers[i].text = value;
-          } else if (i - cargaControllers.length < indicacionControllers.length) {
+          } else if (i - cargaControllers.length <
+              indicacionControllers.length) {
             indicacionControllers[i - cargaControllers.length].text = value;
           }
         }
@@ -386,7 +410,8 @@ class LinealidadController {
   Future<void> initialize() async {
     try {
       final dbHelper = AppDatabase();
-      final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+      final existingRecord =
+          await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
       // Solo cargar datos temporales si no hay datos en DB por sessionId
       final tempData = provider.getTempDataForTest('linealidad');
@@ -401,7 +426,6 @@ class LinealidadController {
         // No hay datos temporales ni por sessionId, busca por codMetrica
         await loadLinFromPrecargaOrDatabase(); // ← Usar el nuevo método
       }
-
     } catch (e) {
       debugPrint('Error en initialize(): $e');
       _createDefaultEmptyRows();
@@ -583,12 +607,14 @@ class LinealidadController {
   Future<void> calculateDifferenceForRow(int index) async {
     if (index >= rows.length) return;
     final lt = double.tryParse(rows[index]['lt']?.text ?? '') ?? 0.0;
-    final indicacion = double.tryParse(rows[index]['indicacion']?.text ?? '') ?? 0.0;
+    final indicacion =
+        double.tryParse(rows[index]['indicacion']?.text ?? '') ?? 0.0;
 
     // Obtener decimal places basado en la carga
     final decimalPlaces = await getDecimalPlacesForCarga(lt);
 
-    rows[index]['difference']?.text = (indicacion - lt).toStringAsFixed(decimalPlaces);
+    rows[index]['difference']?.text =
+        (indicacion - lt).toStringAsFixed(decimalPlaces);
     Future.microtask(() {
       provider.updateTempDataForTest('linealidad', toMap());
     });
@@ -605,7 +631,8 @@ class LinealidadController {
   Future<void> saveDataToDatabase() async {
     try {
       final dbHelper = AppDatabase();
-      final existingRecord = await dbHelper.getRegistroBySeca(secaValue, sessionId);
+      final existingRecord =
+          await dbHelper.getRegistroBySeca(secaValue, sessionId);
 
       final Map<String, dynamic> registro = {
         'session_id': sessionId,
@@ -627,7 +654,6 @@ class LinealidadController {
       } else {
         await dbHelper.insertRegistroCalibracion(registro);
       }
-
     } catch (e) {
       debugPrint('Error al guardar linealidad: $e');
       rethrow;

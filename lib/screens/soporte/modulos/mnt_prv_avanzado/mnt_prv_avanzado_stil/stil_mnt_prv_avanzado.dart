@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +12,6 @@ import '../mnt_prv_avanzado_stil/widgets/steps/paso_terminal_balanza_caja.dart';
 import '../mnt_prv_avanzado_stil/widgets/steps/paso_pruebas_iniciales_finales.dart';
 import 'controllers/mnt_prv_avanzado_stil_controller.dart';
 import 'models/mnt_prv_avanzado_stil_model.dart';
-
 
 class MntPrvAvanzadoStilScreen extends StatefulWidget {
   final String sessionId;
@@ -202,14 +203,14 @@ class _MntPrvAvanzadoStilScreenState extends State<MntPrvAvanzadoStilScreen> {
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0: // Pruebas Iniciales
-      // Validar que si hay pruebas activadas, estén completas
+        // Validar que si hay pruebas activadas, estén completas
         return true; // Por ahora permitir continuar
 
       case 1: // Entorno
       case 2: // Terminal
       case 3: // Balanza
       case 4: // Caja sumadora
-      // Verificar que todos los campos tengan estado seleccionado
+        // Verificar que todos los campos tengan estado seleccionado
         final camposDelPaso = _getCamposDelPaso(_currentStep);
         for (var campo in camposDelPaso) {
           if (_model.camposEstado[campo]?.initialValue == null ||
@@ -228,25 +229,30 @@ class _MntPrvAvanzadoStilScreenState extends State<MntPrvAvanzadoStilScreen> {
 
       case 6: // Estado Final
         if (_model.comentarioGeneral.isEmpty) {
-          _showSnackBar('Por favor complete el Comentario General', isError: true);
+          _showSnackBar('Por favor complete el Comentario General',
+              isError: true);
           return false;
         }
         if (_model.fechaProxServicio.isEmpty) {
-          _showSnackBar('Por favor seleccione la fecha del próximo servicio', isError: true);
+          _showSnackBar('Por favor seleccione la fecha del próximo servicio',
+              isError: true);
           return false;
         }
         if (_model.recomendacion.isEmpty) {
-          _showSnackBar('Por favor seleccione una Recomendación', isError: true);
+          _showSnackBar('Por favor seleccione una Recomendación',
+              isError: true);
           return false;
         }
         if (_model.estadoFisico.isEmpty ||
             _model.estadoOperacional.isEmpty ||
             _model.estadoMetrologico.isEmpty) {
-          _showSnackBar('Por favor complete todos los estados finales', isError: true);
+          _showSnackBar('Por favor complete todos los estados finales',
+              isError: true);
           return false;
         }
         if (_model.horaFin.isEmpty) {
-          _showSnackBar('Por favor registre la hora final del servicio', isError: true);
+          _showSnackBar('Por favor registre la hora final del servicio',
+              isError: true);
           return false;
         }
         return true;
@@ -259,18 +265,50 @@ class _MntPrvAvanzadoStilScreenState extends State<MntPrvAvanzadoStilScreen> {
   List<String> _getCamposDelPaso(int paso) {
     switch (paso) {
       case 1: // Entorno
-        return ['Vibración', 'Polvo', 'Temperatura', 'Humedad',
-          'Mesada', 'Iluminación', 'Limpieza de Fosa', 'Estado de Drenaje'];
+        return [
+          'Vibración',
+          'Polvo',
+          'Temperatura',
+          'Humedad',
+          'Mesada',
+          'Iluminación',
+          'Limpieza de Fosa',
+          'Estado de Drenaje'
+        ];
       case 2: // Terminal
-        return ['Carcasa', 'Teclado Fisico', 'Display Fisico', 'Fuente de poder',
-          'Bateria operacional', 'Bracket', 'Teclado Operativo', 'Display Operativo',
-          'Contector de celda', 'Bateria de memoria'];
+        return [
+          'Carcasa',
+          'Teclado Fisico',
+          'Display Fisico',
+          'Fuente de poder',
+          'Bateria operacional',
+          'Bracket',
+          'Teclado Operativo',
+          'Display Operativo',
+          'Contector de celda',
+          'Bateria de memoria'
+        ];
       case 3: // Balanza
-        return ['Limpieza general', 'Golpes al terminal', 'Nivelacion', 'Limpieza receptor',
-          'Golpes al receptor de carga', 'Encendido'];
+        return [
+          'Limpieza general',
+          'Golpes al terminal',
+          'Nivelacion',
+          'Limpieza receptor',
+          'Golpes al receptor de carga',
+          'Encendido'
+        ];
       case 4: // Caja sumadora
-        return ['Limitador de movimiento', 'Suspensión', 'Limitador de carga', 'Celda de carga',
-          'Tapa de caja sumadora', 'Humedad Interna', 'Estado de prensacables', 'Estado de borneas', 'Trabajo especial'];
+        return [
+          'Limitador de movimiento',
+          'Suspensión',
+          'Limitador de carga',
+          'Celda de carga',
+          'Tapa de caja sumadora',
+          'Humedad Interna',
+          'Estado de prensacables',
+          'Estado de borneas',
+          'Trabajo especial'
+        ];
       default:
         return [];
     }
@@ -359,11 +397,11 @@ class _MntPrvAvanzadoStilScreenState extends State<MntPrvAvanzadoStilScreen> {
           elevation: 0,
           flexibleSpace: isDarkMode
               ? ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-              child: Container(color: Colors.black.withOpacity(0.1)),
-            ),
-          )
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                    child: Container(color: Colors.black.withOpacity(0.1)),
+                  ),
+                )
               : null,
           centerTitle: true,
           actions: [
@@ -571,33 +609,33 @@ class _MntPrvAvanzadoStilScreenState extends State<MntPrvAvanzadoStilScreen> {
               onPressed: _isSaving
                   ? null
                   : () async {
-                if (_currentStep < _steps.length - 1) {
-                  await _goToStep(_currentStep + 1);
-                } else {
-                  // Último paso: finalizar
-                  if (_validateCurrentStep()) {
-                    await _saveCurrentStep();
+                      if (_currentStep < _steps.length - 1) {
+                        await _goToStep(_currentStep + 1);
+                      } else {
+                        // Último paso: finalizar
+                        if (_validateCurrentStep()) {
+                          await _saveCurrentStep();
 
-                    if (!mounted) return;
+                          if (!mounted) return;
 
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FinServicioMntAvaStilScreen(
-                          sessionId: widget.sessionId,
-                          secaValue: widget.secaValue,
-                          codMetrica: widget.codMetrica,
-                          nReca: widget.nReca,
-                          userName: widget.userName,
-                          clienteId: widget.clienteId,
-                          plantaCodigo: widget.plantaCodigo,
-                          tableName: 'mnt_prv_avanzado_stil',
-                        ),
-                      ),
-                    );
-                  }
-                }
-              },
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FinServicioMntAvaStilScreen(
+                                sessionId: widget.sessionId,
+                                secaValue: widget.secaValue,
+                                codMetrica: widget.codMetrica,
+                                nReca: widget.nReca,
+                                userName: widget.userName,
+                                clienteId: widget.clienteId,
+                                plantaCodigo: widget.plantaCodigo,
+                                tableName: 'mnt_prv_avanzado_stil',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    },
               icon: Icon(
                 _currentStep < _steps.length - 1
                     ? Icons.arrow_forward
@@ -650,7 +688,8 @@ class _MntPrvAvanzadoStilScreenState extends State<MntPrvAvanzadoStilScreen> {
                   _buildInfoRow('d1', balanza.d1.toString()),
                   _buildInfoRow('e1', balanza.e1.toString()),
                   _buildInfoRow('Decimales 1', balanza.dec1.toString()),
-                  if (balanza.cap_max2 != null && balanza.cap_max2.isNotEmpty) ...[
+                  if (balanza.cap_max2 != null &&
+                      balanza.cap_max2.isNotEmpty) ...[
                     const Divider(),
                     _buildInfoRow('Cap. Máx 2', balanza.cap_max2),
                     _buildInfoRow('d2', balanza.d2.toString()),

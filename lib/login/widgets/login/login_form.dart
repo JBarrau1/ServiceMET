@@ -1,5 +1,7 @@
 // lib/login/widgets/login/login_form.dart - VERSIÓN SIMPLIFICADA
 
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'user_card.dart';
@@ -20,6 +22,7 @@ class LoginForm extends StatelessWidget {
   final VoidCallback onShowUserSelector;
   final VoidCallback onStartAddingUser;
   final VoidCallback onCancelAddingUser;
+  final VoidCallback onUpdateDatabases;
 
   const LoginForm({
     super.key,
@@ -37,6 +40,7 @@ class LoginForm extends StatelessWidget {
     required this.onShowUserSelector,
     required this.onStartAddingUser,
     required this.onCancelAddingUser,
+    required this.onUpdateDatabases,
   });
 
   @override
@@ -298,6 +302,25 @@ class LoginForm extends StatelessWidget {
 
           const SizedBox(height: 8),
 
+          // Botón Actualizar Bases de Datos
+          TextButton.icon(
+            onPressed: loading ? null : onUpdateDatabases,
+            icon: Icon(
+              Icons.system_update_alt,
+              size: 18,
+              color: isDark ? Colors.white60 : Colors.black45,
+            ),
+            label: Text(
+              'Actualizar Bases de Datos',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white60 : Colors.black45,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
           // Botón reconfigurar
           TextButton.icon(
             onPressed: loading ? null : onReconfigure,
@@ -322,7 +345,7 @@ class LoginForm extends StatelessWidget {
           Column(
             children: [
               Text(
-                'versión 11.5.121225',
+                'versión 12.1.291225',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   color: isDark ? Colors.white38 : Colors.black38,

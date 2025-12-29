@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field
+
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:service_met/providers/calibration_provider.dart';
@@ -25,7 +27,6 @@ class RepetibilidadController {
   final bool loadExisting;
   final List<ValueNotifier<String>> cargaNotifiers = [];
 
-  bool _dataLoadedFromPrecarga = false;
   bool _dataLoadedFromAppDatabase = false;
   bool _isLoadingData = false;
 
@@ -199,7 +200,6 @@ class RepetibilidadController {
       if (precargaData.isNotEmpty) {
         // Si encuentra datos en precarga, los usa
         _createRowsFromPrecargaData(precargaData);
-        _dataLoadedFromPrecarga = true;
         _showDataLoadedMessage(
             'Datos de repetibilidad cargados desde servicio anterior');
         debugPrint(

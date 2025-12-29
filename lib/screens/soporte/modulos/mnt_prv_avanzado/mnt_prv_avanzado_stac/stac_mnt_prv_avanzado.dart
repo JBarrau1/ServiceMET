@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,9 +13,6 @@ import 'package:service_met/screens/soporte/modulos/mnt_prv_avanzado/mnt_prv_ava
 
 import 'controllers/mnt_prv_avanzado_stac_controller.dart';
 import 'fin_servicio_stac.dart';
-
-
-
 
 class StacMntPrvAvanzadoStacScreen extends StatefulWidget {
   final String sessionId;
@@ -40,7 +39,8 @@ class StacMntPrvAvanzadoStacScreen extends StatefulWidget {
       _StacMntPrvAvanzadoStacScreenState();
 }
 
-class _StacMntPrvAvanzadoStacScreenState extends State<StacMntPrvAvanzadoStacScreen> {
+class _StacMntPrvAvanzadoStacScreenState
+    extends State<StacMntPrvAvanzadoStacScreen> {
   late MntPrvAvanzadoStacModel _model;
   late MntPrvAvanzadoStacController _controller;
 
@@ -187,14 +187,14 @@ class _StacMntPrvAvanzadoStacScreenState extends State<StacMntPrvAvanzadoStacScr
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0: // Pruebas Iniciales
-      // Validar que si hay pruebas activadas, estén completas
+        // Validar que si hay pruebas activadas, estén completas
         return true; // Por ahora permitir continuar
 
       case 1: // Entorno
       case 2: // Terminal
       case 3: // Balanza
       case 4: // Caja sumadora
-      // Verificar que todos los campos tengan estado seleccionado
+        // Verificar que todos los campos tengan estado seleccionado
         final camposDelPaso = _getCamposDelPaso(_currentStep);
         for (var campo in camposDelPaso) {
           if (_model.camposEstado[campo]?.initialValue == null ||
@@ -213,25 +213,30 @@ class _StacMntPrvAvanzadoStacScreenState extends State<StacMntPrvAvanzadoStacScr
 
       case 10: // Estado Final
         if (_model.comentarioGeneral.isEmpty) {
-          _showSnackBar('Por favor complete el Comentario General', isError: true);
+          _showSnackBar('Por favor complete el Comentario General',
+              isError: true);
           return false;
         }
         if (_model.recomendacion.isEmpty) {
-          _showSnackBar('Por favor seleccione una Recomendación', isError: true);
+          _showSnackBar('Por favor seleccione una Recomendación',
+              isError: true);
           return false;
         }
         if (_model.fechaProxServicio.isEmpty) {
-          _showSnackBar('Por favor seleccione la fecha del próximo servicio', isError: true);
+          _showSnackBar('Por favor seleccione la fecha del próximo servicio',
+              isError: true);
           return false;
         }
         if (_model.estadoFisico.isEmpty ||
             _model.estadoOperacional.isEmpty ||
             _model.estadoMetrologico.isEmpty) {
-          _showSnackBar('Por favor complete todos los estados finales', isError: true);
+          _showSnackBar('Por favor complete todos los estados finales',
+              isError: true);
           return false;
         }
         if (_model.horaFin.isEmpty) {
-          _showSnackBar('Por favor registre la hora final del servicio', isError: true);
+          _showSnackBar('Por favor registre la hora final del servicio',
+              isError: true);
           return false;
         }
         return true;
@@ -243,15 +248,24 @@ class _StacMntPrvAvanzadoStacScreenState extends State<StacMntPrvAvanzadoStacScr
 
   List<String> _getCamposDelPaso(int paso) {
     switch (paso) {
-      case 1: return AppStacAvanzadoConstants.lozasYFundacionesCampos;
-      case 2: return AppStacAvanzadoConstants.limpiezaYDrenajeCampos;
-      case 3: return AppStacAvanzadoConstants.chequeoCampos;
-      case 4: return AppStacAvanzadoConstants.verificacionesElectricasCampos;
-      case 5: return AppStacAvanzadoConstants.proteccionRayosCampos;
-      case 6: return AppStacAvanzadoConstants.verificacionesCeldasCampos;
-      case 7: return AppStacAvanzadoConstants.terminalCampos;
-      case 8: return AppStacAvanzadoConstants.calibracionCampos;
-      default: return [];
+      case 1:
+        return AppStacAvanzadoConstants.lozasYFundacionesCampos;
+      case 2:
+        return AppStacAvanzadoConstants.limpiezaYDrenajeCampos;
+      case 3:
+        return AppStacAvanzadoConstants.chequeoCampos;
+      case 4:
+        return AppStacAvanzadoConstants.verificacionesElectricasCampos;
+      case 5:
+        return AppStacAvanzadoConstants.proteccionRayosCampos;
+      case 6:
+        return AppStacAvanzadoConstants.verificacionesCeldasCampos;
+      case 7:
+        return AppStacAvanzadoConstants.terminalCampos;
+      case 8:
+        return AppStacAvanzadoConstants.calibracionCampos;
+      default:
+        return [];
     }
   }
 
@@ -338,11 +352,11 @@ class _StacMntPrvAvanzadoStacScreenState extends State<StacMntPrvAvanzadoStacScr
           elevation: 0,
           flexibleSpace: isDarkMode
               ? ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-              child: Container(color: Colors.black.withOpacity(0.1)),
-            ),
-          )
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                    child: Container(color: Colors.black.withOpacity(0.1)),
+                  ),
+                )
               : null,
           centerTitle: true,
           actions: [
@@ -614,33 +628,33 @@ class _StacMntPrvAvanzadoStacScreenState extends State<StacMntPrvAvanzadoStacScr
               onPressed: _isSaving
                   ? null
                   : () async {
-                if (_currentStep < _steps.length - 1) {
-                  await _goToStep(_currentStep + 1);
-                } else {
-                  // Último paso: finalizar
-                  if (_validateCurrentStep()) {
-                    await _saveCurrentStep();
+                      if (_currentStep < _steps.length - 1) {
+                        await _goToStep(_currentStep + 1);
+                      } else {
+                        // Último paso: finalizar
+                        if (_validateCurrentStep()) {
+                          await _saveCurrentStep();
 
-                    if (!mounted) return;
+                          if (!mounted) return;
 
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FinServicioMntAvaStacScreen(
-                          sessionId: widget.sessionId,
-                          secaValue: widget.secaValue,
-                          codMetrica: widget.codMetrica,
-                          nReca: widget.nReca,
-                          userName: widget.userName,
-                          clienteId: widget.clienteId,
-                          plantaCodigo: widget.plantaCodigo,
-                          tableName: 'mnt_prv_avanzado_stac',
-                        ),
-                      ),
-                    );
-                  }
-                }
-              },
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FinServicioMntAvaStacScreen(
+                                sessionId: widget.sessionId,
+                                secaValue: widget.secaValue,
+                                codMetrica: widget.codMetrica,
+                                nReca: widget.nReca,
+                                userName: widget.userName,
+                                clienteId: widget.clienteId,
+                                plantaCodigo: widget.plantaCodigo,
+                                tableName: 'mnt_prv_avanzado_stac',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    },
               icon: Icon(
                 _currentStep < _steps.length - 1
                     ? Icons.arrow_forward
@@ -693,7 +707,8 @@ class _StacMntPrvAvanzadoStacScreenState extends State<StacMntPrvAvanzadoStacScr
                   _buildInfoRow('d1', balanza.d1.toString()),
                   _buildInfoRow('e1', balanza.e1.toString()),
                   _buildInfoRow('Decimales 1', balanza.dec1.toString()),
-                  if (balanza.cap_max2 != null && balanza.cap_max2.isNotEmpty) ...[
+                  if (balanza.cap_max2 != null &&
+                      balanza.cap_max2.isNotEmpty) ...[
                     const Divider(),
                     _buildInfoRow('Cap. Máx 2', balanza.cap_max2),
                     _buildInfoRow('d2', balanza.d2.toString()),

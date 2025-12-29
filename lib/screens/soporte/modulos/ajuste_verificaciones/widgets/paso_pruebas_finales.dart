@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'pruebas_metrologicas_widget.dart';
 import '../models/ajuste_verificaciones_model.dart';
