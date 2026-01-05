@@ -1,39 +1,39 @@
-// ignore_for_file: unused_field, unused_element, unused_local_variable, deprecated_member_use, use_build_context_synchronously
-
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui';
-import 'package:service_met/screens/soporte/componentes/test_container.dart';
-import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart';
-import 'package:provider/provider.dart';
-import 'package:service_met/provider/balanza_provider.dart';
-import 'package:service_met/screens/soporte/modulos/verificaciones_internas/fin_servicio_vinternas.dart';
 
-import '../../../../database/soporte_tecnico/database_helper_verificaciones.dart';
+// Modelos y Controladores propios
+import 'models/verificaciones_internas_model.dart';
+import 'controllers/verificaciones_internas_controller.dart';
+
+// Widgets de pasos
+import 'widgets/steps/paso_pruebas_iniciales.dart';
+import 'widgets/steps/paso_reporte_evaluacion.dart';
+import 'widgets/steps/paso_comentarios.dart';
+import 'widgets/steps/paso_pruebas_finales.dart';
+import 'widgets/steps/paso_estado_final.dart';
+
+// Pantalla final
+import 'fin_servicio_vinternas.dart';
 
 class StacVerificacionesInternasScreen extends StatefulWidget {
-  final String sessionId;
-  final String secaValue;
-  final String nReca;
+  final String otst;
   final String codMetrica;
-  final String userName; // ✅ AGREGAR
-  final String clienteId; // ✅ AGREGAR
-  final String plantaCodigo; // ✅ AGREGAR
+  final String sessionId;
+  final String nReca;
+  final String userName;
+  final int clienteId;
+  final String plantaCodigo;
 
   const StacVerificacionesInternasScreen({
     super.key,
-    required this.sessionId,
-    required this.secaValue,
-    required this.nReca,
+    required this.otst,
     required this.codMetrica,
-    required this.userName, // ✅ AGREGAR
-    required this.clienteId, // ✅ AGREGAR
-    required this.plantaCodigo, // ✅ AGREGAR
+    required this.sessionId,
+    required this.nReca,
+    required this.userName,
+    required this.clienteId,
+    required this.plantaCodigo,
   });
 
   @override
@@ -43,142 +43,107 @@ class StacVerificacionesInternasScreen extends StatefulWidget {
 
 class _StacVerificacionesInternasScreenState
     extends State<StacVerificacionesInternasScreen> {
-  final TextEditingController _reporteFallaController = TextEditingController();
-  final TextEditingController _evaluacionController = TextEditingController();
-  final TextEditingController _horaController = TextEditingController();
-  final TextEditingController _horaFinController = TextEditingController();
-  final List<TextEditingController> _comentariosControllers = [];
-  final List<FocusNode> _comentariosFocusNodes = [];
-  int _comentariosCount = 0;
-
-  late Map<String, dynamic> _initialTestsData;
-  late Map<String, dynamic> _finalTestsData;
-  late String _selectedUnitInicial;
-  late String _selectedUnitFinal;
-
-  final ImagePicker _imagePicker = ImagePicker();
-  final Map<String, Map<String, dynamic>> _fieldData = {};
-  final Map<String, List<File>> _fieldPhotos = {};
-  final ValueNotifier<bool> _isSaveButtonPressed = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _isDataSaved = ValueNotifier<bool>(false);
+  late VerificacionesInternasModel _model;
+  late VerificacionesInternasController _controller;
+  int _currentStep = 0;
+  bool _isSaving = false;
   DateTime? _lastPressedTime;
 
-  final List<File> _fotosGenerales = []; // Nueva lista para fotos generales
-
-  String _excentricidadValue = 'Cumple';
-  String _repetibilidadValue = 'Cumple';
-  String _linealidadValue = 'Cumple';
+  final List<StepData> _steps = [
+    StepData(
+      title: 'Pruebas Iniciales',
+      subtitle: 'Excentricidad, Repetibilidad, Linealidad',
+      icon: Icons.science_outlined,
+    ),
+    StepData(
+      title: 'Reporte y Evaluación',
+      subtitle: 'Descripción del trabajo y estados',
+      icon: Icons.article_outlined,
+    ),
+    StepData(
+      title: 'Comentarios',
+      subtitle: 'Observaciones y fotos',
+      icon: Icons.comment_outlined,
+    ),
+    StepData(
+      title: 'Pruebas Finales',
+      subtitle: 'Verificación post-mantenimiento',
+      icon: Icons.task_alt_outlined,
+    ),
+    StepData(
+      title: 'Finalizar',
+      subtitle: 'Resumen y cierre de servicio',
+      icon: Icons.check_circle_outline,
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
+    _initializeModel();
+    _controller = VerificacionesInternasController(model: _model);
     _actualizarHora();
-    // Inicialización de unidades y datos de pruebas
-    _selectedUnitInicial = 'kg';
-    _selectedUnitFinal = 'kg';
-    _initialTestsData = <String, dynamic>{};
-    _finalTestsData = <String, dynamic>{};
-
-    // Forzar actualización de la UI después de la inicialización
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-
-    final List<String> camposEstadoGeneral = [
-      'Vibración',
-      'Polvo',
-      'Temperatura',
-      'Humedad',
-      'Mesada',
-      'Iluminación',
-      'Limpieza de Fosa',
-      'Estado de Drenaje',
-      'Carcasa',
-      'Teclado Fisico',
-      'Display Fisico',
-      'Fuente de poder',
-      'Bateria operacional',
-      'Bracket',
-      'Teclado Operativo',
-      'Display Operativo',
-      'Contector de celda',
-      'Bateria de memoria',
-      'Limpieza general',
-      'Golpes al terminal',
-      'Nivelacion',
-      'Limpieza receptor',
-      'Golpes al receptor de carga',
-      'Encendido',
-      'Limitador de movimiento',
-      'Suspensión',
-      'Limitador de carga',
-      'Celda de carga',
-      'Tapa de caja sumadora',
-      'Humedad Interna',
-      'Estado de prensacables',
-      'Estado de borneas'
-    ];
-
-    for (final campo in camposEstadoGeneral) {
-      _fieldData[campo] = {
-        'initial_value': '4 No aplica', // Estado inicial
-        'solution_value': 'No aplica' // Estado final/solución
-      };
-    }
   }
 
-  void _showSnackBar(BuildContext context, String message,
-      {Color? backgroundColor, Color? textColor}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(
-              color: textColor ?? Colors.black), // Texto blanco por defecto
-        ),
-        backgroundColor:
-            backgroundColor ?? Colors.grey, // Fondo naranja por defecto
-      ),
+  void _initializeModel() {
+    _model = VerificacionesInternasModel(
+      codMetrica: widget.codMetrica,
+      sessionId: widget.sessionId,
+      secaValue: widget.otst,
+      horaInicio: DateFormat('HH:mm').format(DateTime.now()),
     );
   }
 
-  void _agregarComentario(BuildContext context) {
-    if (_comentariosCount >= 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Máximo 10 comentarios permitidos'),
-          backgroundColor: Colors.red,
-        ),
-      );
+  void _actualizarHora() {
+    if (mounted) {
+      setState(() {
+        _model.horaFin = DateFormat('HH:mm').format(DateTime.now());
+      });
+    }
+  }
+
+  Future<void> _saveCurrentStep() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      _actualizarHora();
+      await _controller.saveDataToDatabase(context, showMessage: false);
+    } catch (e) {
+      debugPrint('Error saving step: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  bool _validateCurrentStep() {
+    // Implementar validaciones específicas si es necesario
+    return true;
+  }
+
+  Future<void> _goToStep(int step) async {
+    if (step > _currentStep && !_validateCurrentStep()) {
       return;
     }
 
+    await _saveCurrentStep();
+
     setState(() {
-      _comentariosControllers.add(TextEditingController());
-      _comentariosFocusNodes.add(FocusNode());
-      _comentariosCount++;
+      _currentStep = step;
     });
+
+    // Si llegamos al paso final, asegurar actualizar hora fin
+    if (step == _steps.length - 1) {
+      _actualizarHora();
+    }
   }
 
-  void _eliminarComentario(int index) {
-    setState(() {
-      _comentariosControllers[index].dispose();
-      _comentariosFocusNodes[index].dispose();
-      _comentariosControllers.removeAt(index);
-      _comentariosFocusNodes.removeAt(index);
-      _comentariosCount--;
-    });
-  }
-
-  void _actualizarHora() {
-    final ahora = DateTime.now();
-    final horaFormateada = DateFormat('HH:mm:ss').format(ahora);
-    _horaController.text = horaFormateada;
-  }
-
-  Future<bool> _onWillPop(BuildContext context) async {
+  Future<bool> _onWillPop() async {
     final now = DateTime.now();
     if (_lastPressedTime == null ||
         now.difference(_lastPressedTime!) > const Duration(seconds: 2)) {
@@ -186,430 +151,30 @@ class _StacVerificacionesInternasScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'Presione nuevamente para retroceder. Los datos registrados se perderán.'),
-          backgroundColor: Colors.orange,
+              'Presione nuevamente para salir. Los datos se guardarán automáticamente.'),
+          duration: Duration(seconds: 2),
         ),
       );
+      await _saveCurrentStep();
       return false;
     }
     return true;
   }
 
-  Future<void> _saveAllDataAndPhotos(BuildContext context) async {
-    // Verificar si el widget está montado antes de continuar
-    if (!mounted) return;
-
-    _isSaveButtonPressed.value = true; // Mostrar indicador de carga
-
-    try {
-      // Verificar si hay fotos en alguno de los campos
-      bool hasPhotos = _fieldPhotos.values.any((photos) => photos.isNotEmpty);
-
-      if (hasPhotos) {
-        // Guardar las fotos en un archivo ZIP
-        final archive = Archive();
-        _fieldPhotos.forEach((label, photos) {
-          for (var i = 0; i < photos.length; i++) {
-            final file = photos[i];
-            final fileName = '${label}_${i + 1}.jpg';
-            archive.addFile(ArchiveFile(
-                fileName, file.lengthSync(), file.readAsBytesSync()));
-          }
-        });
-
-        final zipEncoder = ZipEncoder();
-        final zipData = zipEncoder.encode(archive);
-
-        final uint8ListData = Uint8List.fromList(zipData);
-        final zipFileName =
-            '${widget.secaValue}_${widget.codMetrica}_diagnostico.zip';
-
-        final params = SaveFileDialogParams(
-          data: uint8ListData,
-          fileName: zipFileName,
-          mimeTypesFilter: ['application/zip'],
-        );
-
-        try {
-          final filePath = await FlutterFileDialog.saveFile(params: params);
-          if (filePath != null) {
-            _showSnackBar(context, 'Fotos guardadas en $filePath');
-          } else {
-            _showSnackBar(context, 'No se seleccionó ninguna carpeta');
-          }
-        } catch (e) {
-          _showSnackBar(context, 'Error al guardar el archivo: $e');
-        }
-      } else {
-        _showSnackBar(
-          context,
-          'No se tomaron fotografías. Solo se guardarán los datos.',
-          backgroundColor: Colors.orange,
-        );
-      }
-
-      // Validar campos requeridos
-      if (_horaController.text.isEmpty) {
-        _showSnackBar(context, 'Por favor ingrese la hora de inicio',
-            backgroundColor: Colors.red);
-        return;
-      }
-
-      if (_horaFinController.text.isEmpty) {
-        _showSnackBar(context, 'Por favor ingrese la hora final',
-            backgroundColor: Colors.red);
-        return;
-      }
-
-      // Guardar los datos en la base de datos
-      await _saveAllMetrologicalTests(context);
-    } catch (e) {
-      _showSnackBar(context, 'Error al guardar: ${e.toString()}');
-      debugPrint('Error al guardar: $e');
-    } finally {
-      if (mounted) {
-        _isSaveButtonPressed.value =
-            false; // Asegurarse de ocultar el indicador de carga
-      }
-    }
-  }
-
-  Future<void> _saveAllMetrologicalTests(BuildContext context) async {
-    try {
-      // ✅ USAR DatabaseHelperSop en lugar de abrir BD manualmente
-      final dbHelper = DatabaseHelperVerificaciones();
-
-      String getFotosString(String label) {
-        return _fieldPhotos[label]?.map((f) => basename(f.path)).join(',') ??
-            '';
-      }
-
-      final Map<String, dynamic> comentariosData = {};
-      for (int i = 0; i < _comentariosControllers.length; i++) {
-        comentariosData['comentario_${i + 1}'] =
-            _comentariosControllers[i].text.isNotEmpty
-                ? _comentariosControllers[i].text
-                : null;
-      }
-
-      // Convertir todos los datos a un mapa para la base de datos
-      final Map<String, dynamic> dbData = {
-        'tipo_servicio': 'verificaciones internas',
-        'cod_metrica': widget.codMetrica,
-        'hora_inicio': _horaController.text,
-        'hora_fin': _horaFinController.text,
-        'reporte': _reporteFallaController.text,
-        'evaluacion': _evaluacionController.text,
-        'excentricidad_estado_general': _excentricidadValue,
-        'repetibilidad_estado_general': _repetibilidadValue,
-        'linealidad_estado_general': _linealidadValue,
-        'estado_servicio': 'Completo',
-        // Datos de pruebas metrológicas iniciales
-        ..._convertTestDataToDbFormat(_initialTestsData, 'inicial'),
-
-        //comentarios
-        ...comentariosData,
-        // Retorno a Cero
-        'retorno_cero_inicial_valoracion':
-            _fieldData['Retorno a cero']?['initial_value'] ?? '',
-        'retorno_cero_inicial_carga':
-            _fieldData['Retorno a cero']?['initial_load'] ?? '',
-        'retorno_cero_inicial_unidad':
-            _fieldData['Retorno a cero']?['initial_unit'] ?? '',
-        // Sección Estructural
-        // Entorno de instalación
-      };
-
-      // Verificar si ya existe un registro
-      await dbHelper.upsertRegistroRelevamiento(dbData);
-
-      _showSnackBar(
-        context,
-        'Datos guardados exitosamente',
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-      );
-
-      _isDataSaved.value = true;
-    } catch (e) {
-      _showSnackBar(
-        context,
-        'Error al guardar: ${e.toString()}',
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-      debugPrint('Error al guardar: $e');
-      _isDataSaved.value = false;
-    }
-  }
-
-  Map<String, dynamic> _convertTestDataToDbFormat(
-    Map<String, dynamic> testData,
-    String testType,
-  ) {
-    final Map<String, dynamic> result = {};
-
-    // Excentricidad
-    if (testData['eccentricity'] != null) {
-      final ecc = testData['eccentricity'];
-      result['excentricidad_${testType}_tipo_plataforma'] =
-          ecc['platform'] ?? '';
-      result['excentricidad_${testType}_opcion_prueba'] = ecc['option'] ?? '';
-      result['excentricidad_${testType}_carga'] =
-          double.tryParse(ecc['load']?.toString() ?? '0') ?? 0;
-      result['excentricidad_${testType}_ruta_imagen'] = ecc['imagePath'] ?? '';
-      final positions = ecc['positions'] ?? [];
-      result['excentricidad_${testType}_cantidad_posiciones'] =
-          positions.length.toString();
-
-      // Si es báscula de camión, guarda ida/vuelta
-      if ((ecc['platform'] ?? '').toString().toLowerCase().contains('camion')) {
-        for (int i = 0; i < positions.length; i++) {
-          final pos = positions[i];
-          final label =
-              pos['label'] ?? (i < (positions.length ~/ 2) ? 'Ida' : 'Vuelta');
-          final prefix =
-              'excentricidad_${testType}_punto${i + 1}_${label.toLowerCase()}';
-          final indicacion =
-              double.tryParse(pos['indication']?.toString() ?? '0') ?? 0;
-          final retorno =
-              double.tryParse(pos['return']?.toString() ?? '0') ?? 0;
-
-          result['${prefix}_numero'] = pos['position']?.toString() ?? '';
-          result['${prefix}_indicacion'] = indicacion;
-          result['${prefix}_retorno'] = retorno;
-        }
-      } else {
-        // Lógica estándar para otras plataformas (máximo 6 posiciones)
-        for (int i = 0; i < positions.length && i < 6; i++) {
-          final pos = positions[i];
-          final prefix = 'excentricidad_${testType}_pos${i + 1}';
-          final indicacion =
-              double.tryParse(pos['indication']?.toString() ?? '0') ?? 0;
-          final posicion =
-              double.tryParse(pos['position']?.toString() ?? '0') ?? 0;
-          final retorno =
-              double.tryParse(pos['return']?.toString() ?? '0') ?? 0;
-
-          result['${prefix}_numero'] = pos['position']?.toString() ?? '';
-          result['${prefix}_indicacion'] = indicacion;
-          result['${prefix}_retorno'] = retorno;
-          result['${prefix}_error'] = indicacion - posicion;
-        }
-      }
-    }
-
-    // Repetibilidad
-    if (testData['repeatability'] != null) {
-      final rep = testData['repeatability'];
-      final loadCount = rep['repetibilityCount'] ?? 1;
-      final rowCount = rep['rowCount'] ?? 3;
-
-      result['repetibilidad_${testType}_cantidad_cargas'] =
-          loadCount.toString();
-      result['repetibilidad_${testType}_cantidad_pruebas'] =
-          rowCount.toString();
-
-      final loads = rep['loads'] ?? [];
-
-      for (int i = 0; i < loads.length && i < 3; i++) {
-        final load = loads[i];
-        final loadPrefix = 'repetibilidad_${testType}_carga${i + 1}';
-        result['${loadPrefix}_valor'] =
-            double.tryParse(load['value']?.toString() ?? '0') ?? 0;
-
-        final indications = load['indications'] ?? [];
-
-        for (int j = 0; j < indications.length && j < 10; j++) {
-          final indication =
-              double.tryParse(indications[j]['value']?.toString() ?? '0') ?? 0;
-          final returnVal =
-              double.tryParse(indications[j]['return']?.toString() ?? '0') ?? 0;
-
-          final testPrefix = '${loadPrefix}_prueba${j + 1}';
-          result['${testPrefix}_indicacion'] = indication;
-          result['${testPrefix}_retorno'] = returnVal;
-        }
-      }
-    }
-
-    return result;
-  }
-
-  Future<void> _showCommentDialog(BuildContext context, String label) async {
-    List<File> photos = _fieldPhotos[label] ?? [];
-
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text(
-                'AGREGAR FOTOGRAFÍA PARA: $label',
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () async {
-                        final XFile? photo = await _imagePicker.pickImage(
-                            source: ImageSource.camera);
-                        if (photo != null) {
-                          final fileName = basename(photo.path);
-                          setState(() {
-                            photos.add(File(photo.path));
-                            _fieldPhotos[label] = photos;
-                            _fieldData[label] ??= {};
-                            _fieldData[label]!['foto'] = fileName;
-                          });
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepOrange,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.camera_alt),
-                          const SizedBox(width: 8),
-                          Text(photos.isEmpty
-                              ? 'TOMAR FOTO'
-                              : 'TOMAR OTRA FOTO'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (photos.isNotEmpty)
-                      Text(
-                        'Fotos tomadas: ${photos.length}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      children: photos.map((photo) {
-                        return Stack(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Image.file(photo, width: 100, height: 100),
-                            ),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: IconButton(
-                                icon: const Icon(Icons.delete_outline_rounded,
-                                    color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    photos.remove(photo);
-                                    _fieldPhotos[label] = photos;
-                                    if (photos.isEmpty) {
-                                      _fieldData[label]?.remove('foto');
-                                    }
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
-                  child: const Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    // No necesitamos marcar 'foto_tomada' ya que verificamos directamente _fieldPhotos
-                  },
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showConfirmationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text(
-            'FINALIZAR SERVICIO',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-          ),
-          content: const Text('¿Estas seguro de los datos registrados?\n'
-              'Si no es así, puedes volver atrás y corregirlos.'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancelar'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            const SizedBox(height: 8.0),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              onPressed: () {
-                Navigator.of(dialogContext).pop(); // Cerrar diálogo
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => FinServicioVinternasScreen(
-                      sessionId: widget.sessionId,
-                      secaValue: widget.secaValue,
-                      nReca: widget.nReca,
-                      codMetrica: widget.codMetrica,
-                      userName: widget.userName,
-                      clienteId: widget.clienteId,
-                      plantaCodigo: widget.plantaCodigo,
-                      tableName: 'verificaciones_internas',
-                    ),
-                  ),
-                );
-              },
-              child: const Text('IR A FINALIZAR SERVICIO'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final balanza = Provider.of<BalanzaProvider>(context).selectedBalanza;
 
     return WillPopScope(
-      onWillPop: () => _onWillPop(context),
+      onWillPop: _onWillPop,
       child: Scaffold(
-        extendBodyBehindAppBar: true,
         appBar: AppBar(
           toolbarHeight: 80,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'SOPORTE TÉCNICO',
+                'VERIFICACIONES INTERNAS',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -632,362 +197,246 @@ class _StacVerificacionesInternasScreenState
           flexibleSpace: isDarkMode
               ? ClipRect(
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(color: Colors.black.withOpacity(0.4)),
+                    filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                    child: Container(color: Colors.black.withOpacity(0.1)),
                   ),
                 )
               : null,
           centerTitle: true,
+          actions: [
+            if (_isSaving)
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+          ],
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            top: kToolbarHeight +
-                MediaQuery.of(context).padding.top +
-                40, // Altura del AppBar + Altura de la barra de estado + un poco de espacio extra
-            left: 16.0, // Tu padding horizontal original
-            right: 16.0, // Tu padding horizontal original
-            bottom: 16.0, // Tu padding inferior original
-          ),
-          child: Column(
-            children: [
-              const Text(
-                'VERIFICACIONES INTERNAS',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20.0),
-              TextFormField(
-                controller: _horaController,
-                decoration: InputDecoration(
-                  labelText: 'Hora de Inicio de Servicio',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  suffixIcon: const Icon(Icons.access_time),
-                ),
-                readOnly: true,
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info,
-                      color: isDarkMode ? Colors.white70 : Colors.black54,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'La hora se extrae automáticamente del sistema, este campo no es editable.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDarkMode ? Colors.white70 : Colors.black54,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 8.0),
-              MetrologicalTestsContainer(
-                testType: 'Inicial',
-                initialData: _initialTestsData,
-                onTestsDataChanged: (data) {
-                  setState(() {
-                    _initialTestsData = data;
-                  });
-                },
-                selectedUnit: _selectedUnitInicial,
-                onUnitChanged: (unit) {
-                  setState(() {
-                    _selectedUnitInicial = unit;
-                  });
-                },
-              ),
-              const SizedBox(height: 20.0),
-              const Text(
-                'COMENTARIOS, OBSERVACIONES Y RECOMENDACIONES',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFf5b041),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              // Botón para agregar comentarios
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () => _agregarComentario(context),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text(
-                      'Agregar',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFeCA400),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: _fotosGenerales.length >= 10
-                        ? null
-                        : () async {
-                            final XFile? photo = await _imagePicker.pickImage(
-                                source: ImageSource.camera);
-                            if (photo != null) {
-                              setState(() {
-                                _fotosGenerales.add(File(photo.path));
-                              });
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Foto agregada (${_fotosGenerales.length}/10)'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          },
-                    icon: const Icon(Icons.camera_alt, size: 16),
-                    label: Text('Fotos (${_fotosGenerales.length}/10)'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueGrey,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20.0),
-
-              // Lista de comentarios
-              Column(
-                children:
-                    List.generate(_comentariosControllers.length, (index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _comentariosControllers[index],
-                            focusNode: _comentariosFocusNodes[index],
-                            decoration: InputDecoration(
-                              labelText: 'Comentario ${index + 1}',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              suffixText:
-                                  '${_comentariosControllers[index].text.length}/200',
-                              suffixStyle: TextStyle(
-                                color:
-                                    _comentariosControllers[index].text.length >
-                                            200
-                                        ? Colors.red
-                                        : Colors.grey,
-                              ),
-                            ),
-                            maxLength: 200,
-                            maxLines: 3,
-                            buildCounter: (context,
-                                    {required currentLength,
-                                    required isFocused,
-                                    maxLength}) =>
-                                null,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _eliminarComentario(index),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ),
-
-              if (_comentariosControllers.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'No hay comentarios agregados',
-                    style: TextStyle(
-                        color: Colors.grey, fontStyle: FontStyle.italic),
-                  ),
-                ),
-              const Text(
-                'ESTADO GENERAL DEL INSTRUMENTO',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  // Color personalizado
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 15.0),
-              DropdownButtonFormField<String>(
-                initialValue: _excentricidadValue,
-                decoration: _buildInputDecoration(
-                  'Excentricidad',
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Cumple', child: Text('Cumple')),
-                  DropdownMenuItem(
-                      value: 'No cumple', child: Text('No cumple')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _excentricidadValue = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 15.0),
-              DropdownButtonFormField<String>(
-                initialValue: _repetibilidadValue,
-                decoration: _buildInputDecoration(
-                  'Repetibilidad',
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Cumple', child: Text('Cumple')),
-                  DropdownMenuItem(
-                      value: 'No cumple', child: Text('No cumple')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _repetibilidadValue = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 15.0),
-              DropdownButtonFormField<String>(
-                initialValue: _linealidadValue,
-                decoration: _buildInputDecoration(
-                  'Linealidad',
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Cumple', child: Text('Cumple')),
-                  DropdownMenuItem(
-                      value: 'No cumple', child: Text('No cumple')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _linealidadValue = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 20.0),
-              TextFormField(
-                controller: _horaFinController,
-                decoration: InputDecoration(
-                  labelText: 'Hora Final del Servicio',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.access_time),
-                    onPressed: () {
-                      final ahora = DateTime.now();
-                      final horaFormateada =
-                          DateFormat('HH:mm:ss').format(ahora);
-                      _horaFinController.text = horaFormateada;
-                    },
-                  ),
-                ),
-                readOnly: true,
-              ),
-              const SizedBox(height: 20.0),
-              // Botones de acción
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: _isSaveButtonPressed,
-                      builder: (context, isSaving, child) {
-                        return ElevatedButton(
-                          onPressed: isSaving
-                              ? null
-                              : () => _saveAllDataAndPhotos(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF195375),
-                          ),
-                          child: isSaving
-                              ? const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text('Guardando...',
-                                        style: TextStyle(fontSize: 16)),
-                                  ],
-                                )
-                              : const Text('GUARDAR DATOS'),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _isDataSaved,
-                    builder: (context, isSaved, child) {
-                      return Expanded(
-                        child: ElevatedButton(
-                          onPressed: isSaved
-                              ? () => _showConfirmationDialog(context)
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isSaved ? const Color(0xFF167D1D) : Colors.grey,
-                          ),
-                          child: const Text('SIGUIENTE'),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
+        body: Column(
+          children: [
+            _buildProgressBar(isDarkMode),
+            Expanded(
+              child: _buildStepContent(),
+            ),
+            _buildNavigationButtons(isDarkMode),
+          ],
         ),
       ),
     );
   }
 
-  InputDecoration _buildInputDecoration(String labelText,
-      {Widget? suffixIcon}) {
-    return InputDecoration(
-      labelText: labelText,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.0)),
-      suffixIcon: suffixIcon, // Agregar el parámetro suffixIcon
+  Widget _buildProgressBar(bool isDarkMode) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.black26 : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                _steps[_currentStep].icon,
+                color: Theme.of(context).primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Paso ${_currentStep + 1} de ${_steps.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                    Text(
+                      _steps[_currentStep].title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      _steps[_currentStep].subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDarkMode ? Colors.white60 : Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: List.generate(_steps.length, (index) {
+              final isCompleted = index < _currentStep;
+              final isCurrent = index == _currentStep;
+
+              return Expanded(
+                child: Container(
+                  height: 4,
+                  margin: EdgeInsets.only(
+                    left: index == 0 ? 0 : 4,
+                    right: index == _steps.length - 1 ? 0 : 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isCompleted || isCurrent
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 
-  @override
-  void dispose() {
-    for (var controller in _comentariosControllers) {
-      controller.dispose();
+  Widget _buildStepContent() {
+    switch (_currentStep) {
+      case 0:
+        return PasoPruebasIniciales(
+          model: _model,
+          controller: _controller,
+          getIndicationSuggestions: _controller.getIndicationSuggestions,
+          getD1FromDatabase: _controller.getD1FromDatabase,
+          onChanged: () => setState(() {}),
+        );
+      case 1:
+        return PasoReporteEvaluacion(
+          model: _model,
+          onChanged: () => setState(() {}),
+        );
+      case 2:
+        return PasoComentarios(
+          model: _model,
+          onChanged: () => setState(() {}),
+        );
+      case 3:
+        return PasoPruebasFinales(
+          model: _model,
+          controller: _controller,
+          getIndicationSuggestions: _controller.getIndicationSuggestions,
+          getD1FromDatabase: _controller.getD1FromDatabase,
+          onChanged: () => setState(() {}),
+        );
+      case 4:
+        return PasoEstadoFinal(
+          model: _model,
+          controller: _controller,
+        );
+      default:
+        return const Center(child: Text('Paso no encontrado'));
     }
-    for (var focusNode in _comentariosFocusNodes) {
-      focusNode.dispose();
-    }
-    _horaController.dispose();
-    _horaFinController.dispose();
-    _isSaveButtonPressed.dispose();
-    _isDataSaved.dispose();
-    super.dispose();
   }
+
+  Widget _buildNavigationButtons(bool isDarkMode) {
+    bool isLastStep = _currentStep == _steps.length - 1;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.black26 : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _goToStep(_currentStep - 1),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('ANTERIOR'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[600],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          if (_currentStep > 0) const SizedBox(width: 12),
+          Expanded(
+            flex: _currentStep == 0 ? 1 : 2,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving
+                  ? null
+                  : () async {
+                      if (_currentStep < _steps.length - 1) {
+                        await _goToStep(_currentStep + 1);
+                      } else {
+                        // Último paso: finalizar
+                        await _saveCurrentStep();
+                        if (!mounted) return;
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FinServicioVinternasScreen(
+                              sessionId: widget.sessionId,
+                              secaValue: widget.otst,
+                              codMetrica: widget.codMetrica,
+                              nReca: widget.nReca,
+                              userName: widget.userName,
+                              clienteId: widget.clienteId.toString(),
+                              plantaCodigo: widget.plantaCodigo,
+                              tableName: 'verificaciones_internas',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+              icon: Icon(
+                isLastStep ? Icons.check_circle : Icons.arrow_forward,
+              ),
+              label: Text(
+                isLastStep ? 'FINALIZAR' : 'SIGUIENTE',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isLastStep
+                    ? const Color(0xFF167D1D)
+                    : const Color(0xFF195375),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class StepData {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  StepData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
 }

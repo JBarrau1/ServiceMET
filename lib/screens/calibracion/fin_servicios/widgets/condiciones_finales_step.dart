@@ -272,6 +272,294 @@ class CondicionesFinalesStep extends StatelessWidget {
               decoration: _buildInputDecoration('Observaciones'),
             ),
           ),
+          const SizedBox(height: 20.0),
+          const Text(
+            '4. SELECCIÓN DE PESAS PATRÓN:',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.left,
+          ),
+          const SizedBox(height: 10.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showPesasSelection(context, controller),
+                    icon: const Icon(Icons.fitness_center),
+                    label: Text(
+                      'Seleccionar Pesas (${controller.selectedPesas.length}/5)',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF365666),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (controller.selectedPesas.isNotEmpty)
+                  ...controller.selectedPesas.map((pesa) {
+                    return Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                  color:
+                                      const Color(0xFF365666).withOpacity(0.1),
+                                  shape: BoxShape.circle),
+                              child: const Icon(Icons.check,
+                                  color: Color(0xFF365666)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    pesa['cod_instrumento'] ?? 'Sin código',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                  Text(pesa['instrumento'] ??
+                                      'Instrumento desconocido'),
+                                  const SizedBox(height: 4),
+                                  _buildCertificateStatus(
+                                      pesa['cert_fecha']?.toString() ?? ''),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              children: [
+                                const Text('Cant.',
+                                    style: TextStyle(fontSize: 12)),
+                                SizedBox(
+                                  width: 70,
+                                  child: _QuantityInput(
+                                    initialValue:
+                                        pesa['cantidad']?.toString() ?? '1',
+                                    onChanged: (val) =>
+                                        controller.updatePesaCantidad(
+                                            pesa['cod_instrumento'], val),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color: Colors.red),
+                              onPressed: () => controller
+                                  .removePesa(pesa['cod_instrumento']),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20.0),
+        ],
+      ),
+    );
+  }
+
+  void _showPesasSelection(
+      BuildContext context, FinServiciosController controller) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          maxChildSize: 0.95,
+          minChildSize: 0.6,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text(
+                    'Seleccionar Pesas Patrón',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: controller.equiposOptions.length,
+                      itemBuilder: (context, index) {
+                        final equipo = controller.equiposOptions[index];
+                        final isSelected = controller.selectedPesas.any((e) =>
+                            e['cod_instrumento'] == equipo['cod_instrumento']);
+
+                        final certFecha =
+                            equipo['cert_fecha']?.toString() ?? '';
+                        final diasVencidos = _calculateDaysElapsed(certFecha);
+                        final isExpired = diasVencidos > 365;
+
+                        return Card(
+                          elevation: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            side: isSelected
+                                ? const BorderSide(
+                                    color: Color(0xFF365666), width: 2)
+                                : BorderSide.none,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: CheckboxListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            activeColor: const Color(0xFF365666),
+                            title: Text(
+                              equipo['cod_instrumento'] ?? 'Sin código',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  equipo['instrumento'] ?? 'Sin instrumento',
+                                  style: TextStyle(color: Colors.grey[700]),
+                                ),
+                                const SizedBox(height: 4),
+                                _buildCertificateStatus(certFecha),
+                              ],
+                            ),
+                            secondary: isExpired
+                                ? const Icon(Icons.warning_amber_rounded,
+                                    color: Colors.orange)
+                                : const Icon(Icons.verified_outlined,
+                                    color: Colors.green),
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              if (value == true) {
+                                controller.addPesa(equipo);
+                              } else {
+                                controller
+                                    .removePesa(equipo['cod_instrumento']);
+                              }
+                              // Rebuild modal manually if needed, but CheckboxListTile handles its state usually?
+                              // Actually specific state management might be needed if update doesn't reflect immediately.
+                              // For now relying on parent Controller notification.
+                              (context as Element).markNeedsBuild();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF365666),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('LISTO'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  int _calculateDaysElapsed(String dateStr) {
+    if (dateStr.isEmpty) return 0;
+    try {
+      // Intentar parsear dd-MM-yyyy o yyyy-MM-dd
+      DateTime? certDate;
+      if (dateStr.contains('-')) {
+        final parts = dateStr.split('-');
+        if (parts[0].length == 4) {
+          certDate = DateTime.tryParse(dateStr);
+        } else {
+          // Asumir dd-MM-yyyy
+          certDate = DateTime.tryParse('${parts[2]}-${parts[1]}-${parts[0]}');
+        }
+      }
+
+      if (certDate == null) return 0;
+
+      final now = DateTime.now();
+      return now.difference(certDate).inDays;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Widget _buildCertificateStatus(String dateStr) {
+    if (dateStr.isEmpty) return const Text('Sin fecha de referencia');
+
+    final elapsed = _calculateDaysElapsed(dateStr);
+    final remaining = 365 - elapsed;
+    final isExpired = remaining < 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isExpired
+            ? Colors.red.withOpacity(0.1)
+            : Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: isExpired ? Colors.red : Colors.green),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(isExpired ? Icons.warning : Icons.check_circle,
+              size: 14, color: isExpired ? Colors.red[800] : Colors.green[800]),
+          const SizedBox(width: 4),
+          Text(
+            isExpired
+                ? 'Vencido hace ${elapsed - 365} días'
+                : 'Días de validez: $remaining',
+            style: TextStyle(
+              fontSize: 13, // Slightly larger
+              fontWeight: FontWeight.w700,
+              color: isExpired ? Colors.red[900] : Colors.green[900],
+            ),
+          ),
         ],
       ),
     );
@@ -391,6 +679,60 @@ class CondicionesFinalesStep extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _QuantityInput extends StatefulWidget {
+  final String initialValue;
+  final ValueChanged<String> onChanged;
+
+  const _QuantityInput({
+    super.key,
+    required this.initialValue,
+    required this.onChanged,
+  });
+
+  @override
+  State<_QuantityInput> createState() => _QuantityInputState();
+}
+
+class _QuantityInputState extends State<_QuantityInput> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_QuantityInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue &&
+        widget.initialValue != _controller.text) {
+      _controller.text = widget.initialValue;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textAlign: TextAlign.center,
+      decoration: const InputDecoration(
+        contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        isDense: true,
+        border: OutlineInputBorder(),
+      ),
+      onChanged: widget.onChanged,
     );
   }
 }

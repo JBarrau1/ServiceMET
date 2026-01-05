@@ -14,6 +14,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:service_met/database/app_database.dart';
 import 'package:service_met/screens/calibracion/precarga/precarga_screen.dart';
 import 'package:service_met/home/home_screen.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 class FinServiciosController extends ChangeNotifier {
   final String secaValue;
@@ -61,6 +63,7 @@ class FinServiciosController extends ChangeNotifier {
   }
 
   Future<void> _loadInitialValues() async {
+    fetchEquipos(); // Cargar pesas disponibles
     try {
       final dbHelper = AppDatabase();
       final registro = await dbHelper.getRegistroBySeca(secaValue, sessionId);
@@ -135,7 +138,7 @@ class FinServiciosController extends ChangeNotifier {
         ventaPesasController.text.isEmpty ||
         reemplazoController.text.isEmpty ||
         obscomController.text.isEmpty) {
-      _showSnackBar('Error, termine de llenar todos los campos', isError: true);
+      _showSnackBar('Debe terminar de llenar todos los campos', isError: true);
       return;
     }
 
@@ -161,6 +164,25 @@ class FinServiciosController extends ChangeNotifier {
         'observaciones': obscomController.text,
         'estado_servicio_bal': 'Balanza Calibrada',
       };
+
+      // Guardar Pesas Patrón seleccionadas (Slots 1-5)
+      for (int i = 0; i < _selectedPesas.length; i++) {
+        final index = i + 1;
+        final pesa = _selectedPesas[i];
+        registro['equipo$index'] = pesa['cod_instrumento'];
+        registro['certificado$index'] = pesa['cert_fecha'];
+        registro['ente_calibrador$index'] = pesa['ente_calibrador'];
+        // registro['estado$index'] = 'OK'; // O lo que corresponda
+        registro['cantidad$index'] = pesa['cantidad'];
+      }
+      // Limpiar slots restantes si se deseleccionaron pesas (opcional pero recomendado)
+      for (int i = _selectedPesas.length; i < 5; i++) {
+        final index = i + 1;
+        registro['equipo$index'] = '';
+        registro['certificado$index'] = '';
+        registro['ente_calibrador$index'] = '';
+        registro['cantidad$index'] = '';
+      }
 
       if (existingRecord != null) {
         await dbHelper.upsertRegistroCalibracion(registro);
@@ -206,7 +228,82 @@ class FinServiciosController extends ChangeNotifier {
     }
   }
 
-  // --- Logic for Step 2 ---
+  // --- Logic for Step 2 --- (Offset will shift down)
+
+  // EQUIPOS (Pesas Patrón) logic
+  List<dynamic> _equiposOptions = [];
+  List<Map<String, dynamic>> _selectedPesas = [];
+  List<dynamic> get equiposOptions => _equiposOptions;
+  List<Map<String, dynamic>> get selectedPesas => _selectedPesas;
+
+  Future<void> fetchEquipos() async {
+    try {
+      String path = join(await getDatabasesPath(), 'precarga_database.db');
+      debugPrint('Cargando equipos de: $path');
+      final db = await openDatabase(path);
+
+      final List<Map<String, dynamic>> equiposList = await db.query(
+        'equipamientos',
+        where: "estado != 'DESACTIVADO'",
+      );
+
+      debugPrint('Total equipos cargados: ${equiposList.length}');
+
+      _equiposOptions = equiposList.where((e) {
+        final instrumento = e['instrumento']?.toString().toLowerCase() ?? '';
+        final tipo = e['tipo_instrumento']?.toString().toLowerCase() ?? '';
+        final descripcion = e['descripcion']?.toString().toLowerCase() ?? '';
+
+        final isPesa = instrumento.contains('pesa') ||
+            tipo.contains('pesa') ||
+            descripcion.contains('pesa');
+
+        final isMasa = instrumento.contains('masa') ||
+            tipo.contains('masa') ||
+            descripcion.contains('masa');
+
+        return isPesa || isMasa;
+      }).toList();
+
+      debugPrint('Pesas filtradas: ${_equiposOptions.length}');
+
+      await db.close();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al cargar equipos: $e');
+    }
+  }
+
+  void addPesa(Map<String, dynamic> equipo) {
+    if (_selectedPesas.length < 5) {
+      // Create a copy to modify if needed, add default quantity 1
+      final pesa = Map<String, dynamic>.from(equipo);
+      pesa['cantidad'] = '1';
+      _selectedPesas.add(pesa);
+      notifyListeners();
+    } else {
+      _showSnackBar('Máximo 5 pesas patrón permitidas', isError: true);
+    }
+  }
+
+  void removePesa(String codInstrumento) {
+    _selectedPesas.removeWhere((p) => p['cod_instrumento'] == codInstrumento);
+    notifyListeners();
+  }
+
+  void updatePesaCantidad(String codInstrumento, String nuevaCantidad) {
+    final index = _selectedPesas
+        .indexWhere((p) => p['cod_instrumento'] == codInstrumento);
+    if (index != -1) {
+      _selectedPesas[index]['cantidad'] = nuevaCantidad;
+      // No notificamos a los oyentes aquí para evitar reconstrucciones masivas que pierdan el foco
+      // El valor se actualiza por referencia en la lista, pero para persistencia es suficiente.
+      // Si necesitamos actualizar UI dependiente de esto, llamaríamos notifyListeners().
+      // Dado que es un campo de texto independiente, mejor no reconstruir todo.
+    }
+  }
+
+  // --- Logic for Step 2 --- (Existing code follows)
 
   Future<List<Map<String, dynamic>>> prepareExportData() async {
     try {

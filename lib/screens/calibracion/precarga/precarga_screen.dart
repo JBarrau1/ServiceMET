@@ -17,7 +17,6 @@ import 'widgets/cliente_step.dart';
 import 'widgets/planta_step.dart';
 import 'widgets/seca_step.dart';
 import 'widgets/balanza_step.dart';
-import 'widgets/equipos_step.dart';
 
 class PrecargaScreen extends StatefulWidget {
   final String userName;
@@ -212,7 +211,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     return ChangeNotifierProvider<PrecargaController>.value(
       value: controller,
       child: Scaffold(
-        appBar: _buildAppBar(),
+        appBar: _buildAppBar(controller),
         body: Consumer<PrecargaController>(
           builder: (context, controller, child) {
             // Mostrar error de validación si existe
@@ -242,11 +241,6 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                       title: 'Balanza',
                       subtitle: 'Datos del equipo',
                       icon: Icons.scale_outlined,
-                    ),
-                    StepData(
-                      title: 'Equipos',
-                      subtitle: 'Patrones',
-                      icon: Icons.precision_manufacturing_outlined,
                     ),
                   ],
                 ),
@@ -294,7 +288,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(PrecargaController controller) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return PreferredSize(
@@ -312,6 +306,45 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
                 fontSize: 16.0,
               ),
             ),
+            actions: [
+              IconButton(
+                icon: Stack(
+                  children: [
+                    Icon(
+                      Icons.device_thermostat,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                    if (controller.selectedTermohigrometros.isNotEmpty)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 12,
+                            minHeight: 12,
+                          ),
+                          child: Text(
+                            '${controller.selectedTermohigrometros.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: () => _showTermohigrometrosSelection(controller),
+                tooltip: 'Seleccionar Termohigrómetros',
+              ),
+              const SizedBox(width: 8),
+            ],
             backgroundColor: isDarkMode
                 ? Colors.black.withOpacity(0.4)
                 : Colors.white.withOpacity(0.7),
@@ -345,8 +378,6 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
           selectedCliente: controller.selectedClienteId ?? '',
           loadFromSharedPreferences: false,
         );
-      case 4:
-        return const EquiposStep();
       default:
         return const SizedBox();
     }
@@ -417,13 +448,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
             ? () => controller.nextStep()
             : () => _confirmSeca();
 
-      case 3: // Balanza
-        return controller.canProceedToStep(3)
-            ? () => controller.nextStep()
-            : null;
-
-      case 4: // Equipos
-        return controller.canProceedToStep(4) ? () => _saveAndNavigate() : null;
+      case 3: // Balanza (Último paso ahora)
+        return controller.canProceedToStep(3) ? () => _saveAndNavigate() : null;
 
       default:
         return null;
@@ -434,7 +460,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     switch (controller.currentStep) {
       case 2:
         return controller.secaConfirmed ? Icons.arrow_forward : Icons.check;
-      case 4:
+      case 3:
         return Icons.save;
       default:
         return Icons.arrow_forward;
@@ -445,7 +471,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     switch (controller.currentStep) {
       case 2:
         return controller.secaConfirmed ? 'Siguiente' : 'Confirmar SECA';
-      case 4:
+      case 3:
         return 'Finalizar y Continuar';
       default:
         return 'Siguiente';
@@ -458,7 +484,7 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
         return controller.secaConfirmed
             ? const Color(0xFF667EEA)
             : Colors.green;
-      case 4:
+      case 3:
         return Colors.green;
       default:
         return const Color(0xFF667EEA);
@@ -753,6 +779,205 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
     );
   }
 
+  void _showTermohigrometrosSelection(PrecargaController controller) {
+    if (controller.equipos.isEmpty) {
+      _showSnackBar(
+          'No hay equipos disponibles. Asegúrese de cargar un cliente o sincronizar.',
+          isError: true);
+      return;
+    }
+
+    // Filtrar equipos ambientales (todo lo que NO sea pesa/masa)
+    final termohigrometros = controller.equipos.where((equipo) {
+      final instrumento = equipo['instrumento']?.toString().toLowerCase() ?? '';
+      final tipo = equipo['tipo_instrumento']?.toString().toLowerCase() ?? '';
+      final descripcion = equipo['descripcion']?.toString().toLowerCase() ?? '';
+
+      // Excluir explícitamente pesas y masas
+      if (instrumento.contains('pesa') ||
+          tipo.contains('pesa') ||
+          descripcion.contains('pesa')) return false;
+      if (instrumento.contains('masa') ||
+          tipo.contains('masa') ||
+          descripcion.contains('masa')) return false;
+
+      // Excluir elementos desactivados por si acaso (aunque fetchEquipos ya lo hace)
+      if (equipo['estado'] == 'DESACTIVADO') return false;
+
+      return true;
+    }).toList();
+
+    if (termohigrometros.isEmpty) {
+      _showSnackBar('No hay equipos ambientales disponibles.', isError: true);
+      return;
+    }
+
+    // Obtener la versión más reciente de cada termohigrómetro (Logic reused)
+    final Map<String, Map<String, dynamic>> uniqueTermos = {};
+    for (var termo in termohigrometros) {
+      final codInstrumento = termo['cod_instrumento'].toString();
+      final certFecha = DateTime.parse(termo['cert_fecha']);
+
+      if (!uniqueTermos.containsKey(codInstrumento) ||
+          certFecha.isAfter(
+              DateTime.parse(uniqueTermos[codInstrumento]!['cert_fecha']))) {
+        uniqueTermos[codInstrumento] = termo;
+      }
+    }
+
+    final termosUnicos = uniqueTermos.values.toList()
+      ..sort((a, b) => (a['cod_instrumento']?.toString() ?? '')
+          .compareTo(b['cod_instrumento']?.toString() ?? ''));
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          builder: (context, scrollController) {
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'SELECCIONAR TERMOHIGRÓMETROS',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Seleccione los termohigrómetros (Máximo 2)',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: termosUnicos.length,
+                          itemBuilder: (context, index) {
+                            final termo = termosUnicos[index];
+                            final isSelected =
+                                controller.selectedTermohigrometros.any((e) =>
+                                    e['cod_instrumento'] ==
+                                    termo['cod_instrumento']);
+
+                            final certFecha =
+                                DateTime.parse(termo['cert_fecha']);
+                            final difference =
+                                DateTime.now().difference(certFecha).inDays;
+
+                            return Container(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
+                              child: CheckboxListTile(
+                                title: Text(
+                                  '${termo['cod_instrumento']}',
+                                  style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('${termo['instrumento']}'),
+                                    Text(
+                                      'Certificado: ${termo['cert_fecha']} ($difference días)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: difference > 365
+                                            ? Colors.red
+                                            : difference > 300
+                                                ? Colors.orange
+                                                : Colors.green,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                value: isSelected,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      if (controller
+                                              .selectedTermohigrometros.length <
+                                          2) {
+                                        controller.addEquipo(
+                                            termo, 'termohigrometro', '1');
+                                        // Force UI rebuild in parent
+                                        this.setState(() {});
+                                      } else {
+                                        _showSnackBar(
+                                            'Máximo 2 termohigrómetros permitidos',
+                                            isError: true);
+                                      }
+                                    } else {
+                                      controller.removeEquipo(
+                                          termo['cod_instrumento'],
+                                          'termohigrometro');
+                                      this.setState(() {});
+                                    }
+                                  });
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text('CONFIRMAR SELECCIÓN',
+                                style: TextStyle(color: Colors.white)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   bool _validateFinalFields() {
     if (_nRecaController.text.trim().isEmpty) {
       _showSnackBar('Por favor ingrese el Nº RECA');
@@ -764,10 +989,8 @@ class _PrecargaScreenState extends State<PrecargaScreen> {
       return false;
     }
 
-    if (controller.getAllSelectedEquipos().isEmpty) {
-      _showSnackBar('Por favor seleccione al menos un equipo');
-      return false;
-    }
+    // Ya no validamos equipos aquí, los termohigrómetros son opcionales/warning pero no bloqueantes
+    // y las pesas se movieron.
 
     return true;
   }

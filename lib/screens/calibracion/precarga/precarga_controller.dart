@@ -32,7 +32,7 @@ class PrecargaController extends ChangeNotifier {
   bool _secaConfirmed = false;
 
   // Validación por paso
-  Map<int, String?> _stepErrors = {0: null, 1: null, 2: null, 3: null, 4: null};
+  Map<int, String?> _stepErrors = {0: null, 1: null, 2: null, 3: null};
   Map<int, String?> get stepErrors => _stepErrors;
 
   // Getters
@@ -229,32 +229,13 @@ class PrecargaController extends ChangeNotifier {
         }
         return null;
 
-      case 4: // Equipos
-        if (_selectedEquipos.isEmpty && _selectedTermohigrometros.isEmpty) {
-          return 'Debe seleccionar al menos un equipo';
-        }
-        // Validar que todos los equipos tengan cantidad
-        for (var equipo in _selectedEquipos) {
-          final cantidad = equipo['cantidad']?.toString() ?? '';
-          if (cantidad.isEmpty) {
-            return 'Todos los equipos deben tener cantidad especificada';
-          }
-        }
-        for (var termo in _selectedTermohigrometros) {
-          final cantidad = termo['cantidad']?.toString() ?? '';
-          if (cantidad.isEmpty) {
-            return 'Todos los termohigrometros deben tener cantidad especificada';
-          }
-        }
-        return null;
-
       default:
         return null;
     }
   }
 
   void updateStepErrors() {
-    for (int i = 0; i <= _currentStep && i <= 4; i++) {
+    for (int i = 0; i <= _currentStep && i <= 3; i++) {
       _stepErrors[i] = validateStep(i);
     }
     notifyListeners();
@@ -267,7 +248,7 @@ class PrecargaController extends ChangeNotifier {
 
   // MÉTODOS DE NAVEGACIÓN
   void nextStep() {
-    if (_currentStep < 4) {
+    if (_currentStep < 3) {
       _currentStep++;
       updateStepErrors();
       notifyListeners();
@@ -289,7 +270,7 @@ class PrecargaController extends ChangeNotifier {
   }
 
   void setCurrentStep(int step) {
-    if (step >= 0 && step <= 4) {
+    if (step >= 0 && step <= 3) {
       _currentStep = step;
       updateStepErrors();
       notifyListeners();
@@ -624,7 +605,7 @@ class PrecargaController extends ChangeNotifier {
       final dbHelper = AppDatabase();
       _generatedSessionId = await dbHelper.generateSessionId(_generatedSeca!);
 
-      await dbHelper.upsertRegistroCalibracion({
+      final Map<String, dynamic> sessionData = {
         'seca': _generatedSeca!,
         'fecha_servicio': fechaServicio,
         'personal': userName,
@@ -635,7 +616,23 @@ class PrecargaController extends ChangeNotifier {
         'dir_planta': _selectedPlantaDir ?? 'No especificado',
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
         'cod_planta': _selectedPlantaCodigo ?? 'No especificado',
-      });
+      };
+
+      // Guardar Termohigrómetros en slots 6 y 7
+      for (int i = 0; i < _selectedTermohigrometros.length; i++) {
+        if (i < 2) {
+          // Solo permitimos 2
+          final index = i + 6; // 6 y 7
+          final termo = _selectedTermohigrometros[i];
+          sessionData['equipo$index'] = termo['cod_instrumento'];
+          sessionData['certificado$index'] = termo['cert_fecha'];
+          sessionData['ente_calibrador$index'] = termo['ente_calibrador'];
+          // sessionData['estado$index'] = termo['estado']; // No está en la estructura equipo, quizá solo en DB?
+          sessionData['cantidad$index'] = termo['cantidad'];
+        }
+      }
+
+      await dbHelper.upsertRegistroCalibracion(sessionData);
 
       if (_disposed) return;
 

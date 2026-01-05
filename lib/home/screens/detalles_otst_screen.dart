@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/servicio_model.dart';
+import '../utils/pdf_generator.dart';
 
 class DetallesOtstScreen extends StatefulWidget {
   final ServicioOtst servicioOtst;
@@ -189,6 +190,70 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
                     color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Error al exportar: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportarPDF() async {
+    try {
+      final pdfBytes =
+          await PdfGenerator.generateSoportePdf(widget.servicioOtst);
+
+      final fileName =
+          'Resumen_Soporte_OTST_${widget.servicioOtst.otst}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+      // Seleccionar directorio de destino
+      final String? directoryPath = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Seleccione carpeta para guardar el PDF',
+      );
+
+      if (directoryPath == null) {
+        // Usuario canceló
+        return;
+      }
+
+      final File file = File('$directoryPath/$fileName');
+      await file.writeAsBytes(pdfBytes);
+
+      // Abrir el archivo generado
+      OpenFilex.open(file.path);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(FontAwesomeIcons.circleCheck,
+                    color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text('PDF guardado en: ${file.path}')),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(FontAwesomeIcons.circleXmark,
+                    color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Error al exportar PDF: $e')),
               ],
             ),
             backgroundColor: Colors.red,
@@ -605,6 +670,23 @@ class _DetallesOtstScreenState extends State<DetallesOtstScreen> {
               elevation: 0,
               centerTitle: true,
               actions: [
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      FontAwesomeIcons.filePdf,
+                      color: Colors.red,
+                      size: 18,
+                    ),
+                  ),
+                  onPressed: _exportarPDF,
+                  tooltip: 'Exportar PDF',
+                ),
+                const SizedBox(width: 4),
                 IconButton(
                   icon: Container(
                     padding: const EdgeInsets.all(8),

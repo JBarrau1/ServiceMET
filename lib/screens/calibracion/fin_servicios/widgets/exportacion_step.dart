@@ -171,10 +171,7 @@ class ExportacionStep extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'EMP NB 23001',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: _buildInputDecoration('EMP NB 23001'),
                       initialValue: controller.selectedEmp23001,
                       items: ['Sí', 'No'].map((String value) {
                         return DropdownMenuItem<String>(
@@ -197,10 +194,7 @@ class ExportacionStep extends StatelessWidget {
                         FilteringTextInputFormatter.allow(
                             RegExp(r'^\d*\.?\d*')),
                       ],
-                      decoration: const InputDecoration(
-                        labelText: 'Indicar (%)',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: _buildInputDecoration('Indicar (%)'),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -211,17 +205,11 @@ class ExportacionStep extends StatelessWidget {
                         FilteringTextInputFormatter.allow(
                             RegExp(r'^\d*\.?\d*')),
                       ],
-                      decoration: const InputDecoration(
-                        labelText: 'Factor Seguridad',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: _buildInputDecoration('Factor Seguridad'),
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Regla de Aceptación',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: _buildInputDecoration('Regla de Aceptación'),
                       initialValue: controller.selectedReglaAceptacion,
                       items: ['Ninguna', 'Simple', 'Conservadora']
                           .map((String value) {
@@ -308,6 +296,23 @@ class ExportacionStep extends StatelessWidget {
     if (confirmado == true) {
       await controller.confirmarSeleccionOtraBalanza();
     }
+  }
+
+  InputDecoration _buildInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20.0),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20.0),
+        borderSide: const BorderSide(color: Colors.grey),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20.0),
+        borderSide: const BorderSide(color: Colors.blue, width: 2.0),
+      ),
+    );
   }
 }
 

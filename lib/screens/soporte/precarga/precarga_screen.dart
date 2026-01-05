@@ -32,7 +32,8 @@ import '../modulos/mnt_prv_avanzado/mnt_prv_avanzado_stil/stil_mnt_prv_avanzado.
 import '../modulos/mnt_prv_regular/mnt_prv_regular_stil/stil_mnt_prv_regular.dart'
     hide StepData;
 import '../modulos/relevamiento_de_datos/relevamiento_de_datos.dart';
-import '../modulos/verificaciones_internas/stac_verificaciones_internas.dart';
+import '../modulos/verificaciones_internas/stac_verificaciones_internas.dart'
+    hide StepData;
 import 'precarga_controller.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/cliente_step.dart';
@@ -887,12 +888,12 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
       case 'verificaciones_internas':
         return StacVerificacionesInternasScreen(
           userName: widget.userName,
-          clienteId: controller.selectedClienteId ?? '',
+          clienteId: int.tryParse(controller.selectedClienteId ?? '0') ?? 0,
           plantaCodigo: controller.selectedPlantaCodigo ?? '',
           codMetrica: codMetrica,
           nReca: nReca,
-          secaValue: secaValue,
-          sessionId: sessionId,
+          otst: secaValue,
+          sessionId: sessionId.toString(),
         );
 
       default:
