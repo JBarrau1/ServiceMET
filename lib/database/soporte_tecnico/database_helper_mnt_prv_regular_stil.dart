@@ -262,7 +262,8 @@ class DatabaseHelperMntPrvRegularStil {
         personal TEXT DEFAULT '',
         otst TEXT DEFAULT '',
         session_id TEXT DEFAULT '',
-
+        inf_bal TEXT DEFAULT '',
+        
         --INF BALANZA
         foto_balanza TEXT DEFAULT '',
         categoria_balanza TEXT DEFAULT '',

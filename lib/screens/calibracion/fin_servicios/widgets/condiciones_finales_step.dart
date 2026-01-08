@@ -688,7 +688,6 @@ class _QuantityInput extends StatefulWidget {
   final ValueChanged<String> onChanged;
 
   const _QuantityInput({
-    super.key,
     required this.initialValue,
     required this.onChanged,
   });

@@ -18,7 +18,7 @@ class StepIndicator extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _buildStep(0, 'Conexión BD'),
+          child: _buildStep(0, 'Conexión'),
         ),
         Container(
           width: 40,
@@ -53,15 +53,15 @@ class StepIndicator extends StatelessWidget {
             child: isCompleted
                 ? const Icon(Icons.check, color: Colors.white, size: 20)
                 : Text(
-              '${step + 1}',
-              style: GoogleFonts.inter(
-                color: isActive
-                    ? Colors.white
-                    : (isDark ? Colors.white38 : Colors.black38),
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+                    '${step + 1}',
+                    style: GoogleFonts.inter(
+                      color: isActive
+                          ? Colors.white
+                          : (isDark ? Colors.white38 : Colors.black38),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 8),

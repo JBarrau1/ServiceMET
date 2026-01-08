@@ -8,6 +8,7 @@ class UserModel {
   final String pass;
   final String tituloAbr;
   final String estado;
+  final String accesoApp; // Nuevo campo
 
   UserModel({
     required this.usuario,
@@ -17,6 +18,7 @@ class UserModel {
     required this.pass,
     required this.tituloAbr,
     required this.estado,
+    this.accesoApp = '0', // Default a '0' (acceso denegado por defecto)
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -28,6 +30,7 @@ class UserModel {
       pass: map['pass']?.toString() ?? '',
       tituloAbr: map['titulo_abr']?.toString() ?? '',
       estado: map['estado']?.toString() ?? '',
+      accesoApp: map['acceso_app']?.toString() ?? '0', // Default '0'
     );
   }
 
@@ -40,6 +43,7 @@ class UserModel {
       'pass': pass,
       'titulo_abr': tituloAbr,
       'estado': estado,
+      'acceso_app': accesoApp, // Guardar nuevo campo
       'fecha_guardado': DateTime.now().toIso8601String(),
     };
   }

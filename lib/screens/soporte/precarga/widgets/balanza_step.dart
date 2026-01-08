@@ -136,6 +136,60 @@ class _BalanzaStepState extends State<BalanzaStep> {
     );
   }
 
+  // NUEVO: Wrapper para desbloqueo/edición
+  Widget _buildValidatedField(
+    PrecargaControllerSop controller,
+    String validationKey,
+    Widget child,
+  ) {
+    // Si no existe la clave en el mapa de unlock, devolvemos solo el hijo
+    if (!controller.isFieldUnlock(validationKey) &&
+        !controller.balanzas.any((b) => b.containsKey(validationKey))) {
+      // Fallback simple si no estamos seguros, aunque isFieldUnlock maneja false por defecto
+    }
+
+    // Nota: isFieldUnlock devuelve false si no existe la key, lo cual significa "bloqueado" (readOnly)
+    // Pero aquí queremos saber si mostrar el checkbox.
+    // Mostramos checkbox para todos los campos definidos en _initializeBalanzaUnlockState.
+    // Como no tenemos acceso directo a la lista de keysKeys, asumimos que si llamamos a este método
+    // es porque queremos validación.
+
+    final isUnlocked = controller.isFieldUnlock(validationKey);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Widget original expandido
+        Expanded(child: child),
+
+        const SizedBox(width: 12),
+
+        // Checkbox de desbloqueo
+        Container(
+          decoration: BoxDecoration(
+            color: isUnlocked
+                ? Colors.green.withOpacity(0.1)
+                : Colors.grey.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isUnlocked ? Colors.green : Colors.grey.withOpacity(0.3),
+            ),
+          ),
+          child: Checkbox(
+            value: isUnlocked,
+            activeColor: Colors.green,
+            onChanged: (bool? value) {
+              controller.toggleBalanzaUnlock(validationKey, value);
+            },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildBalanzaSelectionButtons(PrecargaControllerSop controller) {
     return Row(
       children: [
@@ -216,101 +270,152 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
           const SizedBox(height: 20),
 
-          // Código métrica (solo lectura)
-          _buildTextField(
-            controller: widget.balanzaControllers['cod_metrica']!,
-            label: 'Código Métrica',
-            readOnly: true,
-            prefixIcon: Icons.qr_code,
+          // Código métrica
+          _buildValidatedField(
+            controller,
+            'cod_metrica',
+            _buildTextField(
+              controller: widget.balanzaControllers['cod_metrica']!,
+              label: 'Código Métrica',
+              readOnly: !controller
+                  .isFieldUnlock('cod_metrica'), // Bloqueado por defecto
+              prefixIcon: Icons.qr_code,
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Categoría
-          _buildCategoriaField(),
+          _buildValidatedField(
+            controller,
+            'categoria_balanza',
+            _buildCategoriaField(
+                enabled: controller.isFieldUnlock('categoria_balanza')),
+          ),
 
           const SizedBox(height: 16),
 
           // Tecnología (Informativo)
-          _buildTextField(
-            controller: widget.balanzaControllers['tecnologia']!,
-            label: 'Tecnología',
-            prefixIcon: Icons.memory,
-            readOnly: true,
+          _buildValidatedField(
+            controller,
+            'tecnologia',
+            _buildTextField(
+              controller: widget.balanzaControllers['tecnologia']!,
+              label: 'Tecnología',
+              prefixIcon: Icons.memory,
+              readOnly: !controller.isFieldUnlock('tecnologia'),
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Clase (Informativo)
-          _buildTextField(
-            controller: widget.balanzaControllers['clase']!,
-            label: 'Clase',
-            prefixIcon: Icons.class_,
-            readOnly: true,
+          _buildValidatedField(
+            controller,
+            'clase',
+            _buildTextField(
+              controller: widget.balanzaControllers['clase']!,
+              label: 'Clase',
+              prefixIcon: Icons.class_,
+              readOnly: !controller.isFieldUnlock('clase'),
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Código interno
-          _buildTextField(
-            controller: widget.balanzaControllers['cod_int']!,
-            label: 'Código Interno',
-            prefixIcon: Icons.tag,
-            readOnly: false, // AGREGAR ESTA LÍNEA
+          _buildValidatedField(
+            controller,
+            'cod_int',
+            _buildTextField(
+              controller: widget.balanzaControllers['cod_int']!,
+              label: 'Código Interno',
+              prefixIcon: Icons.tag,
+              readOnly: !controller.isFieldUnlock('cod_int'),
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Tipo de equipo - Dropdown
-          _buildTipoEquipoField(controller),
+          _buildValidatedField(
+            controller,
+            'tipo_equipo',
+            _buildTipoEquipoField(controller),
+          ),
 
           const SizedBox(height: 16),
 
           // Marca - Dropdown
-          _buildMarcaField(controller),
+          _buildValidatedField(
+            controller,
+            'marca',
+            _buildMarcaField(controller),
+          ),
 
           const SizedBox(height: 16),
 
           // Modelo
-          _buildTextField(
-            controller: widget.balanzaControllers['modelo']!,
-            label: 'Modelo',
-            prefixIcon: Icons.precision_manufacturing,
-            readOnly: false, // AGREGAR ESTA LÍNEA
+          _buildValidatedField(
+            controller,
+            'modelo',
+            _buildTextField(
+              controller: widget.balanzaControllers['modelo']!,
+              label: 'Modelo',
+              prefixIcon: Icons.precision_manufacturing,
+              readOnly: !controller.isFieldUnlock('modelo'),
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Serie
-          _buildTextField(
-            controller: widget.balanzaControllers['serie']!,
-            label: 'Serie',
-            prefixIcon: Icons.confirmation_number,
-            readOnly: false, // AGREGAR ESTA LÍNEA
+          _buildValidatedField(
+            controller,
+            'serie',
+            _buildTextField(
+              controller: widget.balanzaControllers['serie']!,
+              label: 'Serie',
+              prefixIcon: Icons.confirmation_number,
+              readOnly: !controller.isFieldUnlock('serie'),
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Unidad - Dropdown
-          _buildUnidadField(controller),
+          _buildValidatedField(
+            controller,
+            'unidades',
+            _buildUnidadField(controller),
+          ),
 
           const SizedBox(height: 16),
 
           // Ubicación
-          _buildTextField(
-            controller: widget.balanzaControllers['ubicacion']!,
-            label: 'Ubicación',
-            prefixIcon: Icons.location_on,
+          _buildValidatedField(
+            controller,
+            'ubicacion',
+            _buildTextField(
+              controller: widget.balanzaControllers['ubicacion']!,
+              label: 'Ubicación',
+              prefixIcon: Icons.location_on,
+              readOnly: !controller.isFieldUnlock('ubicacion'),
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Rango (Informativo)
-          _buildTextField(
-            controller: widget.balanzaControllers['rango']!,
-            label: 'Rango',
-            prefixIcon: Icons.linear_scale,
-            readOnly: true,
+          _buildValidatedField(
+            controller,
+            'rango',
+            _buildTextField(
+              controller: widget.balanzaControllers['rango']!,
+              label: 'Rango',
+              prefixIcon: Icons.linear_scale,
+              readOnly: !controller.isFieldUnlock('rango'),
+            ),
           ),
 
           const SizedBox(height: 16),
@@ -536,13 +641,14 @@ class _BalanzaStepState extends State<BalanzaStep> {
     );
   }
 
-  Widget _buildCategoriaField() {
+  Widget _buildCategoriaField({bool enabled = true}) {
     return DropdownButtonFormField<String>(
       initialValue:
           widget.balanzaControllers['categoria_balanza']!.text.isNotEmpty
               ? widget.balanzaControllers['categoria_balanza']!.text
               : null,
       decoration: InputDecoration(
+        enabled: enabled,
         labelText: 'Categoría',
         prefixIcon: const Icon(Icons.category),
         border: OutlineInputBorder(

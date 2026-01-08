@@ -367,7 +367,6 @@ class SetupService {
         case 'balanzas':
           return {
             'cod_metrica': data['cod_metrica']?.toString().trim() ?? '',
-            'serie': data['serie']?.toString().trim() ?? '',
             'unidad': data['unidad']?.toString().trim() ?? '',
             'n_celdas': data['n_celdas']?.toString().trim() ?? '',
             'cap_max1': data['cap_max1']?.toString().trim() ?? '',

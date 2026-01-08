@@ -232,7 +232,7 @@ class FinServiciosController extends ChangeNotifier {
 
   // EQUIPOS (Pesas Patrón) logic
   List<dynamic> _equiposOptions = [];
-  List<Map<String, dynamic>> _selectedPesas = [];
+  final List<Map<String, dynamic>> _selectedPesas = [];
   List<dynamic> get equiposOptions => _equiposOptions;
   List<Map<String, dynamic>> get selectedPesas => _selectedPesas;
 

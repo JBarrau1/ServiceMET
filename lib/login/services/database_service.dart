@@ -31,7 +31,6 @@ class DatabaseService {
     await db.execute('''
       CREATE TABLE balanzas (
         cod_metrica TEXT PRIMARY KEY,
-        serie TEXT,
         unidad TEXT,
         n_celdas TEXT,
         cap_max1 TEXT,
@@ -231,7 +230,7 @@ class DatabaseService {
 
     return await openDatabase(
       usersDbPath,
-      version: 1,
+      version: 2, // Sincronizado con AuthService
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE usuarios (
@@ -240,12 +239,22 @@ class DatabaseService {
             apellido1 TEXT,
             apellido2 TEXT,
             pass TEXT,
-            usuario TEXT,
+            usuario TEXT UNIQUE,
             titulo_abr TEXT,
             estado TEXT,
+            acceso_app TEXT,
             fecha_guardado TEXT
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          try {
+            await db.execute('ALTER TABLE usuarios ADD COLUMN acceso_app TEXT');
+          } catch (e) {
+            print('Error upgrade DBService: $e');
+          }
+        }
       },
     );
   }

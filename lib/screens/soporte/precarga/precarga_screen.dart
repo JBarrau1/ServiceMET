@@ -719,6 +719,118 @@ class _PrecargaScreenSopState extends State<PrecargaScreenSop> {
   }
 
   Future<void> _saveAndNavigate() async {
+    // 1. VERIFICACIÓN DE EDICIÓN (Datos Modificados)
+    if (!controller.isNewBalanza && controller.hiddenEditedFields.isNotEmpty) {
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(
+            'Confirmación de Cambios',
+            style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                color: Colors.blue[800],
+                fontSize: 16),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.info_outline, color: Colors.blue, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Estás modificando los datos originales de la balanza.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '¿Estás seguro de que deseas guardar estos cambios?',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[800],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Guardar Cambios'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldProceed != true) return;
+    }
+
+    // 2. VERIFICACIÓN DE NO EDICIÓN (Datos Intactos)
+    if (!controller.isNewBalanza && controller.hiddenEditedFields.isEmpty) {
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(
+            'Advertencia de Datos',
+            style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                color: Colors.orange[800],
+                fontSize: 16),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Colors.orange, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'No has editado ningún campo de la balanza.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Si la información mostrada es correcta, puedes continuar. De lo contrario, marca las casillas para editar los datos incorrectos.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: const Text(
+                  'Nota: Eres responsable de verificar que los datos coincidan con el equipo físico.',
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Revisar Datos'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[800],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Continuar de todos modos'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldProceed != true) return;
+    }
+
     try {
       // Preparar datos de la balanza
       final balanzaData = <String, String>{};

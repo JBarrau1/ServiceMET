@@ -12,6 +12,73 @@ import '../models/user_model.dart';
 class AuthService {
   MssqlConnection? _connection;
 
+  // Helper centralizado para abrir DB con migración garantizada
+  Future<Database> _openDb() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'usuarios.db');
+
+    return await openDatabase(
+      path,
+      version: 4, // Incrementamos versión nuevamente
+      onCreate: (db, version) async {
+        await db.execute('''
+            CREATE TABLE usuarios (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              nombre1 TEXT,
+              apellido1 TEXT,
+              apellido2 TEXT,
+              pass TEXT,
+              usuario TEXT UNIQUE,
+              titulo_abr TEXT,
+              estado TEXT,
+              acceso_app TEXT,
+              fecha_guardado TEXT
+            )
+          ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Dejamos que onOpen maneje la estructura para asegurar consistencia
+      },
+      onOpen: (db) async {
+        // ULTIMA OPCIÓN: Recreación total si falla la estructura
+        try {
+          final columns = await db.rawQuery("PRAGMA table_info(usuarios)");
+          final hasColumn = columns.any((c) => c['name'] == 'acceso_app');
+
+          if (!hasColumn) {
+            print(
+                '⚠️ Esquema incorrecto detectado. Recreando tabla usuarios...');
+            // Si la columna no está, destruimos la tabla y la creamos de cero
+            await db.execute('DROP TABLE IF EXISTS usuarios');
+            await db.execute('''
+              CREATE TABLE usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre1 TEXT,
+                apellido1 TEXT,
+                apellido2 TEXT,
+                pass TEXT,
+                usuario TEXT UNIQUE,
+                titulo_abr TEXT,
+                estado TEXT,
+                acceso_app TEXT,
+                fecha_guardado TEXT
+              )
+            ''');
+            print(
+                '✅ Tabla usuarios recreada correctamente con nueva estructura');
+          }
+
+          // Asegurar valores por defecto en la nueva tabla o existente
+          // Si es NULL o vacío, se asume '0' (Sin Acceso)
+          await db.execute(
+              "UPDATE usuarios SET acceso_app = '0' WHERE acceso_app IS NULL OR acceso_app = ''");
+        } catch (e) {
+          print('❌ Error crítico en auto-reparación de BD: $e');
+        }
+      },
+    );
+  }
+
   Future<bool> userExists(String usuario) async {
     try {
       final dbPath = await getDatabasesPath();
@@ -20,7 +87,7 @@ class AuthService {
       final dbExists = await databaseExists(path);
       if (!dbExists) return false;
 
-      final db = await openDatabase(path);
+      final db = await _openDb(); // Usar helper
       final results = await db.query(
         'usuarios',
         where: 'usuario = ?',
@@ -31,7 +98,7 @@ class AuthService {
 
       return results.isNotEmpty;
     } catch (e) {
-      print('❌ Error verificando usuario: $e');
+      print('Error verificando usuario: $e');
       return false;
     }
   }
@@ -62,7 +129,7 @@ class AuthService {
     };
   }
 
-  // ✅ NUEVO: Conectar al servidor
+  // Conectar al servidor
   Future<bool> _connectToServer() async {
     final credentials = await _getConnectionCredentials();
     if (credentials == null) return false;
@@ -85,12 +152,12 @@ class AuthService {
 
       return connected;
     } catch (e) {
-      print('❌ Error conectando: $e');
+      print('Error conectando: $e');
       return false;
     }
   }
 
-  // ✅ NUEVO: Validar usuario en SQL Server
+  // Validar usuario en SQL Server
   Future<UserValidationResult> _validateUserInServer(
     String usuario,
     String pass,
@@ -104,7 +171,7 @@ class AuthService {
 
     try {
       final query = '''
-        SELECT nombre1, apellido1, apellido2, pass, usuario, titulo_abr, estado 
+        SELECT nombre1, apellido1, apellido2, pass, usuario, titulo_abr, estado, acceso_app 
         FROM data_users 
         WHERE usuario = '$usuario' AND pass = '$pass'
       ''';
@@ -132,6 +199,16 @@ class AuthService {
       final userData =
           UserModel.fromMap(Map<String, dynamic>.from(result.first));
 
+      // VALIDACIÓN ACCESO APP
+      // CAMBIO: Ahora validamos que sea ESTRICTAMENTE '1'. Cualquier otro valor (0, null, vacío) deniega acceso.
+      if (userData.accesoApp != '1') {
+        return UserValidationResult(
+          success: false,
+          message:
+              '[ACCESO_DENEGADO] Tu usuario no tiene permisos para acceder a la aplicación móvil. Contacta al administrador.',
+        );
+      }
+
       if (!userData.isActive) {
         return UserValidationResult(
           success: false,
@@ -152,31 +229,10 @@ class AuthService {
     }
   }
 
-  // ✅ NUEVO: Guardar usuario en SQLite (sin eliminar anteriores)
-  Future<bool> _saveUserToDatabase(UserModel userData) async {
+  // Guardar usuario en SQLite (sin eliminar anteriores)
+  Future<bool> saveUserToDatabase(UserModel userData) async {
     try {
-      final dbPath = await getDatabasesPath();
-      final path = join(dbPath, 'usuarios.db');
-
-      final db = await openDatabase(
-        path,
-        version: 1,
-        onCreate: (db, version) async {
-          await db.execute('''
-            CREATE TABLE usuarios (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              nombre1 TEXT,
-              apellido1 TEXT,
-              apellido2 TEXT,
-              pass TEXT,
-              usuario TEXT UNIQUE,
-              titulo_abr TEXT,
-              estado TEXT,
-              fecha_guardado TEXT
-            )
-          ''');
-        },
-      );
+      final db = await _openDb(); // Usar helper para garantizar migración
 
       // Insertar o actualizar usuario
       await db.insert(
@@ -188,12 +244,12 @@ class AuthService {
       await db.close();
       return true;
     } catch (e) {
-      print('❌ Error guardando usuario: $e');
+      print('Error guardando usuario: $e');
       return false;
     }
   }
 
-  // ✅ NUEVO: Obtener lista de usuarios guardados
+  // Obtener lista de usuarios guardados
   Future<List<UserModel>> getSavedUsers() async {
     try {
       final dbPath = await getDatabasesPath();
@@ -202,14 +258,14 @@ class AuthService {
       final dbExists = await databaseExists(path);
       if (!dbExists) return [];
 
-      final db = await openDatabase(path);
+      final db = await _openDb(); // Usar helper
       final results =
           await db.query('usuarios', orderBy: 'fecha_guardado DESC');
       await db.close();
 
       return results.map((map) => UserModel.fromMap(map)).toList();
     } catch (e) {
-      print('❌ Error obteniendo usuarios: $e');
+      print('Error obteniendo usuarios: $e');
       return [];
     }
   }
@@ -238,7 +294,7 @@ class AuthService {
     await prefs.setString('logged_user_nombre', userData.fullName);
   }
 
-  // ✅ MODIFICADO: Login con validación local Y remota
+  // Login con validación local Y remota
   Future<LoginResult> login({
     String? usuario,
     required String password,
@@ -262,7 +318,7 @@ class AuthService {
         );
       }
 
-      final db = await openDatabase(path);
+      final db = await _openDb(); // Usar helper
 
       // 1. Buscar usuario localmente
       final results = await db.query(
@@ -276,6 +332,16 @@ class AuthService {
       // 2. Si el usuario existe localmente
       if (results.isNotEmpty) {
         final userData = UserModel.fromMap(results.first);
+
+        // VALIDACIÓN LOCAL ACCESO APP
+        // CAMBIO: Ahora validamos que sea ESTRICTAMENTE '1'.
+        if (userData.accesoApp != '1') {
+          return LoginResult(
+            success: false,
+            message:
+                '[ACCESO_DENEGADO] Tu usuario no tiene permisos para acceder a la aplicación móvil. Contacta al administrador.',
+          );
+        }
 
         if (!userData.isActive) {
           return LoginResult(
@@ -304,7 +370,7 @@ class AuthService {
     }
   }
 
-  // ✅ NUEVO: Agregar nuevo usuario (validando en servidor)
+  // Agregar nuevo usuario (validando en servidor)
   Future<LoginResult> addNewUser({
     required String usuario,
     required String password,
@@ -333,7 +399,7 @@ class AuthService {
       }
 
       // 4. Guardar usuario en SQLite
-      final saved = await _saveUserToDatabase(validation.userData!);
+      final saved = await saveUserToDatabase(validation.userData!);
 
       if (!saved) {
         return LoginResult(
@@ -388,31 +454,28 @@ class AuthService {
     await prefs.remove('is_first_login');
   }
 
-  // ✅ NUEVO: Eliminar usuario guardado
+  // Eliminar usuario guardado
   Future<bool> deleteUser(String usuario) async {
     try {
-      final dbPath = await getDatabasesPath();
-      final path = join(dbPath, 'usuarios.db');
-
-      final db = await openDatabase(path);
+      final db = await _openDb(); // Usar helper
       await db.delete('usuarios', where: 'usuario = ?', whereArgs: [usuario]);
 
-      // ✅ Verificar si quedan usuarios
+      // Verificar si quedan usuarios
       final remainingUsers = await db.query('usuarios');
       await db.close();
 
-      // ✅ Si no quedan usuarios, limpiar SharedPreferences
+      // Si no quedan usuarios, limpiar SharedPreferences
       if (remainingUsers.isEmpty) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('logged_user');
         await prefs.remove('logged_user_nombre');
         await prefs.setBool('auto_login_enabled', false);
-        print('✅ Todos los usuarios eliminados, SharedPreferences limpiado');
+        print('Todos los usuarios eliminados, SharedPreferences limpiado');
       }
 
       return true;
     } catch (e) {
-      print('❌ Error eliminando usuario: $e');
+      print('Error eliminando usuario: $e');
       return false;
     }
   }

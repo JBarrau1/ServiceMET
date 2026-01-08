@@ -37,4 +37,11 @@ class BalanzaProvider with ChangeNotifier {
     }
     notifyListeners();
   }
+
+  void clearSelectedBalanza() {
+    _selectedBalanza = null;
+    _isNewBalanza = false;
+    _lastServiceData = null;
+    notifyListeners();
+  }
 }

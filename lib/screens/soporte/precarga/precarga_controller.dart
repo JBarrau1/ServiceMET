@@ -61,9 +61,64 @@ class PrecargaControllerSop extends ChangeNotifier {
     1: null,
     2: null,
     3: null,
-    4: null
+    2: null,
+    3: null, // Balanza
+    4: null // Confirmación
   };
   Map<int, String?> get stepErrors => _stepErrors;
+
+  // ESTADO DE DESBLOQUEO DE CAMPOS (Validación/Edición)
+  final Map<String, bool> _balanzaUnlockState = {};
+  String _hiddenEditedFields = ''; // Campos editados separados por coma
+
+  bool isFieldUnlock(String key) => _balanzaUnlockState[key] ?? false;
+  String get hiddenEditedFields => _hiddenEditedFields;
+
+  void _initializeBalanzaUnlockState() {
+    _balanzaUnlockState.clear();
+    _hiddenEditedFields = '';
+
+    // Campos que pueden ser desbloqueados para edición
+    final fieldsToUnlock = [
+      'cod_metrica',
+      'categoria_balanza',
+      'cod_int',
+      'tipo_equipo',
+      'marca',
+      'modelo',
+      'serie',
+      'unidades',
+      'ubicacion',
+      'tecnologia',
+      'clase',
+      'rango',
+    ];
+
+    for (var field in fieldsToUnlock) {
+      _balanzaUnlockState[field] = false; // Por defecto bloqueados (readOnly)
+    }
+  }
+
+  void toggleBalanzaUnlock(String key, bool? value) {
+    if (_balanzaUnlockState.containsKey(key)) {
+      _balanzaUnlockState[key] = value ?? false;
+
+      // Actualizar lista oculta de campos editados
+      List<String> currentEdited =
+          _hiddenEditedFields.isEmpty ? [] : _hiddenEditedFields.split(',');
+
+      if (value == true) {
+        if (!currentEdited.contains(key)) {
+          currentEdited.add(key);
+        }
+      } else {
+        currentEdited.remove(key);
+      }
+
+      _hiddenEditedFields = currentEdited.join(',');
+      notifyListeners();
+    }
+  }
 
   // Getters
   int get currentStep => _currentStep;
@@ -264,6 +319,7 @@ class PrecargaControllerSop extends ChangeNotifier {
         if (_selectedBalanza == null) {
           return 'Debe seleccionar una balanza';
         }
+        // Ya no bloqueamos por validación, pero mostramos advertencia al final si no se editó nada
         return null;
 
       case 4: // Confirmación final
@@ -531,6 +587,7 @@ class PrecargaControllerSop extends ChangeNotifier {
     _isNewClient = false;
     _plantas = null;
     _selectedPlantaKey = null;
+    _initializeBalanzaUnlockState();
     updateStepErrors();
     notifyListeners();
   }
@@ -783,6 +840,12 @@ class PrecargaControllerSop extends ChangeNotifier {
           'd3': balanza['d3'],
           'e3': balanza['e3'],
           'dec3': balanza['dec3'],
+
+          // Nuevos campos
+          'tecnologia': balanza['tecnologia'],
+          'clase': balanza['clase'],
+          'tipo': balanza['tipo'],
+          'rango': balanza['rango'],
         };
 
         if (infDetails.isNotEmpty) {
@@ -797,10 +860,17 @@ class PrecargaControllerSop extends ChangeNotifier {
           balanzaCompleta['estado'] = infData['estado'];
           balanzaCompleta['instrumento'] = infData['instrumento'];
 
-          // TRADUCCIÓN IMPORTANTE: De 'tipo_instrumento' (BD) a 'tipo' (App)
-          // Se usa 'tipo_instrumento' preferentemente, o 'tipo' si existiera en INF
-          balanzaCompleta['tipo'] =
-              infData['tipo_instrumento'] ?? infData['tipo'];
+          // Concatenar instrumento + tipo para mostrar en UI
+          final instrumento = infData['instrumento']?.toString() ?? '';
+          final tipo = balanza['tipo']?.toString() ?? '';
+
+          if (instrumento.isNotEmpty && tipo.isNotEmpty) {
+            balanzaCompleta['tipo'] = '$instrumento - $tipo';
+          } else if (instrumento.isNotEmpty) {
+            balanzaCompleta['tipo'] = instrumento;
+          } else {
+            balanzaCompleta['tipo'] = tipo;
+          }
         }
 
         processedBalanzas.add(balanzaCompleta);
@@ -857,6 +927,7 @@ class PrecargaControllerSop extends ChangeNotifier {
   void selectBalanza(Map<String, dynamic> balanza) {
     _selectedBalanza = balanza;
     _isNewBalanza = false;
+    _initializeBalanzaUnlockState();
     updateStepErrors();
     notifyListeners();
   }
@@ -872,6 +943,7 @@ class PrecargaControllerSop extends ChangeNotifier {
     _selectedBalanza = {
       'cod_metrica': '$_selectedPlantaCodigo-$formattedDateTime',
     };
+    _initializeBalanzaUnlockState();
     notifyListeners();
   }
 
@@ -1002,6 +1074,7 @@ class PrecargaControllerSop extends ChangeNotifier {
         'dep_planta': _selectedPlantaDep ?? 'No especificado',
         'cod_planta': _selectedPlantaCodigo ?? '',
         'foto_balanza': _fotosTomadas ? '1' : '0',
+        'inf_bal': _hiddenEditedFields, // GUARDAR CAMPOS EDITADOS
         ...dataToSave,
       };
 

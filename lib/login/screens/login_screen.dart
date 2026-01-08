@@ -160,7 +160,38 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } else {
-      _showSnackBar(context, result.message, Colors.red);
+      // ✅ NUEVO: Manejo de Acceso Denegado
+      if (result.message.contains('[ACCESO_DENEGADO]')) {
+        // Limpiamos el prefijo para mostrar el mensaje limpio
+        final cleanMessage =
+            result.message.replaceAll('[ACCESO_DENEGADO]', '').trim();
+
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.block, color: Colors.red[700]),
+                const SizedBox(width: 10),
+                const Text('Acceso Denegado'),
+              ],
+            ),
+            content: Text(
+              cleanMessage,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        _showSnackBar(context, result.message, Colors.red);
+      }
     }
   }
 

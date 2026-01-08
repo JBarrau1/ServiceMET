@@ -14,6 +14,8 @@ import '../database/soporte_tecnico/database_helper_mnt_prv_regular_stac.dart';
 import '../database/soporte_tecnico/database_helper_mnt_prv_regular_stil.dart';
 import '../database/soporte_tecnico/database_helper_verificaciones.dart';
 
+import '../login/services/auth_service.dart';
+
 class DatabaseMaintenanceService {
   /// Ejecuta el proceso de migración para todas las bases de datos registradas.
   ///
@@ -25,6 +27,9 @@ class DatabaseMaintenanceService {
   /// 5. Insertar los registros guardados.
   static Future<void> migrateAllDatabases() async {
     debugPrint('🔄 Iniciando mantenimiento de bases de datos...');
+
+    // 0. Usuarios (AuthService) - IMPORTANTE: Recrear estructura nueva
+    await _migrateUsuarios();
 
     // 1. AppDatabase (Calibración)
     await _migrateAppDatabase();
@@ -255,6 +260,36 @@ class DatabaseMaintenanceService {
       debugPrint('   - Registros restaurados: ${data.length}');
     } catch (e) {
       debugPrint('❌ Error migrando Verificaciones: $e');
+    }
+  }
+
+  static Future<void> _migrateUsuarios() async {
+    try {
+      final authService = AuthService();
+      debugPrint('📦 Migrando Usuarios...');
+
+      // 1. Backup
+      final users = await authService.getSavedUsers();
+      debugPrint('   - Usuarios respaldados: ${users.length}');
+
+      // 2. Delete
+      // Nota: AuthService cierra la conexión en cada operación, así que no es necesario un close() explicito aquí
+      // si usamos getSavedUsers(). Pero para borrar el archivo sí necesitamos asegurar que nadie lo tenga tomado,
+      // aunque sqflite maneja pool. De todas formas, lo borraremos.
+      final path = join(await getDatabasesPath(), 'usuarios.db');
+      await _deleteDbFile(path);
+
+      // 3. Restore
+      // Al llamar a saveUserToDatabase, el AuthService automáticamente ejecutará _openDb(),
+      // lo cual creará la tabla con la NUEVA estructura definida en AuthService (versión actualizada).
+      int restored = 0;
+      for (var user in users) {
+        await authService.saveUserToDatabase(user);
+        restored++;
+      }
+      debugPrint('   - Usuarios restaurados: $restored');
+    } catch (e) {
+      debugPrint('❌ Error migrando Usuarios: $e');
     }
   }
 

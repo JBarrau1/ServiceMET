@@ -345,7 +345,7 @@ class LoginForm extends StatelessWidget {
           Column(
             children: [
               Text(
-                'versión 1.1.050126',
+                'versión 1.3.080126',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   color: isDark ? Colors.white38 : Colors.black38,
