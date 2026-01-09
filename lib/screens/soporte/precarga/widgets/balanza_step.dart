@@ -105,7 +105,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
           children: [
             // Título
             Text(
-              'IDENTIFICACIÓN DE BALANZA',
+              'IDENTIFICACIÓN DEL INSTRUMENTO',
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -197,7 +197,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
           child: ElevatedButton.icon(
             onPressed: () => _showBalanzasDialog(controller),
             icon: const Icon(Icons.search),
-            label: const Text('Ver Balanzas'),
+            label: const Text('Ver Instrumentos'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF326677),
               foregroundColor: Colors.white,
@@ -213,7 +213,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
               _initializeNewBalanzaFields(controller);
             },
             icon: const Icon(Icons.add),
-            label: const Text('Nueva Balanza'),
+            label: const Text('Nuevo Instrumento'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF327734),
               foregroundColor: Colors.white,
@@ -258,7 +258,9 @@ class _BalanzaStepState extends State<BalanzaStep> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            controller.isNewBalanza ? 'NUEVA BALANZA' : 'BALANZA SELECCIONADA',
+            controller.isNewBalanza
+                ? 'NUEVO INSTRUMENTO'
+                : 'INSTRUMENTO SELECCIONADO',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1053,9 +1055,8 @@ class _BalanzaStepState extends State<BalanzaStep> {
                               itemCount: filteredBalanzas.length,
                               itemBuilder: (context, index) {
                                 final balanza = filteredBalanzas[index];
-                                final estadoCalibacion =
-                                    balanza['estado_servicio'] ??
-                                        'sin_registro';
+                                final estadoServicio =
+                                    balanza['estado_servicio'] ?? '';
                                 final tieneRegistro =
                                     balanza['tiene_registro'] ?? false;
 
@@ -1064,9 +1065,9 @@ class _BalanzaStepState extends State<BalanzaStep> {
                                       const EdgeInsets.symmetric(vertical: 4),
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: estadoCalibacion == 'Completo'
+                                      color: estadoServicio == 'Completo'
                                           ? Colors.green[300]!
-                                          : estadoCalibacion == 'Pendiente'
+                                          : tieneRegistro
                                               ? Colors.orange[300]!
                                               : Colors.grey[300]!,
                                       width: 2,
@@ -1074,7 +1075,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: ListTile(
-                                    leading: _buildEstadoIcon(estadoCalibacion),
+                                    leading: _buildEstadoIcon(estadoServicio),
                                     title: Text(
                                       'CÓDIGO: ${balanza['cod_metrica']}',
                                       style: GoogleFonts.poppins(
@@ -1099,14 +1100,14 @@ class _BalanzaStepState extends State<BalanzaStep> {
                                             padding:
                                                 const EdgeInsets.only(top: 4),
                                             child: Text(
-                                              estadoCalibacion == 'Completo'
+                                              estadoServicio == 'Completo'
                                                   ? '✓ Balanza Completada'
                                                   : '⚠ Requiere Concluir',
                                               style: TextStyle(
-                                                color: estadoCalibacion ==
-                                                        'Completo'
-                                                    ? Colors.green[700]
-                                                    : Colors.orange[700],
+                                                color:
+                                                    estadoServicio == 'Completo'
+                                                        ? Colors.green[700]
+                                                        : Colors.orange[700],
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,
                                               ),
@@ -1120,7 +1121,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
                                     onTap: () {
                                       // Mostrar alerta si la balanza no está calibrada
                                       if (tieneRegistro &&
-                                          estadoCalibacion == 'Pendiente') {
+                                          estadoServicio != 'Completo') {
                                         _showCalibrationWarningDialog(
                                             balanza, controller);
                                       } else {
@@ -1155,7 +1156,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
 
   Widget _buildEstadoIcon(String estado) {
     switch (estado) {
-      case 'calibrada':
+      case 'Completo':
         return Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -1168,20 +1169,8 @@ class _BalanzaStepState extends State<BalanzaStep> {
             size: 24,
           ),
         );
-      case 'no_calibrada':
-        return Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.orange[100],
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.warning,
-            color: Colors.orange[700],
-            size: 24,
-          ),
-        );
-      default:
+      case '':
+        // Sin registro
         return Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -1191,6 +1180,20 @@ class _BalanzaStepState extends State<BalanzaStep> {
           child: Icon(
             Icons.help_outline,
             color: Colors.grey[700],
+            size: 24,
+          ),
+        );
+      default:
+        // Tiene registro pero no está completo
+        return Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.orange[100],
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.warning,
+            color: Colors.orange[700],
             size: 24,
           ),
         );

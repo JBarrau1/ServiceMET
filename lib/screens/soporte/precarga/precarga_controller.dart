@@ -816,6 +816,7 @@ class PrecargaControllerSop extends ChangeNotifier {
           // Datos de control y estado
           'estado_calibracion': estadoCalibacion['estado'],
           'tiene_registro': estadoCalibacion['tiene_registro'],
+          'estado_servicio': estadoCalibacion['estado_servicio'],
 
           // Datos base de tabla BALANZAS
           'cod_metrica': balanza['cod_metrica'],
@@ -890,7 +891,11 @@ class PrecargaControllerSop extends ChangeNotifier {
       String codMetrica) async {
     try {
       if (_tableName == null || _tableName!.isEmpty) {
-        return {'estado': 'sin_tabla', 'tiene_registro': false};
+        return {
+          'estado': 'sin_tabla',
+          'tiene_registro': false,
+          'estado_servicio': null
+        };
       }
 
       final dbHelper = _getDatabaseHelper();
@@ -906,21 +911,41 @@ class PrecargaControllerSop extends ChangeNotifier {
       );
 
       if (registros.isEmpty) {
-        return {'estado': 'sin_registro', 'tiene_registro': false};
+        return {
+          'estado': 'sin_registro',
+          'tiene_registro': false,
+          'estado_servicio': null
+        };
       }
 
-      // Verificar el estado del servicio
-      final estadoServicio =
+      // Leer el estado del servicio desde la base de datos
+      final estadoServicioBal =
           registros.first['estado_servicio_bal']?.toString() ?? '';
 
-      if (estadoServicio == 'Balanza Calibrada') {
-        return {'estado': 'calibrada', 'tiene_registro': true};
+      // Leer el estado_servicio (puede ser "Completo", "Pendiente", etc.)
+      final estadoServicio =
+          registros.first['estado_servicio']?.toString() ?? '';
+
+      if (estadoServicioBal == 'Balanza Calibrada') {
+        return {
+          'estado': 'calibrada',
+          'tiene_registro': true,
+          'estado_servicio': estadoServicio
+        };
       } else {
-        return {'estado': 'no_calibrada', 'tiene_registro': true};
+        return {
+          'estado': 'no_calibrada',
+          'tiene_registro': true,
+          'estado_servicio': estadoServicio
+        };
       }
     } catch (e) {
       debugPrint('Error al verificar estado de calibración: $e');
-      return {'estado': 'error', 'tiene_registro': false};
+      return {
+        'estado': 'error',
+        'tiene_registro': false,
+        'estado_servicio': null
+      };
     }
   }
 

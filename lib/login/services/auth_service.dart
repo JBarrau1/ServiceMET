@@ -3,6 +3,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:convert';
+import 'package:meta/meta.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -180,53 +181,58 @@ class AuthService {
             const Duration(seconds: 15),
           );
 
-      if (resultJson.isEmpty || resultJson == '[]') {
-        return UserValidationResult(
-          success: false,
-          message: 'Usuario o contraseña incorrecta',
-        );
-      }
-
-      final List<dynamic> result = jsonDecode(resultJson);
-
-      if (result.isEmpty) {
-        return UserValidationResult(
-          success: false,
-          message: 'Usuario o contraseña incorrecta',
-        );
-      }
-
-      final userData =
-          UserModel.fromMap(Map<String, dynamic>.from(result.first));
-
-      // VALIDACIÓN ACCESO APP
-      // CAMBIO: Ahora validamos que sea ESTRICTAMENTE '1'. Cualquier otro valor (0, null, vacío) deniega acceso.
-      if (userData.accesoApp != '1') {
-        return UserValidationResult(
-          success: false,
-          message:
-              '[ACCESO_DENEGADO] Tu usuario no tiene permisos para acceder a la aplicación móvil. Contacta al administrador.',
-        );
-      }
-
-      if (!userData.isActive) {
-        return UserValidationResult(
-          success: false,
-          message: 'Usuario inactivo. Contacte al administrador.',
-        );
-      }
-
-      return UserValidationResult(
-        success: true,
-        message: 'Usuario validado correctamente',
-        userData: userData,
-      );
+      return _processServerUserResult(resultJson);
     } catch (e) {
       return UserValidationResult(
         success: false,
         message: 'Error validando usuario: ${e.toString()}',
       );
     }
+  }
+
+  // Lógica centralizada para interpretar la respuesta del servidor
+  UserValidationResult _processServerUserResult(String resultJson) {
+    if (resultJson.isEmpty || resultJson == '[]') {
+      return UserValidationResult(
+        success: false,
+        message: 'Usuario o contraseña incorrecta',
+      );
+    }
+
+    final List<dynamic> result = jsonDecode(resultJson);
+
+    if (result.isEmpty) {
+      return UserValidationResult(
+        success: false,
+        message: 'Usuario o contraseña incorrecta',
+      );
+    }
+
+    final userData =
+        UserModel.fromMap(Map<String, dynamic>.from(result.first));
+
+    // VALIDACIÓN ACCESO APP
+    // CAMBIO: Ahora validamos que sea ESTRICTAMENTE '1'. Cualquier otro valor (0, null, vacío) deniega acceso.
+    if (userData.accesoApp != '1') {
+      return UserValidationResult(
+        success: false,
+        message:
+            '[ACCESO_DENEGADO] Tu usuario no tiene permisos para acceder a la aplicación móvil. Contacta al administrador.',
+      );
+    }
+
+    if (!userData.isActive) {
+      return UserValidationResult(
+        success: false,
+        message: 'Usuario inactivo. Contacte al administrador.',
+      );
+    }
+
+    return UserValidationResult(
+      success: true,
+      message: 'Usuario validado correctamente',
+      userData: userData,
+    );
   }
 
   // Guardar usuario en SQLite (sin eliminar anteriores)
@@ -478,6 +484,11 @@ class AuthService {
       print('Error eliminando usuario: $e');
       return false;
     }
+  }
+
+  @visibleForTesting
+  UserValidationResult processServerUserResultForTest(String resultJson) {
+    return _processServerUserResult(resultJson);
   }
 }
 

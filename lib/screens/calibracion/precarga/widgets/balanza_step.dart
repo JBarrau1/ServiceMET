@@ -145,7 +145,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
           child: ElevatedButton.icon(
             onPressed: () => _showBalanzasDialog(controller),
             icon: const Icon(Icons.search),
-            label: const Text('Ver Balanzas'),
+            label: const Text('Ver Instrumentos'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF326677),
               foregroundColor: Colors.white,
@@ -161,7 +161,7 @@ class _BalanzaStepState extends State<BalanzaStep> {
               _initializeNewBalanzaFields(controller);
             },
             icon: const Icon(Icons.add),
-            label: const Text('Nueva Balanza'),
+            label: const Text('Nuevo Instrumento'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF327734),
               foregroundColor: Colors.white,
@@ -205,7 +205,9 @@ class _BalanzaStepState extends State<BalanzaStep> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            controller.isNewBalanza ? 'NUEVA BALANZA' : 'BALANZA SELECCIONADA',
+            controller.isNewBalanza
+                ? 'NUEVO INSTRUMENTO'
+                : 'INSTRUMENTO SELECCIONADO',
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.bold,
